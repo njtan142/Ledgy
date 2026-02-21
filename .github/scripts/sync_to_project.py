@@ -263,8 +263,13 @@ query($login: String!, $number: Int!) {{
             return project
 
     print(
-        f"⚠  Project #{project_number} not found for owner '{owner}'. "
-        "Check that the project exists and the token has 'project' scope.",
+        f"⚠  Project #{project_number} not found for owner '{owner}'.\n"
+        "   Possible causes:\n"
+        "   1. The project number is incorrect — check the URL: /projects/<number>\n"
+        "   2. The token lacks 'project' scope — the default GITHUB_TOKEN cannot\n"
+        "      access Projects V2.  Create a PAT (classic or fine-grained) with\n"
+        "      the 'project' scope and store it as a repository secret named\n"
+        "      PROJECT_TOKEN.",
         file=sys.stderr,
     )
     return None
