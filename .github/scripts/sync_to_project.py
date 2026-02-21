@@ -35,6 +35,7 @@ SPRINT_STATUS_YAML = "_bmad-output/implementation-artifacts/sprint-status.yaml"
 # Map BMAD status keys → GitHub Project Status option names (preferred order)
 STATUS_CANDIDATES: dict[str, list[str]] = {
     "backlog":     ["Backlog", "Todo", "To Do"],
+    "ready-for-dev": ["Ready"],
     "in-progress": ["In Progress", "InProgress"],
     "review":      ["In Review", "Review", "In Progress"],
     "done":        ["Done", "Completed"],
