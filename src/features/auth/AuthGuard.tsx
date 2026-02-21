@@ -19,17 +19,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
 
     if (!isUnlocked) {
-        // If registered but locked, redirect to unlock (to be implemented)
-        // For now, if /unlock doesn't exist, we'll just stay on /setup or home
-        // but the next story 1.3 handles the unlock flow.
-        // For story 1.2, we just care about the registration flow.
-        // If locked, we'll just let them go to /unlock if that's where we are.
-        if (location.pathname !== '/unlock' && location.pathname !== '/setup') {
-            // Since /unlock isn't built yet, we'll redirect to /setup as a fallback
-            // or just return children if we want to allow testing the dashboard
-            // after registration (which sets isUnlocked = true).
-            return <Navigate to="/setup" replace />;
+        // If registered but locked, redirect to unlock
+        if (location.pathname !== '/unlock') {
+            return <Navigate to="/unlock" replace />;
         }
+        return <>{children}</>;
     }
 
     return <>{children}</>;

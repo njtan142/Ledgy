@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { AuthGuard } from "./features/auth/AuthGuard";
 import { SetupPage } from "./features/auth/SetupPage";
+import { UnlockPage } from "./features/auth/UnlockPage";
 
 function App() {
   return (
@@ -23,8 +24,23 @@ function App() {
         }
       />
 
-      {/* Placeholder for Unlock route in Story 1.3 */}
-      <Route path="/unlock" element={<div>Unlock UI Placeholder</div>} />
+      <Route
+        path="/unlock"
+        element={
+          <AuthGuard>
+            <UnlockPage />
+          </AuthGuard>
+        }
+      />
+
+      <Route
+        path="/profiles"
+        element={
+          <AuthGuard>
+            <div className="p-20 text-emerald-500 font-bold">Profile Selector Placeholder</div>
+          </AuthGuard>
+        }
+      />
     </Routes>
   );
 }

@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,15 +22,15 @@ so that my data is decrypted and I can access my profiles.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 (AC: 1, 3, 5): Implement Unlock UI
-  - [ ] Subtask 1.1: Create `src/features/auth/UnlockPage.tsx` with a focusable 6-digit OTP input.
-  - [ ] Subtask 1.2: Implement form handling to call `useAuthStore().unlock(code)` on submission or when 6 digits are entered.
-  - [ ] Subtask 1.3: Add inline error state when `unlock` returns `false`.
-- [ ] Task 2 (AC: 2): Refine Routing & Protection
-  - [ ] Subtask 2.1: Update `src/features/auth/AuthGuard.tsx` with corrected redirection logic (Backlog -> /setup, Registered & Locked -> /unlock).
-  - [ ] Subtask 2.2: Register `UnlockPage` in `src/App.tsx` and ensure `/profiles` route is planned for Epic 2.
-- [ ] Task 3 (AC: 4): Security Validation
-  - [ ] Subtask 3.1: Verify that accessing `/` or other protected routes while locked forces a redirect to `/unlock`.
+- [x] Task 1 (AC: 1, 3, 5): Implement Unlock UI
+  - [x] Subtask 1.1: Create `src/features/auth/UnlockPage.tsx` with a focusable 6-digit OTP input.
+  - [x] Subtask 1.2: Implement form handling to call `useAuthStore().unlock(code)` on submission or when 6 digits are entered.
+  - [x] Subtask 1.3: Add inline error state when `unlock` returns `false`.
+- [x] Task 2 (AC: 2): Refine Routing & Protection
+  - [x] Subtask 2.1: Update `src/features/auth/AuthGuard.tsx` with corrected redirection logic (Backlog -> /setup, Registered & Locked -> /unlock).
+  - [x] Subtask 2.2: Register `UnlockPage` in `src/App.tsx` and ensure `/profiles` route is planned for Epic 2.
+- [x] Task 3 (AC: 4): Security Validation
+  - [x] Subtask 3.1: Verify that accessing `/` or other protected routes while locked forces a redirect to `/unlock`.
 
 ## Dev Notes
 
