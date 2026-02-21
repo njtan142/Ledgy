@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { ProfileMetadata } from '../types/profile';
 import { getProfileDb } from '../lib/db';
 import { useErrorStore } from './useErrorStore';
+import { useAuthStore } from '../features/auth/useAuthStore';
+import { encryptPayload, decryptPayload } from '../lib/crypto';
 
 interface ProfileState {
     profiles: ProfileMetadata[];
@@ -28,18 +30,41 @@ export const useProfileStore = create<ProfileState>()(
             fetchProfiles: async () => {
                 set({ isLoading: true, error: null });
                 try {
-                    // Profile metadata is stored in a special 'master' DB or localStorage.
-                    // For now, let's assume a 'master' profile DB named 'ledgy_master'
                     const masterDb = getProfileDb('master');
                     const profileDocs = await masterDb.getAllDocuments<any>('profile');
-                    const profiles = profileDocs
+                    const encryptionKey = useAuthStore.getState().encryptionKey;
+
+                    const profiles = await Promise.all(profileDocs
                         .filter(doc => !doc.isDeleted)
-                        .map(doc => ({
-                            id: doc._id,
-                            name: doc.name,
-                            description: doc.description,
-                            createdAt: doc.createdAt,
-                            updatedAt: doc.updatedAt,
+                        .map(async doc => {
+                            let name = doc.name;
+                            let description = doc.description;
+
+                            // If name is encrypted (object with iv/ciphertext), decrypt it
+                            if (encryptionKey && doc.name_enc) {
+                                try {
+                                    const iv = new Uint8Array(doc.name_enc.iv);
+                                    const ciphertext = new Uint8Array(doc.name_enc.ciphertext).buffer;
+                                    name = await decryptPayload(encryptionKey, iv, ciphertext);
+
+                                    if (doc.description_enc) {
+                                        const dIv = new Uint8Array(doc.description_enc.iv);
+                                        const dCiphertext = new Uint8Array(doc.description_enc.ciphertext).buffer;
+                                        description = await decryptPayload(encryptionKey, dIv, dCiphertext);
+                                    }
+                                } catch (e) {
+                                    console.error('Failed to decrypt profile name:', e);
+                                    name = `[Encrypted Profile ${doc._id.slice(-4)}]`;
+                                }
+                            }
+
+                            return {
+                                id: doc._id,
+                                name,
+                                description,
+                                createdAt: doc.createdAt,
+                                updatedAt: doc.updatedAt,
+                            };
                         }));
                     set({ profiles, isLoading: false });
                 } catch (err: any) {
@@ -57,16 +82,34 @@ export const useProfileStore = create<ProfileState>()(
                 set({ isLoading: true, error: null });
                 try {
                     const masterDb = getProfileDb('master');
-                    const response = await masterDb.createDocument('profile', {
-                        name,
-                        description,
-                    });
+                    const encryptionKey = useAuthStore.getState().encryptionKey;
+
+                    let docData: any = { type: 'profile' };
+
+                    if (encryptionKey) {
+                        const nameEnc = await encryptPayload(encryptionKey, name);
+                        docData.name_enc = {
+                            iv: nameEnc.iv,
+                            ciphertext: Array.from(new Uint8Array(nameEnc.ciphertext))
+                        };
+                        if (description) {
+                            const descEnc = await encryptPayload(encryptionKey, description);
+                            docData.description_enc = {
+                                iv: descEnc.iv,
+                                ciphertext: Array.from(new Uint8Array(descEnc.ciphertext))
+                            };
+                        }
+                        // Store a hint for list identification if needed, or just leave it fully opaque
+                    } else {
+                        docData.name = name;
+                        docData.description = description;
+                    }
+
+                    const response = await masterDb.createDocument('profile', docData);
 
                     if (response.ok) {
-                        // After creating metadata, we initialize the profile's dedicated PouchDB
                         const profileDb = getProfileDb(response.id);
                         await profileDb.createDocument('profile_init', { initialized: true });
-
                         await get().fetchProfiles();
                     }
                 } catch (err: any) {
@@ -80,11 +123,9 @@ export const useProfileStore = create<ProfileState>()(
                 set({ isLoading: true, error: null });
                 try {
                     const masterDb = getProfileDb('master');
-                    // In a real app, we might want to deeply delete the profile's PouchDB too
                     const profileDb = getProfileDb(id);
                     await profileDb.destroy();
 
-                    // Update metadata
                     const profileDoc = await masterDb.getDocument<any>(id);
                     await masterDb.updateDocument(id, {
                         ...profileDoc,

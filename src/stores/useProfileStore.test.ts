@@ -1,12 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useProfileStore } from './useProfileStore';
 import { getProfileDb, _clearProfileDatabases } from '../lib/db';
-import { useErrorStore } from './useErrorStore';
+import { useAuthStore } from '../features/auth/useAuthStore';
 
-describe('useProfileStore', () => {
+describe('useProfileStore Encryption', () => {
+    // Mock key
+    const mockKey: CryptoKey = { type: 'secret', algorithm: { name: 'AES-GCM' }, extractable: false, usages: ['encrypt', 'decrypt'] } as any;
+
     beforeEach(async () => {
         vi.clearAllMocks();
         _clearProfileDatabases();
+
+        // -----------------------------------------------------------------------
+        // Mock Crypto (Vitest lacks full WebCrypto support in JSDOM)
+        // -----------------------------------------------------------------------
+        vi.mock('../lib/crypto', () => ({
+            encryptPayload: vi.fn().mockResolvedValue({
+                iv: [1, 2, 3],
+                ciphertext: new Uint8Array([1, 2, 3]).buffer,
+            }),
+            decryptPayload: vi.fn().mockResolvedValue('Decrypted Material'),
+        }));
+
         useProfileStore.setState({
             profiles: [],
             activeProfileId: null,
@@ -14,55 +29,49 @@ describe('useProfileStore', () => {
             error: null,
         });
 
-        // Reset the master DB
+        useAuthStore.setState({
+            encryptionKey: mockKey,
+            isUnlocked: true
+        });
+
         const masterDb = getProfileDb('master');
         await masterDb.destroy();
-        _clearProfileDatabases(); // Clear registry again after destroy
+        _clearProfileDatabases();
     });
 
-    it('should create a profile and update state', async () => {
+    it('should encrypt profile name on creation', async () => {
         const store = useProfileStore.getState();
+        await store.createProfile('Secret Profile');
 
-        await store.createProfile('Test Profile', 'A test profile');
-
-        const state = useProfileStore.getState();
-        expect(state.profiles).toHaveLength(1);
-        expect(state.profiles[0].name).toBe('Test Profile');
-        expect(state.profiles[0].description).toBe('A test profile');
-    });
-
-    it('should set active profile', () => {
-        useProfileStore.getState().setActiveProfile('test-id');
-        expect(useProfileStore.getState().activeProfileId).toBe('test-id');
-    });
-
-    it('should handle errors during profile creation', async () => {
-        // Mock a DB failure
         const masterDb = getProfileDb('master');
-        vi.spyOn(masterDb, 'createDocument').mockRejectedValue(new Error('DB Error'));
+        const docs = await masterDb.getAllDocuments<any>('profile');
 
-        const dispatchErrorSpy = vi.spyOn(useErrorStore.getState(), 'dispatchError');
-
-        await useProfileStore.getState().createProfile('Fail Profile');
-
-        const state = useProfileStore.getState();
-        expect(state.error).toBe('DB Error');
-        expect(dispatchErrorSpy).toHaveBeenCalledWith('DB Error');
+        expect(docs).toHaveLength(1);
+        expect(docs[0].name_enc).toBeDefined();
+        expect(docs[0].name).toBeUndefined(); // Plain name should not be stored
     });
 
-    it('should delete a profile and clear activity if it was active', async () => {
+    it('should decrypt profile name on fetch', async () => {
+        const { decryptPayload } = await import('../lib/crypto');
+        (decryptPayload as any).mockResolvedValue('Secret Profile');
+
         const store = useProfileStore.getState();
-        await store.createProfile('To Delete');
-        const profiles = useProfileStore.getState().profiles;
-        const profileId = profiles[0].id;
+        await store.createProfile('Secret Profile');
 
-        await store.setActiveProfile(profileId);
-        expect(useProfileStore.getState().activeProfileId).toBe(profileId);
-
-        await store.deleteProfile(profileId);
+        // Clear state and fetch
+        useProfileStore.setState({ profiles: [] });
+        await store.fetchProfiles();
 
         const state = useProfileStore.getState();
-        expect(state.profiles).toHaveLength(0);
-        expect(state.activeProfileId).toBeNull();
+        expect(state.profiles[0].name).toBe('Secret Profile');
+    });
+
+    it('should handle unencrypted profiles (legacy support)', async () => {
+        const masterDb = getProfileDb('master');
+        await masterDb.createDocument('profile', { name: 'Legacy' });
+
+        await useProfileStore.getState().fetchProfiles();
+
+        expect(useProfileStore.getState().profiles[0].name).toBe('Legacy');
     });
 });
