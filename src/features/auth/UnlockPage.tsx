@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { OTPInput, SlotProps } from 'input-otp';
 import { Lock, ShieldAlert, ArrowRight, AlertTriangle, Eye, EyeOff, KeyRound, LogOut } from 'lucide-react';
 import { useAuthStore, EXPIRY_OPTIONS, RememberMeExpiry, DEFAULT_EXPIRY } from './useAuthStore';
+import { useErrorStore } from '../../stores/useErrorStore';
 
 const getFriendlyErrorMessage = (error: any): string => {
     if (!error) return 'An unexpected error occurred.';
@@ -19,7 +20,9 @@ const getFriendlyErrorMessage = (error: any): string => {
 
 export const UnlockPage: React.FC = () => {
     const [code, setCode] = useState('');
-    const [error, setError] = useState<string | null>(null);
+    const dispatchError = useErrorStore(state => state.dispatchError);
+    const clearError = useErrorStore(state => state.clearError);
+    const currentError = useErrorStore(state => state.error);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isSubmittingRef = useRef(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -33,16 +36,13 @@ export const UnlockPage: React.FC = () => {
 
     const { unlock, unlockWithPassphrase, needsPassphrase, reset, isUnlocked } = useAuthStore();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const isResetMode = searchParams.get('reset') === 'true';
-
     useEffect(() => {
-        if (error && code === '') {
+        if (currentError && code === '') {
             inputRef.current?.focus();
         }
-    }, [error, code]);
+    }, [currentError, code]);
 
     // If already unlocked (e.g. via ?reset=true bypass), show management UI
     if (isUnlocked) {
@@ -88,7 +88,7 @@ export const UnlockPage: React.FC = () => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
         setIsSubmitting(true);
-        setError(null);
+        clearError();
         try {
             const selectedExpiry = EXPIRY_OPTIONS.find(o => o.value === expiryOption);
             const expiryMs = selectedExpiry?.ms ?? null;
@@ -96,12 +96,12 @@ export const UnlockPage: React.FC = () => {
             if (success) {
                 navigate('/profiles');
             } else {
-                setError('Invalid code. Please try again.');
+                dispatchError('Invalid code. Please try again.', 'error');
                 setCode('');
             }
         } catch (err: any) {
             console.error('Unlock error occurred', err);
-            setError(getFriendlyErrorMessage(err));
+            dispatchError(getFriendlyErrorMessage(err), 'error');
             setCode('');
         } finally {
             setIsSubmitting(false);
@@ -113,17 +113,17 @@ export const UnlockPage: React.FC = () => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
         setIsSubmitting(true);
-        setError(null);
+        clearError();
         try {
             const success = await unlockWithPassphrase(passphrase);
             if (success) {
                 navigate('/profiles');
             } else {
-                setError('Incorrect passphrase. Please try again.');
+                dispatchError('Incorrect passphrase. Please try again.', 'error');
             }
         } catch (err: any) {
             console.error('Passphrase unlock error occurred', err);
-            setError(getFriendlyErrorMessage(err));
+            dispatchError(getFriendlyErrorMessage(err), 'error');
         } finally {
             setIsSubmitting(false);
             isSubmittingRef.current = false;
@@ -132,7 +132,7 @@ export const UnlockPage: React.FC = () => {
 
     const onChange = (value: string) => {
         setCode(value);
-        if (error) setError(null);
+        if (currentError) clearError();
         if (value.length === 6 && !isSubmittingRef.current) {
             handleUnlock(value);
         }
@@ -170,7 +170,7 @@ export const UnlockPage: React.FC = () => {
                                 type={showPassphrase ? 'text' : 'password'}
                                 autoFocus
                                 value={passphrase}
-                                onChange={(e) => { setPassphrase(e.target.value); if (error) setError(null); }}
+                                onChange={(e) => { setPassphrase(e.target.value); if (currentError) clearError(); }}
                                 placeholder="Enter passphrase…"
                                 disabled={isSubmitting}
                                 className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 pr-10 text-sm text-zinc-50 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all disabled:opacity-50"
@@ -184,13 +184,6 @@ export const UnlockPage: React.FC = () => {
                                 {showPassphrase ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                         </div>
-
-                        {error && (
-                            <div className="flex items-center gap-2 text-red-500 animate-in fade-in slide-in-from-top-1 duration-200">
-                                <ShieldAlert className="w-4 h-4" />
-                                <span className="text-sm font-medium">{error}</span>
-                            </div>
-                        )}
 
                         <button
                             type="submit"
@@ -234,13 +227,6 @@ export const UnlockPage: React.FC = () => {
                                 </div>
                             )}
                         />
-
-                        {error && (
-                            <div className="flex items-center gap-2 text-red-500 animate-in fade-in slide-in-from-top-1 duration-200">
-                                <ShieldAlert className="w-4 h-4" />
-                                <span className="text-sm font-medium">{error}</span>
-                            </div>
-                        )}
 
                         {/* ── Security Warning (Always shown if not passphrase protected) ── */}
                         {!needsPassphrase && !passphrase && (

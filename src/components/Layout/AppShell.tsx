@@ -11,23 +11,12 @@ export const AppShell: React.FC = () => {
         theme, toggleTheme
     } = useUIStore();
 
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
-
-    // Sync theme with root element
-    useEffect(() => {
-        const root = window.document.documentElement;
-        if (theme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-    }, [theme]);
 
     useEffect(() => {
         if (isMobile) {
@@ -39,7 +28,6 @@ export const AppShell: React.FC = () => {
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
-            setWindowWidth(width);
             setIsMobile(width < 900);
 
             // Auto-collapse logic based on width
@@ -81,7 +69,7 @@ export const AppShell: React.FC = () => {
             {/* Left Sidebar */}
             <aside
                 className={`flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${leftSidebarOpen ? 'w-[240px]' : 'w-[48px]'
-                    } ${windowWidth < 1100 && !leftSidebarOpen ? 'w-[48px]' : ''}`}
+                    }`}
             >
                 <div className="h-14 flex items-center px-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
                     <button
@@ -132,7 +120,7 @@ export const AppShell: React.FC = () => {
 
             {/* Right Inspector */}
             <aside
-                className={`flex flex-col border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${rightInspectorOpen && windowWidth >= 1280 ? 'w-[280px]' : 'w-0'
+                className={`flex flex-col border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${rightInspectorOpen ? 'w-[280px]' : 'w-0'
                     }`}
             >
                 <div className="h-14 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">

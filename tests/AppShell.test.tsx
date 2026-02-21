@@ -63,7 +63,8 @@ describe("AppShell Component", () => {
     });
 
     it("hides Inspector when width is between 1100 and 1279", () => {
-        Object.defineProperty(window, 'innerWidth', { value: 1200 });
+        // Assume resize has happened and rightInspectorOpen is false
+        mockUseUIStore.mockReturnValue({ ...mockUIState, rightInspectorOpen: false });
 
         render(
             <MemoryRouter>
@@ -71,9 +72,7 @@ describe("AppShell Component", () => {
             </MemoryRouter>
         );
 
-        // The inspector is in the DOM but has w-0 class (or similar)
-        // In our implementation, we use: rightInspectorOpen && windowWidth >= 1280 ? 'w-[280px]' : 'w-0'
-        const inspector = screen.getByText(/Inspector/i).closest('aside');
+        const inspector = screen.getByTitle(/Expand Inspector/i).closest('aside');
         expect(inspector).toHaveClass('w-0');
     });
 

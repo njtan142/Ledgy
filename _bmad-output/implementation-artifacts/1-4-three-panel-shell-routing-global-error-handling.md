@@ -1,6 +1,6 @@
 # Story 1.4: Three-Panel Shell, Routing & Global Error Handling
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -57,10 +57,10 @@ So that I can navigate between areas of the app without disorientation.
 - [x] [AI-Review][MEDIUM] Duplicate Test Location: Tests found in src/features/auth/ instead of strictly in tests/ [src/features/auth/UnlockPage.test.tsx]
 - [x] [AI-Review][MEDIUM] Error Handling Consistency: Consider wiring warning banner to useErrorStore [src/components/Layout/AppShell.tsx:44]
 - [x] [AI-Review][MEDIUM] Missing Resize Test: No tests verifying transition between breakpoints [tests/AppShell.test.tsx]
-- [ ] [AI-Review][HIGH] AC 4 Violation (Responsive Logic): The Right Inspector cannot be toggled open when the window width is between 900-1099px. The CSS class in `AppShell.tsx` hardcodes the width to `w-0` below 1280px, overriding local state. [src/components/Layout/AppShell.tsx:135]
-- [ ] [AI-Review][HIGH] AC 5 Violation (Theme Isolation): The light/dark theme synchronization logic is placed directly inside `AppShell.tsx`, which means public pages like setup and unlock do not receive the theme. [src/components/Layout/AppShell.tsx:22]
-- [ ] [AI-Review][HIGH] AC 3 Violation (Error Handling): The story dictates "Strictly no local `useState` for async errors". However, `src/features/auth/UnlockPage.tsx` still contains and uses local `[error, setError]` state variations. [src/features/auth/UnlockPage.tsx:22]
-- [ ] [AI-Review][MEDIUM] Redundant Logic: In `AppShell.tsx`, the Left Sidebar contains redundant and potentially confusing conditional width logic in its CSS string evaluation. [src/components/Layout/AppShell.tsx:84]
+- [x] [AI-Review][HIGH] AC 4 Violation (Responsive Logic): The Right Inspector cannot be toggled open when the window width is between 900-1099px. The CSS class in `AppShell.tsx` hardcodes the width to `w-0` below 1280px, overriding local state. [src/components/Layout/AppShell.tsx:135]
+- [x] [AI-Review][HIGH] AC 5 Violation (Theme Isolation): The light/dark theme synchronization logic is placed directly inside `AppShell.tsx`, which means public pages like setup and unlock do not receive the theme. [src/components/Layout/AppShell.tsx:22]
+- [x] [AI-Review][HIGH] AC 3 Violation (Error Handling): The story dictates "Strictly no local `useState` for async errors". However, `src/features/auth/UnlockPage.tsx` still contains and uses local `[error, setError]` state variations. [src/features/auth/UnlockPage.tsx:22]
+- [x] [AI-Review][MEDIUM] Redundant Logic: In `AppShell.tsx`, the Left Sidebar contains redundant and potentially confusing conditional width logic in its CSS string evaluation. [src/components/Layout/AppShell.tsx:84]
 
 ## Dev Notes
 
@@ -118,6 +118,10 @@ Antigravity (Gemini 2.0)
 - ✅ Resolved review finding [MEDIUM]: Duplicate Test Location. Moved `src/features/auth/UnlockPage.test.tsx` to `/tests`.
 - ✅ Resolved review finding [MEDIUM]: Error Handling Consistency. Dispatched `isMobile` warning via `useErrorStore`.
 - ✅ Resolved review finding [MEDIUM]: Missing Resize Test. Mocked resize event in `AppShell.test.tsx` to verify auto-collapse logic.
+- ✅ Resolved review finding [HIGH]: AC 4 Violation (Responsive Logic). Removed hardcoded `w-0` override for the Right Inspector.
+- ✅ Resolved review finding [HIGH]: AC 5 Violation (Theme Isolation). Moved theme synchronization logic to `App.tsx`.
+- ✅ Resolved review finding [HIGH]: AC 3 Violation (Error Handling). Removed local `[error, setError]` from `UnlockPage` and used `useErrorStore`.
+- ✅ Resolved review finding [MEDIUM]: Redundant Logic. Simplified Left Sidebar width CSS in `AppShell.tsx`.
 
 ### File List
 

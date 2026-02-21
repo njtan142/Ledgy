@@ -7,8 +7,21 @@ import { GuestGuard } from "./features/auth/GuestGuard";
 import { UnlockGuard } from "./features/auth/UnlockGuard";
 import { AppShell } from "./components/Layout/AppShell";
 import { ErrorToast } from "./components/ErrorToast";
+import { useUIStore } from "./stores/useUIStore";
+import { useEffect } from "react";
 
 function App() {
+  const theme = useUIStore((state) => state.theme);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
     <>
       <ErrorToast />

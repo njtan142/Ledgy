@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UnlockPage } from '../src/features/auth/UnlockPage';
 import { useAuthStore } from '../src/features/auth/useAuthStore';
+import { useErrorStore } from '../src/stores/useErrorStore';
 import { MemoryRouter } from 'react-router-dom';
 
 global.ResizeObserver = class ResizeObserver {
@@ -21,6 +22,14 @@ vi.mock('../src/features/auth/useAuthStore', async (importOriginal) => {
     };
 });
 
+vi.mock('../src/stores/useErrorStore', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/stores/useErrorStore')>();
+    return {
+        ...actual,
+        useErrorStore: vi.fn(),
+    };
+});
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
     const actual = await vi.importActual('react-router-dom');
@@ -36,6 +45,8 @@ describe('UnlockPage', () => {
     const mockUnlock = vi.fn();
     const mockReset = vi.fn();
     const mockUnlockWithPassphrase = vi.fn();
+    const mockDispatchError = vi.fn();
+    const mockClearError = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -47,6 +58,15 @@ describe('UnlockPage', () => {
                 unlock: mockUnlock,
                 unlockWithPassphrase: mockUnlockWithPassphrase,
                 reset: mockReset,
+            };
+            return selector ? selector(state) : state;
+        });
+
+        (useErrorStore as any).mockImplementation((selector: any) => {
+            const state = {
+                error: null,
+                dispatchError: mockDispatchError,
+                clearError: mockClearError,
             };
             return selector ? selector(state) : state;
         });
@@ -91,7 +111,7 @@ describe('UnlockPage', () => {
         fireEvent.change(input, { target: { value: '000000' } });
 
         await waitFor(() => {
-            expect(screen.getByText(/Invalid code/i)).toBeInTheDocument();
+            expect(mockDispatchError).toHaveBeenCalledWith('Invalid code. Please try again.', 'error');
         });
     });
 
@@ -250,7 +270,7 @@ describe('UnlockPage', () => {
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-            expect(screen.getByText(/Incorrect passphrase/i)).toBeInTheDocument();
+            expect(mockDispatchError).toHaveBeenCalledWith('Incorrect passphrase.', 'error');
         });
     });
 
