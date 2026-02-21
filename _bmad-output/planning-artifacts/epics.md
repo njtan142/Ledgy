@@ -272,19 +272,19 @@ So that my tracking spaces stay organized and I can fully remove data I want gon
 **And** on confirm, `delete_profile` purges the local PouchDB database completely (NFR12 — right-to-be-forgotten)
 **And** if the profile has a configured remote sync endpoint, the user is warned that remote data must be purged separately
 
-### Story 2.4: First-Launch Template Picker (Onboarding Flow)
+### Story 2.4: First-Launch Empty State Experience
 
 As a new user,
-I want to be guided to pick a starting template when I create my first profile,
-So that I am never faced with a blank canvas on day one.
+I want to see a clean welcome state when I create my first profile,
+So that I understand how to begin without being overwhelmed by choice.
 
 **Acceptance Criteria:**
 
 **Given** a profile is freshly created with no ledgers
 **When** the user enters the profile for the first time
-**Then** the template picker overlay is shown with at least 3 built-in starter templates (e.g. "Wellness Tracker", "Expense Log", "Blank Canvas")
-**And** selecting a template scaffolds the initial ledger schema in PouchDB and dismisses the overlay
-**And** selecting "Blank Canvas" dismisses the overlay with an empty ledger list showing the instructional CTA: "No entries yet — press N or + to begin"
+**Then** they land on the main dashboard showing a helpful empty state
+**And** the UI displays an instructional CTA: "Welcome to Ledgy! Create your first ledger to get started."
+**And** the "Template Picker" logic is deferred until built-in templates are defined.
 
 ---
 

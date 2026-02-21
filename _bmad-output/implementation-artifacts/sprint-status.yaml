@@ -46,13 +46,13 @@ development_status:
   1-3-app-unlock-flow-auth-guard: done
   1-4-three-panel-shell-routing-global-error-handling: done
   1-5-github-actions-ci-cd-pipeline: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   epic-2: backlog
   2-1-pouchdb-initialization-profile-data-model: backlog
   2-2-profile-selector-ui: backlog
   2-3-create-delete-profile: backlog
-  2-4-first-launch-template-picker-onboarding-flow: backlog
+  2-4-first-launch-empty-state-experience: backlog
   epic-2-retrospective: optional
 
   epic-3: backlog
