@@ -387,25 +387,67 @@ def get_branch_sha(repo: str, branch_name: str) -> str | None:
         return None
 
 
+def find_pr_for_branch(repo: str, branch_name: str) -> dict | None:
+    """Find an open PR whose head branch matches *branch_name*."""
+    prs = run_gh(
+        "pr", "list",
+        "--repo", repo,
+        "--head", branch_name,
+        "--state", "open",
+        "--json", "number,title,body",
+        "--limit", "1",
+    )
+    if prs and isinstance(prs, list) and len(prs) > 0:
+        return prs[0]
+    return None
+
+
 def link_branch_to_issue(
-    issue_node_id: str, branch_name: str, commit_sha: str
+    repo: str, issue_number: int, branch_name: str, commit_sha: str
 ) -> bool:
-    """Link an existing branch to an issue via the createLinkedBranch mutation."""
-    mutation = """
-mutation($issueId: ID!, $oid: GitObjectID!, $name: String!) {
-  createLinkedBranch(input: {issueId: $issueId, oid: $oid, name: $name}) {
-    linkedBranch { id }
-  }
-}
-"""
-    data = graphql(mutation, issueId=issue_node_id, oid=commit_sha, name=branch_name)
-    if isinstance(data, dict) and data.get("errors"):
-        msg = data["errors"][0].get("message", "")
-        if "already" in msg.lower():
-            return True
-        print(f"  ⚠  Error linking branch to issue: {msg}", file=sys.stderr)
+    """Link a story issue to its PR by adding a closing reference in the PR body.
+
+    If a matching open PR exists for *branch_name*, the issue reference
+    ``Closes #<number>`` is appended to the PR body so that GitHub
+    populates the issue's *Development* sidebar section.
+    """
+    pr = find_pr_for_branch(repo, branch_name)
+    if not pr:
+        print(f"  ⚠  No open PR found for branch '{branch_name}'",
+              file=sys.stderr)
         return False
-    return data is not None
+
+    body = pr.get("body", "") or ""
+    issue_ref = f"#{issue_number}"
+
+    # Check whether the PR body already contains a closing keyword for this issue
+    closing_patterns = [
+        f"closes {issue_ref}", f"close {issue_ref}",
+        f"fixes {issue_ref}",  f"fix {issue_ref}",
+        f"resolves {issue_ref}", f"resolve {issue_ref}",
+    ]
+    if any(pat in body.lower() for pat in closing_patterns):
+        print(f"  · PR #{pr['number']} already references issue {issue_ref}")
+        return True
+
+    # Append a closing reference to the PR body
+    separator = "\n\n" if body.strip() else ""
+    new_body = f"{body}{separator}Closes {issue_ref}"
+
+    result = run_gh(
+        "pr", "edit", str(pr["number"]),
+        "--repo", repo,
+        "--body", new_body,
+    )
+    dry_run = os.getenv("DRY_RUN", "").lower() == "true"
+    if result is not None or dry_run:
+        print(f"  ✔ Linked issue {issue_ref} → PR #{pr['number']} "
+              f"({pr.get('title', '?')})")
+        return True
+
+    print(f"  ⚠  Failed to update PR #{pr['number']} body with closing "
+          f"reference for issue {issue_ref}", file=sys.stderr)
+    return False
 
 
 def add_sub_issue(epic_node_id: str, story_node_id: str) -> bool:
@@ -601,7 +643,7 @@ def main() -> int:
                 if dry_run:
                     print(f"  [DRY RUN] Would link branch '{expected_branch}' to issue #{issue.get('number')} ({key})")
                     continue
-                ok = link_branch_to_issue(issue["id"], expected_branch, sha)
+                ok = link_branch_to_issue(repo, issue["number"], expected_branch, sha)
                 if ok:
                     print(f"  ✔ Linked branch '{expected_branch}' → issue #{issue.get('number')} ({key})")
                 else:
