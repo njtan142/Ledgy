@@ -1,6 +1,6 @@
 # Story 1.4: Three-Panel Shell, Routing & Global Error Handling
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -52,11 +52,11 @@ So that I can navigate between areas of the app without disorientation.
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][HIGH] Responsive Logic Gap: Auto-collapse for Inspector (1100–1279px) not implemented in resize handler [src/components/Layout/AppShell.tsx:28]
-- [ ] [AI-Review][HIGH] UI State Flash: Missing hydration check for persisted state causing layout shift [src/components/Layout/AppShell.tsx:17]
-- [ ] [AI-Review][MEDIUM] Duplicate Test Location: Tests found in src/features/auth/ instead of strictly in tests/ [src/features/auth/UnlockPage.test.tsx]
-- [ ] [AI-Review][MEDIUM] Error Handling Consistency: Consider wiring warning banner to useErrorStore [src/components/Layout/AppShell.tsx:44]
-- [ ] [AI-Review][MEDIUM] Missing Resize Test: No tests verifying transition between breakpoints [tests/AppShell.test.tsx]
+- [x] [AI-Review][HIGH] Responsive Logic Gap: Auto-collapse for Inspector (1100–1279px) not implemented in resize handler [src/components/Layout/AppShell.tsx:28]
+- [x] [AI-Review][HIGH] UI State Flash: Missing hydration check for persisted state causing layout shift [src/components/Layout/AppShell.tsx:17]
+- [x] [AI-Review][MEDIUM] Duplicate Test Location: Tests found in src/features/auth/ instead of strictly in tests/ [src/features/auth/UnlockPage.test.tsx]
+- [x] [AI-Review][MEDIUM] Error Handling Consistency: Consider wiring warning banner to useErrorStore [src/components/Layout/AppShell.tsx:44]
+- [x] [AI-Review][MEDIUM] Missing Resize Test: No tests verifying transition between breakpoints [tests/AppShell.test.tsx]
 
 ## Dev Notes
 
@@ -109,6 +109,11 @@ Antigravity (Gemini 2.0)
 - Created `AppShell` with a responsive three-panel layout (Sidebar, Main, Inspector).
 - Configured React Router v7 with nested routes and redirects.
 - Added 17 unit and integration tests (100% pass).
+- ✅ Resolved review finding [HIGH]: Responsive Logic Gap. Implemented resize handler auto-collapse for Inspector and Sidebar.
+- ✅ Resolved review finding [HIGH]: UI State Flash. Added mounted state to `AppShell.tsx`.
+- ✅ Resolved review finding [MEDIUM]: Duplicate Test Location. Moved `src/features/auth/UnlockPage.test.tsx` to `/tests`.
+- ✅ Resolved review finding [MEDIUM]: Error Handling Consistency. Dispatched `isMobile` warning via `useErrorStore`.
+- ✅ Resolved review finding [MEDIUM]: Missing Resize Test. Mocked resize event in `AppShell.test.tsx` to verify auto-collapse logic.
 
 ### File List
 
@@ -121,6 +126,8 @@ Antigravity (Gemini 2.0)
 - `tests/useErrorStore.test.ts`
 - `tests/AppShell.test.tsx`
 - `tests/App.test.tsx`
+- `tests/UnlockPage.test.tsx`
+- `[Deleted] src/features/auth/UnlockPage.test.tsx`
 
 ## Git Intelligence Summary (Previous Story)
 

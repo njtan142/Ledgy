@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useUIStore } from '../../stores/useUIStore';
+import { useErrorStore } from '../../stores/useErrorStore';
 import { Outlet } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Moon, Sun, MonitorOff } from 'lucide-react';
 
@@ -12,6 +13,11 @@ export const AppShell: React.FC = () => {
 
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Sync theme with root element
     useEffect(() => {
@@ -23,6 +29,12 @@ export const AppShell: React.FC = () => {
         }
     }, [theme]);
 
+    useEffect(() => {
+        if (isMobile) {
+            useErrorStore.getState().dispatchError("Mobile and Tablet layouts are not supported in this version.", "warning");
+        }
+    }, [isMobile]);
+
     // Handle responsive breakpoints
     useEffect(() => {
         const handleResize = () => {
@@ -33,13 +45,21 @@ export const AppShell: React.FC = () => {
             // Auto-collapse logic based on width
             if (width < 1280 && width >= 1100) {
                 // Should hide inspector but keep sidebar
-                // We'll let the CSS handle the hiding, but we could sync store here if needed
+                useUIStore.getState().setRightInspector(false);
+            } else if (width < 1100) {
+                // Should hide both inspector and sidebar
+                useUIStore.getState().setRightInspector(false);
+                useUIStore.getState().setLeftSidebar(false);
             }
         };
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    if (!mounted) {
+        return null;
+    }
 
     if (isMobile) {
         return (

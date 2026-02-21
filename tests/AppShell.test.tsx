@@ -18,13 +18,16 @@ describe("AppShell Component", () => {
         toggleLeftSidebar: vi.fn(),
         rightInspectorOpen: true,
         toggleRightInspector: vi.fn(),
+        setRightInspector: vi.fn(),
         theme: 'dark',
         toggleTheme: vi.fn(),
+        setLeftSidebar: vi.fn(),
     };
 
     beforeEach(() => {
         vi.clearAllMocks();
         mockUseUIStore.mockReturnValue(mockUIState);
+        (mockUseUIStore as any).getState = vi.fn().mockReturnValue(mockUIState);
 
         // Reset window width to desktop default
         Object.defineProperty(window, 'innerWidth', {
@@ -97,4 +100,27 @@ describe("AppShell Component", () => {
         fireEvent.click(themeBtn);
         expect(mockUIState.toggleTheme).toHaveBeenCalled();
     });
+
+    it("auto-collapses panels on window resize", () => {
+        render(
+            <MemoryRouter>
+                <AppShell />
+            </MemoryRouter>
+        );
+
+        // Resize to 1200 (hide inspector)
+        act(() => {
+            Object.defineProperty(window, 'innerWidth', { value: 1200 });
+            window.dispatchEvent(new Event('resize'));
+        });
+        expect(mockUIState.setRightInspector).toHaveBeenCalledWith(false);
+
+        // Resize to 800 (hide sidebar too)
+        act(() => {
+            Object.defineProperty(window, 'innerWidth', { value: 800 });
+            window.dispatchEvent(new Event('resize'));
+        });
+        expect(mockUIState.setLeftSidebar).toHaveBeenCalledWith(false);
+    });
 });
+
