@@ -7,6 +7,7 @@ import { GuestGuard } from "./features/auth/GuestGuard";
 import { UnlockGuard } from "./features/auth/UnlockGuard";
 import { AppShell } from "./components/Layout/AppShell";
 import { ErrorToast } from "./components/ErrorToast";
+import { ProfileSelector } from "./features/profiles/ProfileSelector";
 import { useUIStore } from "./stores/useUIStore";
 import { useEffect } from "react";
 
@@ -50,9 +51,7 @@ function App() {
           path="/profiles"
           element={
             <AuthGuard>
-              <div className="p-20 text-emerald-500 font-bold bg-zinc-950 min-h-screen">
-                Profile Selector Placeholder
-              </div>
+              <ProfileSelector />
             </AuthGuard>
           }
         />
