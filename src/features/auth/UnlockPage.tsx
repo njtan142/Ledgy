@@ -1,45 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { OTPInput, SlotProps } from 'input-otp';
 import { Lock, ShieldAlert, ArrowRight } from 'lucide-react';
 import { useAuthStore } from './useAuthStore';
 
 export const UnlockPage: React.FC = () => {
     const [code, setCode] = useState('');
-    const [error, setError] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const { unlock } = useAuthStore();
-    const totpSecret = useAuthStore(state => state.totpSecret);
-    const isUnlocked = useAuthStore(state => state.isUnlocked);
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if (!totpSecret) {
-            navigate('/setup', { replace: true });
-            return;
+        if (error && code === '') {
+            inputRef.current?.focus();
         }
-        if (isUnlocked) {
-            navigate('/profiles', { replace: true });
-            return;
-        }
-    }, [totpSecret, isUnlocked, navigate]);
+    }, [error, code]);
 
     const handleUnlock = async (otp: string) => {
+        if (isSubmitting) return;
         setIsSubmitting(true);
-        setError(false);
+        setError(null);
         try {
-            const success = await unlock(otp);
+            const success = await unlock(otp, rememberMe);
             if (success) {
                 navigate('/profiles');
             } else {
-                setError(true);
+                setError('Invalid code. Please try again.');
                 setCode('');
-                setTimeout(() => inputRef.current?.focus(), 10);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Unlock error:', err);
-            setError(true);
+            setError(err?.message || 'An unexpected error occurred. Please try again.');
+            setCode('');
         } finally {
             setIsSubmitting(false);
         }
@@ -47,7 +42,7 @@ export const UnlockPage: React.FC = () => {
 
     const onChange = (value: string) => {
         setCode(value);
-        if (error) setError(false);
+        if (error) setError(null);
         if (value.length === 6 && !isSubmitting) {
             handleUnlock(value);
         }
@@ -76,10 +71,12 @@ export const UnlockPage: React.FC = () => {
                     className="flex flex-col items-center w-full space-y-6"
                 >
                     <OTPInput
+                        autoFocus
                         ref={inputRef}
                         maxLength={6}
                         value={code}
                         onChange={onChange}
+                        disabled={isSubmitting}
                         containerClassName="group flex items-center has-[:disabled]:opacity-50"
                         render={({ slots }) => (
                             <div className="flex gap-2">
@@ -93,9 +90,20 @@ export const UnlockPage: React.FC = () => {
                     {error && (
                         <div className="flex items-center gap-2 text-red-500 animate-in fade-in slide-in-from-top-1 duration-200">
                             <ShieldAlert className="w-4 h-4" />
-                            <span className="text-sm font-medium">Invalid code. Please try again.</span>
+                            <span className="text-sm font-medium">{error}</span>
                         </div>
                     )}
+
+                    <label className="flex items-center gap-2 self-start text-sm text-zinc-400 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            className="rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            disabled={isSubmitting}
+                        />
+                        Remember me on this device
+                    </label>
 
                     <button
                         type="submit"
@@ -113,8 +121,11 @@ export const UnlockPage: React.FC = () => {
                     </button>
                 </form>
 
-                <div className="pt-8 text-center">
+                <div className="pt-8 text-center space-y-4 flex flex-col items-center">
                     <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Secure Local-Only Architecture</p>
+                    <Link to="/setup" className="text-sm text-zinc-500 hover:text-emerald-400 transition-colors">
+                        Not you? Reset vault & start over
+                    </Link>
                 </div>
             </div>
         </div>

@@ -3,13 +3,19 @@ import { AuthGuard } from "./features/auth/AuthGuard";
 import { SetupPage } from "./features/auth/SetupPage";
 import { UnlockPage } from "./features/auth/UnlockPage";
 import { Dashboard } from "./features/dashboard/Dashboard";
+import { GuestGuard } from "./features/auth/GuestGuard";
+import { UnlockGuard } from "./features/auth/UnlockGuard";
 
 function App() {
   return (
     <Routes>
       <Route
         path="/setup"
-        element={<SetupPage />}
+        element={
+          <GuestGuard>
+            <SetupPage />
+          </GuestGuard>
+        }
       />
 
       <Route
@@ -23,7 +29,11 @@ function App() {
 
       <Route
         path="/unlock"
-        element={<UnlockPage />}
+        element={
+          <UnlockGuard>
+            <UnlockPage />
+          </UnlockGuard>
+        }
       />
 
       <Route

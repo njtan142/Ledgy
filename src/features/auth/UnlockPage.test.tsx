@@ -10,6 +10,8 @@ global.ResizeObserver = class ResizeObserver {
     disconnect() { }
 } as any;
 
+document.elementFromPoint = vi.fn();
+
 vi.mock('./useAuthStore', () => ({
     useAuthStore: vi.fn(),
 }));
@@ -62,7 +64,7 @@ describe('UnlockPage', () => {
         fireEvent.change(input, { target: { value: '123456' } });
 
         await waitFor(() => {
-            expect(mockUnlock).toHaveBeenCalledWith('123456');
+            expect(mockUnlock).toHaveBeenCalledWith('123456', false);
         });
         expect(mockNavigate).toHaveBeenCalledWith('/profiles');
     });
@@ -95,5 +97,28 @@ describe('UnlockPage', () => {
 
         const button = screen.getByRole('button', { name: /Unlock Vault/i });
         expect(button).toBeDisabled();
+    });
+
+    it('disables OTPInput when isSubmitting is true', async () => {
+        let resolveUnlock: (val: boolean) => void;
+        mockUnlock.mockReturnValue(new Promise(resolve => {
+            resolveUnlock = resolve;
+        }));
+
+        const { container } = render(
+            <MemoryRouter>
+                <UnlockPage />
+            </MemoryRouter>
+        );
+
+        const input = container.querySelector('input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '123456' } });
+
+        await waitFor(() => {
+            expect(input).toBeDisabled();
+        });
+
+        // cleanup
+        resolveUnlock!(true);
     });
 });

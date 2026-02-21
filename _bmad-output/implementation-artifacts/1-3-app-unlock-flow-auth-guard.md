@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -45,15 +45,15 @@ so that my data is decrypted and I can access my profiles.
 - [x] [AI-Review][Low] `App.tsx` does not define a fallback catch-all route (e.g., `path="*"`). [src/App.tsx:45]
 
 ### Review Follow-ups (AI) - Round 2
-- [ ] [AI-Review][High] OTPInput lacks disabled state while isSubmitting is true [src/features/auth/UnlockPage.tsx:78]
-- [ ] [AI-Review][Medium] SetupPage.tsx modified but undocumented in File List [src/features/auth/SetupPage.tsx]
-- [ ] [AI-Review][Medium] Concurrent Submission Vulnerability in SetupPage [src/features/auth/SetupPage.tsx:82]
-- [ ] [AI-Review][Medium] Visual Flash on Redirects due to component-level useEffects (needs GuestGuard) [src/features/auth/SetupPage.tsx:17]
-- [ ] [AI-Review][Low] Hacky Focus Recovery using setTimeout instead of reactive effect [src/features/auth/UnlockPage.tsx:38]
-- [ ] [AI-Review][Low] Obscured Error Context in handleUnlock catch block [src/features/auth/UnlockPage.tsx:41]
-- [ ] [Feature] Provide an option to create a new profile on the unlock screen [src/features/auth/UnlockPage.tsx]
-- [ ] [Feature] Auto-focus the OTP input on page load [src/features/auth/UnlockPage.tsx]
-- [ ] [Feature] Implement session persistence / "Remember Me" so OTP isn't required on every app load [src/features/auth/useAuthStore.ts]
+- [x] [AI-Review][High] OTPInput lacks disabled state while isSubmitting is true [src/features/auth/UnlockPage.tsx:78]
+- [x] [AI-Review][Medium] SetupPage.tsx modified but undocumented in File List [src/features/auth/SetupPage.tsx]
+- [x] [AI-Review][Medium] Concurrent Submission Vulnerability in SetupPage [src/features/auth/SetupPage.tsx:82]
+- [x] [AI-Review][Medium] Visual Flash on Redirects due to component-level useEffects (needs GuestGuard) [src/features/auth/SetupPage.tsx:17]
+- [x] [AI-Review][Low] Hacky Focus Recovery using setTimeout instead of reactive effect [src/features/auth/UnlockPage.tsx:38]
+- [x] [AI-Review][Low] Obscured Error Context in handleUnlock catch block [src/features/auth/UnlockPage.tsx:41]
+- [x] [Feature] Provide an option to create a new profile on the unlock screen [src/features/auth/UnlockPage.tsx]
+- [x] [Feature] Auto-focus the OTP input on page load [src/features/auth/UnlockPage.tsx]
+- [x] [Feature] Implement session persistence / "Remember Me" so OTP isn't required on every app load [src/features/auth/useAuthStore.ts]
 
 ## Dev Notes
 
@@ -103,8 +103,13 @@ Antigravity (Gemini 2.0 Flash)
 - `src/features/auth/UnlockPage.tsx`
 - `src/features/auth/UnlockPage.test.tsx`
 - `src/features/auth/AuthGuard.tsx`
+- `src/features/auth/GuestGuard.tsx`
+- `src/features/auth/UnlockGuard.tsx`
+- `src/features/auth/SetupPage.tsx`
+- `src/features/auth/useAuthStore.ts`
 - `src/App.tsx`
 - `src/features/dashboard/Dashboard.tsx`
 
 ### Change Log
 - Addressed code review findings - 6 items resolved
+- Addressed Review Round 2 findings - 9 items resolved, including SetupPage vulnerabilities, Remember Me session persistence, and GuestGuard visual flash preventions.

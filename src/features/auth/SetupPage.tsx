@@ -9,16 +9,11 @@ export const SetupPage: React.FC = () => {
     const [qrUri, setQrUri] = useState<string>('');
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { verifyAndRegister } = useAuthStore();
-    const totpSecret = useAuthStore(state => state.totpSecret);
-    const isUnlocked = useAuthStore(state => state.isUnlocked);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (totpSecret) {
-            navigate(isUnlocked ? '/' : '/unlock', { replace: true });
-            return;
-        }
         // Generate new secret on mount
         const rawSecret = generateSecret();
         const encoded = encodeSecret(rawSecret);
@@ -29,16 +24,22 @@ export const SetupPage: React.FC = () => {
     }, []);
 
     const handleVerify = async (val?: string) => {
+        if (isSubmitting) return;
         const verifyCode = val || code;
         if (!tempSecret || verifyCode.length !== 6) return;
 
         setError(null);
+        setIsSubmitting(true);
 
-        const success = await verifyAndRegister(tempSecret, verifyCode);
-        if (success) {
-            navigate('/');
-        } else {
-            setError('Invalid code. Please try again.');
+        try {
+            const success = await verifyAndRegister(tempSecret, verifyCode);
+            if (success) {
+                navigate('/');
+            } else {
+                setError('Invalid code. Please try again.');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -102,10 +103,10 @@ export const SetupPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={code.length !== 6}
+                            disabled={code.length !== 6 || isSubmitting}
                             className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-[0.98]"
                         >
-                            Finish Setup
+                            {isSubmitting ? 'Verifying...' : 'Finish Setup'}
                         </button>
                     </form>
                 </div>
