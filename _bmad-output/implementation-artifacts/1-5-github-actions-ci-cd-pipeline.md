@@ -1,6 +1,6 @@
 # Story 1.5: GitHub Actions CI/CD Pipeline
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -43,10 +43,10 @@ So that distribution is automated and reproducible across all platforms.
 - [x] [AI-Review][MEDIUM] **Matrix Asset Pollution**: Jobs try to upload all platform artifacts instead of just their own.
 - [x] [AI-Review][MEDIUM] **Brittle Artifact Paths**: Combine specific path discovery with explicit output passing.
 - [x] [AI-Review][LOW] **Missing Rust Cache**: Use `Swatinem/rust-cache` to improve build times.
-- [ ] [AI-Review][HIGH] **Brittle Artifact Discovery**: build.yml uses `find | head -n 1` which is prone to error if multiple artifacts exist.
-- [ ] [AI-Review][MEDIUM] **Ambiguous Size Limit**: Workflow uses MiB (1024^2) while requirements likely imply Decimal MB (1000^2).
-- [ ] [AI-Review][MEDIUM] **Performance Risk**: Rust Cache grow management needed to avoid hitting 10GB limit too quickly.
-- [ ] [AI-Review][LOW] **Workflow Naming Inconsistency**: Workflow named "Release" but story is "GitHub Actions CI/CD Pipeline".
+- [x] [AI-Review][HIGH] **Brittle Artifact Discovery**: build.yml uses `find | head -n 1` which is prone to error if multiple artifacts exist.
+- [x] [AI-Review][MEDIUM] **Ambiguous Size Limit**: Workflow uses MiB (1024^2) while requirements likely imply Decimal MB (1000^2).
+- [x] [AI-Review][MEDIUM] **Performance Risk**: Rust Cache grow management needed to avoid hitting 10GB limit too quickly.
+- [x] [AI-Review][LOW] **Workflow Naming Inconsistency**: Workflow named "Release" but story is "GitHub Actions CI/CD Pipeline".
 
 
 ## Dev Notes
@@ -105,11 +105,8 @@ To address the remaining review findings, the following changes will be made to 
 
 - ✅ Implemented GitHub Actions CI/CD configuration for Tauri (Task 1).
 - ✅ Added size verification step to strictly enforce the 10MB installation file artifact requirement (Task 2).
-- ✅ Configured trigger exclusively for `v*` tags on pushing to the repository.
-- ✅ Resolved race conditions by decoupling release creation from asset uploads.
-- ✅ Hardened trigger logic to verify tags are pushed from the `main` branch.
-- ✅ Optimized build performance using Rust dependency caching.
-- ✅ Improved artifact discovery and targeted specific platform binaries for upload.
+- ✅ Resolved second round of follow-up findings (Trigger Leak, Race Condition, Asset Pollution, Path Robustness, Caching).
+- ✅ Resolved third round of follow-up findings (Artifact Discovery, Size Limit Ambiguity, Cache Management, Naming).
 
 ### File List
 

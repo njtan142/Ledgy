@@ -1,4 +1,4 @@
-name: Release
+name: GitHub Actions CI/CD Pipeline
 
 on:
   push:
@@ -73,8 +73,8 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          # Shared cache between platforms if possible (though Rust builds are platform specific)
-          workspaces: src-tauri -> target
+          prefix-key: "v1-rust"
+          shared-key: "tauri-build"
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-latest'
@@ -92,11 +92,20 @@ jobs:
         id: locate
         shell: bash
         run: |
-          # 10 MiB limit (10 * 1024 * 1024 = 10485760 bytes)
-          MAX_SIZE=10485760
+          # 10 MB limit (decimal: 10 * 1000 * 1000 = 10,000,000 bytes)
+          MAX_SIZE=10000000
           
           echo "Scanning for artifacts with extension ${{ matrix.target_ext }}..."
-          ARTIFACT=$(find src-tauri/target/release/bundle -name "*${{ matrix.target_ext }}" | head -n 1)
+          
+          # Target specific subfolders based on extension to avoid finding old build artifacts or nested bundles
+          case "${{ matrix.target_ext }}" in
+            .msi) SEARCH_DIR="src-tauri/target/release/bundle/msi" ;;
+            .dmg) SEARCH_DIR="src-tauri/target/release/bundle/dmg" ;;
+            .AppImage) SEARCH_DIR="src-tauri/target/release/bundle/appimage" ;;
+            *) SEARCH_DIR="src-tauri/target/release/bundle" ;;
+          esac
+          
+          ARTIFACT=$(find "$SEARCH_DIR" -maxdepth 1 -name "*${{ matrix.target_ext }}" | head -n 1)
           
           if [[ -z "$ARTIFACT" ]]; then
             echo "::error::No artifact found with extension ${{ matrix.target_ext }} in src-tauri/target/release/bundle"
