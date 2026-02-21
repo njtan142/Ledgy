@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -31,6 +31,12 @@ so that my data is decrypted and I can access my profiles.
   - [x] Subtask 2.2: Register `UnlockPage` in `src/App.tsx` and ensure `/profiles` route is planned for Epic 2.
 - [x] Task 3 (AC: 4): Security Validation
   - [x] Subtask 3.1: Verify that accessing `/` or other protected routes while locked forces a redirect to `/unlock`.
+
+### Review Follow-ups (AI)
+- [ ] [AI-Review][High] Dev Agent Record -> File List is empty. Needs documentation of created/modified files (UnlockPage.tsx, AuthGuard.tsx, App.tsx, UnlockPage.test.tsx). [1-3-app-unlock-flow-auth-guard.md:67]
+- [ ] [AI-Review][Medium] UnlockPage input is not wrapped in a form, preventing native Enter-key submission. [src/features/auth/UnlockPage.tsx:55]
+- [ ] [AI-Review][Medium] Focus is not returned to the first input slot automatically after an invalid code attempt. [src/features/auth/UnlockPage.tsx:21]
+- [ ] [AI-Review][Low] `Dashboard` placeholder component is declared directly in `App.tsx` instead of its own file. [src/App.tsx:48]
 
 ## Dev Notes
 
