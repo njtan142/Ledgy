@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OTPInput, SlotProps } from 'input-otp';
 import { Lock, ShieldAlert, ArrowRight } from 'lucide-react';
@@ -10,6 +10,7 @@ export const UnlockPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { unlock } = useAuthStore();
     const navigate = useNavigate();
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const handleUnlock = async (otp: string) => {
         setIsSubmitting(true);
@@ -21,6 +22,7 @@ export const UnlockPage: React.FC = () => {
             } else {
                 setError(true);
                 setCode('');
+                setTimeout(() => inputRef.current?.focus(), 10);
             }
         } catch (err) {
             console.error('Unlock error:', err);
@@ -51,8 +53,17 @@ export const UnlockPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center space-y-6">
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (code.length === 6 && !isSubmitting) {
+                            handleUnlock(code);
+                        }
+                    }}
+                    className="flex flex-col items-center w-full space-y-6"
+                >
                     <OTPInput
+                        ref={inputRef}
                         maxLength={6}
                         value={code}
                         onChange={onChange}
@@ -74,7 +85,7 @@ export const UnlockPage: React.FC = () => {
                     )}
 
                     <button
-                        onClick={() => handleUnlock(code)}
+                        type="submit"
                         disabled={code.length !== 6 || isSubmitting}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-emerald-500/10"
                     >
@@ -87,7 +98,7 @@ export const UnlockPage: React.FC = () => {
                             </>
                         )}
                     </button>
-                </div>
+                </form>
 
                 <div className="pt-8 text-center">
                     <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Secure Local-Only Architecture</p>
