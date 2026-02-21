@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -89,10 +89,10 @@ so that my data is decrypted and I can access my profiles.
 - [x] [AI-Review][Low] isRegistered() method in useAuthStore is dead code — all guards derive registration state directly from totpSecret; remove to reduce interface noise [src/features/auth/useAuthStore.ts:86]
 
 ### Review Follow-ups (AI) - Round 7
-- [ ] [AI-Review][High] Missing UI Tests for Passphrase Flow: UnlockPage.test.tsx lacks coverage for needsPassphrase state, input handling, visibility toggle, and unlockWithPassphrase call. [src/features/auth/UnlockPage.test.tsx]
-- [ ] [AI-Review][Medium] Confusing Passphrase Expiry UX: "Session expires after" option resets timer but doesn't force TOTP re-entry, making it redundant for passphrase users. [src/features/auth/useAuthStore.ts]
-- [ ] [AI-Review][Low] Missing Reset Option for Auto-Unlocked Users: "Not you? Reset vault" button inaccessible on UnlockPage due to auto-redirect. [src/features/auth/UnlockPage.tsx]
-- [ ] [AI-Review][Low] Generic Error Handling: UnlockPage.tsx displays raw err.message; sanitize to generic user-friendly messages. [src/features/auth/UnlockPage.tsx]
+- [x] [AI-Review][High] Missing UI Tests for Passphrase Flow: UnlockPage.test.tsx lacks coverage for needsPassphrase state, input handling, visibility toggle, and unlockWithPassphrase call. [src/features/auth/UnlockPage.test.tsx]
+- [x] [AI-Review][Medium] Confusing Passphrase Expiry UX: "Session expires after" option resets timer but doesn't force TOTP re-entry, making it redundant for passphrase users. [src/features/auth/useAuthStore.ts]
+- [x] [AI-Review][Low] Missing Reset Option for Auto-Unlocked Users: "Not you? Reset vault" button inaccessible on UnlockPage due to auto-redirect. [src/features/auth/UnlockPage.tsx]
+- [x] [AI-Review][Low] Generic Error Handling: UnlockPage.tsx displays raw err.message; sanitize to generic user-friendly messages. [src/features/auth/UnlockPage.tsx]
 
 ## Dev Notes
 
@@ -152,6 +152,10 @@ Antigravity (Gemini 2.0 Flash)
 - ✅ Resolved review finding [Medium] Round 5: Moved initSession() call to main.tsx and await it (.finally render) so the app never renders with stale auth state, eliminating TOTP-screen flash.
 - ✅ Resolved review finding [Low] Round 5: Replaced passphrase || undefined with passphrase.length > 0 ? passphrase : undefined in UnlockPage.
 - ✅ Resolved review finding [Low] Round 5: Added console.warn in unlock() when totpSecret is null to surface passphrase-session mismatches.
+- ✅ Resolved review finding [High] Round 7: Missing UI Tests for Passphrase Flow - Added extensive tests in UnlockPage.test.tsx covering needsPassphrase, unlockWithPassphrase, and error handling.
+- ✅ Resolved review finding [Medium] Round 7: Confusing Passphrase Expiry UX - Implemented strict logout behavior in useAuthStore.ts (clears all state on expiry) to make "Session expires after" meaningful. Updated useAuthStore.test.ts to verify.
+- ✅ Resolved review finding [Low] Round 7: Missing Reset Option for Auto-Unlocked Users - Modified UnlockGuard.tsx to allow ?reset=true bypass; updated UnlockPage.tsx to show "Vault Unlocked" UI with Reset button if unlocked.
+- ✅ Resolved review finding [Low] Round 7: Generic Error Handling - Added friendlyError helper in UnlockPage.tsx to map error codes to user-friendly messages.
 
 ### File List
 - `src/features/auth/UnlockPage.tsx`
@@ -179,3 +183,4 @@ Antigravity (Gemini 2.0 Flash)
 - Round 5 review follow-ups resolved (2026-02-21): fixed initSession() expiry branch to set needsPassphrase for passphrase sessions; added rememberMeExpiryMs persisted field; fixed unlockWithPassphrase to restore fresh rememberMeExpiry; added encryptedTotpSecret to App.test.tsx mock; moved initSession() to main.tsx awaited before render; replaced passphrase || undefined with passphrase.length > 0 check; added console.warn for null-totpSecret in unlock(); 3 new tests added covering all new behaviours.
 - Round 6 code review (2026-02-21): 4 action items added — 1 High (missing App.test.tsx routing tests), 1 Medium (DRY guards), 2 Low.
 - Round 6 review follow-ups resolved (2026-02-21): Added integration tests for App routing; Refactored `isRegistered` logic to `useIsRegistered` hook; Sanitized error logging in UnlockPage; Centralized `DEFAULT_EXPIRY` constant.
+- Round 7 review follow-ups resolved (2026-02-21): Implemented strict session expiry (logout on expiry); Added reset bypass for unlocked users (?reset=true); Improved error handling in UnlockPage; Added comprehensive UI tests in UnlockPage.test.tsx.

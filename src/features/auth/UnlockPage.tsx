@@ -1,8 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { OTPInput, SlotProps } from 'input-otp';
-import { Lock, ShieldAlert, ArrowRight, AlertTriangle, Eye, EyeOff, KeyRound } from 'lucide-react';
+import { Lock, ShieldAlert, ArrowRight, AlertTriangle, Eye, EyeOff, KeyRound, LogOut } from 'lucide-react';
 import { useAuthStore, EXPIRY_OPTIONS, RememberMeExpiry, DEFAULT_EXPIRY } from './useAuthStore';
+
+const getFriendlyErrorMessage = (error: any): string => {
+    if (!error) return 'An unexpected error occurred.';
+    const msg = (error?.message || String(error)).toLowerCase();
+
+    if (msg.includes('decryption failed') || msg.includes('mac check failed') || msg.includes('operation failed')) {
+        return 'Incorrect passphrase.';
+    }
+    if (msg.includes('invalid signature') || msg.includes('verification failed')) {
+        return 'Invalid code.';
+    }
+    return 'An unexpected error occurred. Please try again.';
+};
 
 export const UnlockPage: React.FC = () => {
     const [code, setCode] = useState('');
@@ -18,15 +31,58 @@ export const UnlockPage: React.FC = () => {
     // Session expiry (shown when rememberMe is checked)
     const [expiryOption, setExpiryOption] = useState<RememberMeExpiry>(DEFAULT_EXPIRY);
 
-    const { unlock, unlockWithPassphrase, needsPassphrase, reset } = useAuthStore();
+    const { unlock, unlockWithPassphrase, needsPassphrase, reset, isUnlocked } = useAuthStore();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const isResetMode = searchParams.get('reset') === 'true';
 
     useEffect(() => {
         if (error && code === '') {
             inputRef.current?.focus();
         }
     }, [error, code]);
+
+    // If already unlocked (e.g. via ?reset=true bypass), show management UI
+    if (isUnlocked) {
+        return (
+            <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center justify-center p-6 font-sans">
+                <div className="w-full max-w-sm space-y-8 text-center">
+                    <div className="p-4 bg-emerald-500/10 rounded-full border border-emerald-500/20 inline-block">
+                        <Lock className="w-8 h-8 text-emerald-500" />
+                    </div>
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-bold tracking-tight">Vault Unlocked</h1>
+                        <p className="text-zinc-400">
+                            You are currently authenticated.
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <button
+                            onClick={() => navigate('/profiles')}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-all"
+                        >
+                            <span>Go to Profiles</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                reset();
+                                navigate('/setup');
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-zinc-800 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 border border-zinc-700 text-zinc-300 font-semibold rounded-lg transition-all"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span>Reset Vault & Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const handleUnlock = async (otp: string) => {
         if (isSubmittingRef.current) return;
@@ -44,8 +100,8 @@ export const UnlockPage: React.FC = () => {
                 setCode('');
             }
         } catch (err: any) {
-            console.error('Unlock error occurred');
-            setError(err?.message || 'An unexpected error occurred. Please try again.');
+            console.error('Unlock error occurred', err);
+            setError(getFriendlyErrorMessage(err));
             setCode('');
         } finally {
             setIsSubmitting(false);
@@ -66,8 +122,8 @@ export const UnlockPage: React.FC = () => {
                 setError('Incorrect passphrase. Please try again.');
             }
         } catch (err: any) {
-            console.error('Passphrase unlock error occurred');
-            setError(err?.message || 'An unexpected error occurred. Please try again.');
+            console.error('Passphrase unlock error occurred', err);
+            setError(getFriendlyErrorMessage(err));
         } finally {
             setIsSubmitting(false);
             isSubmittingRef.current = false;

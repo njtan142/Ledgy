@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useAuthStore } from './useAuthStore';
 
 // ---------------------------------------------------------------------------
@@ -261,9 +260,8 @@ describe('useAuthStore', () => {
             expect(state.rememberMeExpiry).toBeNull();
         });
 
-        it('sets needsPassphrase (not TOTP input) when expiry is past AND encryptedTotpSecret is set', async () => {
-            // Regression: previously the expiry branch only cleared state and returned,
-            // leaving the user stuck on the TOTP screen when totpSecret is null.
+        it('forgets user and clears state when expiry is past, even if encryptedTotpSecret is set', async () => {
+            // New behavior: strict logout on expiry
             useAuthStore.setState({
                 rememberMe: true,
                 totpSecret: null,
@@ -281,7 +279,9 @@ describe('useAuthStore', () => {
             expect(state.isUnlocked).toBe(false);
             expect(state.encryptionKey).toBeNull();
             expect(state.rememberMeExpiry).toBeNull();
-            expect(state.needsPassphrase).toBe(true);
+            expect(state.encryptedTotpSecret).toBeNull(); // Should be cleared
+            expect(state.rememberMe).toBe(false); // Should be cleared
+            expect(state.needsPassphrase).toBe(false); // Should NOT prompt for passphrase
         });
 
         it('auto-unlocks when rememberMe is true, expiry is null, and no passphrase', async () => {

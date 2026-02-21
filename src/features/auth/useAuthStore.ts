@@ -101,12 +101,17 @@ export const useAuthStore = create<AuthState>()(
 
                 // Step 1: Check session expiry
                 if (rememberMeExpiry !== null && Date.now() > rememberMeExpiry) {
-                    if (encryptedTotpSecret) {
-                        // Passphrase-protected session expired — can't auto-unlock, prompt for passphrase
-                        set({ isUnlocked: false, encryptionKey: null, rememberMeExpiry: null, needsPassphrase: true });
-                    } else {
-                        set({ isUnlocked: false, encryptionKey: null, rememberMeExpiry: null });
-                    }
+                    // Session expired — fully forget the user to force re-authentication via TOTP
+                    set({
+                        totpSecret: null,
+                        encryptedTotpSecret: null,
+                        isUnlocked: false,
+                        encryptionKey: null,
+                        rememberMe: false,
+                        rememberMeExpiry: null,
+                        rememberMeExpiryMs: null,
+                        needsPassphrase: false,
+                    });
                     return;
                 }
 
