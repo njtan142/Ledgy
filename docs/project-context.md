@@ -48,6 +48,8 @@ A **personal, AI-powered universal ledger and tracker** — not limited to finan
 - The core data structure — a tracked list of entries
 - A project can have **multiple ledgers**
 - AI can generate ledger entries from image analysis
+  > [!IMPORTANT]
+  > **PouchDB Data Model Rules:** Ledgy uses PouchDB for local storage. When defining schema or documents, **never** prefix custom field names with an underscore (e.g., use `type` instead of `_type`). Underscores are strictly reserved for PouchDB internals (`_id`, `_rev`). violating this causes hard crashes.
 
 ### Scenes
 - The **parent-most component** — primarily a wrapper for:
@@ -115,13 +117,12 @@ A **personal, AI-powered universal ledger and tracker** — not limited to finan
 
 ## Cross-Platform Requirement
 
-- Must run on **mobile** (iOS, Android) and **desktop** (Windows, macOS, Linux)
-- **Tech stack undecided** — candidates may include:
-  - Flutter (Dart)
-  - React Native / Expo
-  - Kotlin Multiplatform
-  - Tauri + web framework
-  - Other (to be evaluated)
+- Must run on **mobile** (iOS, Android) and **desktop** (Windows, macOS, Linux) and **web browsers*
+- **Tech stack** — 
+  - React / Vite / TypeScript (Universal Web App)
+  - PouchDB (IndexedDB storage)
+  - WebCrypto (Client-side encryption)
+  - Tauri 2.0 (Optional desktop/mobile wrapper for deep OS integrations)
 
 ---
 

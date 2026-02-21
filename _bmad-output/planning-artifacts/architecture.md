@@ -109,7 +109,7 @@ npm create tauri-app@latest ledgy -- --template react-ts
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| **Local DB** | PouchDB | Runs natively in Tauri's WebView; built-in CouchDB replication protocol |
+| **Local DB** | PouchDB (IndexedDB) | Runs natively in the browser via IndexedDB; built-in CouchDB replication protocol |
 | **Remote Sync** | CouchDB / Firebase Firestore | User self-hosted on GCE free tier; Firebase as fallback |
 | **Conflict Resolution** | Last-Write-Wins (LWW) | Device with latest timestamp wins automatically; user can always override via Diff UI |
 | **Data Portability** | Standardized JSON export/import | Full data sovereignty; no platform lock-in |
@@ -121,22 +121,21 @@ npm create tauri-app@latest ledgy -- --template react-ts
 | Decision | Choice | Rationale |
 |---|---|---|
 | **Auth method** | TOTP (RFC 6238) via Google Authenticator | No email/password; lightweight single-user security |
-| **Encryption** | AES-256-GCM client-side | All data encrypted before leaving the device |
-| **Key derivation** | HKDF derived from TOTP secret | Key is tied to the TOTP seed; no separate password required |
+| **Encryption** | AES-256-GCM WebCrypto | All data encrypted locally within the browser context |
+| **Key derivation** | HKDF WebCrypto | Key is tied to the TOTP seed; no separate password required |
 | **Telemetry** | Zero mandatory | No background pings, no analytics |
 | **Remote encryption** | Zero-knowledge | Remote CouchDB receives only ciphertext |
 
-### Tauri Commands (API Layer)
+### Universal Web API Layer
 
-All backend logic is exposed via **Tauri Commands** (`#[tauri::command]` in Rust). This replaces REST/GraphQL entirely for local operations. The frontend React layer communicates exclusively through `invoke()`.
+All backend logic is built entirely in the frontend using **Web Frameworks and APIs**. 
+Ledgy does **not** rely on Tauri commands for Core functionality. Tauri is only utilized as a desktop/mobile wrapper for deep-OS integrations, but the app must remain fully functional in a web browser.
 
-| Command Category | Examples |
+| Domain | Abstraction / Implementation |
 |---|---|
-| **Profile management** | `create_profile`, `delete_profile`, `list_profiles` |
-| **Ledger CRUD** | `create_entry`, `update_entry`, `delete_entry` |
-| **Sync** | `trigger_sync`, `get_sync_status`, `resolve_conflict` |
-| **Security** | `verify_totp`, `encrypt_payload`, `decrypt_payload` |
-| **Plugin runtime** | `load_plugin`, `invoke_plugin_command` |
+| **Storage (PouchDB)** | Direct instantiation via IndexedDB in `src/lib/db.ts` |
+| **Cryptography** | WebCrypto API for AES/HKDF in `src/lib/crypto.ts` |
+| **Plugin runtime** | Handled natively by React architecture |
 
 ### Frontend Architecture
 
@@ -196,7 +195,9 @@ AI Capture and other non-core capabilities are delivered via Ledgy's **Plugin Sy
 
 **PouchDB Document Naming:**
 - Document IDs: `{type}:{uuid}` — e.g., `entry:a1b2c3`, `profile:x9y8z7`
-- Document type field: `_type` (string, always present)
+- Document type field: `type` (string, always present)
+  > [!WARNING]
+  > **PouchDB Restriction:** Do not use `_type` or prefix any custom fields with an underscore `_`. Fields starting with an underscore (like `_id`, `_rev`, `_deleted`) are strictly reserved for PouchDB internal use and will cause a `Bad special document member` runtime crash.
 - All fields: `camelCase` — e.g., `schemaVersion`, `createdAt`, `ledgerId`
 
 **Code Naming:**
@@ -224,7 +225,7 @@ AI Capture and other non-core capabilities are delivered via Ledgy's **Plugin Sy
 interface LedgyDocument {
   _id: string;           // "{type}:{uuid}"
   _rev?: string;
-  _type: string;         // "entry" | "schema" | "node" | "profile"
+  type: string;         // "entry" | "schema" | "node" | "profile"
   schema_version: number;
   createdAt: string;     // ISO 8601
   updatedAt: string;     // ISO 8601

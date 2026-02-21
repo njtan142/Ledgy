@@ -37,7 +37,7 @@ Ledgy is a local-first personal data platform designed to break the cycle of "Tr
 
 ## Project Classification
 
-- **Project Type:** Desktop Application (Tauri 2.0 shell, Rust backend, React/TS frontend).
+- **Project Type:** Universal Web Application (Optional: Tauri 2.0 shell).
 - **Domain:** Personal Productivity / Universal Life-Tracking.
 - **Complexity:** Medium-High (Local-first sync, relational data integrity, visual scripting).
 - **Project Context:** Brownfield (Built on established architectural research and vision docs).
@@ -54,7 +54,7 @@ Ledgy is a local-first personal data platform designed to break the cycle of "Tr
 ### Technical Benchmarks
 - **Zero Data Loss:** 100% reliability in PouchDB ↔ CouchDB replication across three unique device profiles.
 - **Node Performance:** Visual editor maintains 60fps with 100+ active nodes.
-- **Binary Density:** Desktop installation package remains < 10MB (Windows/Mac/Linux).
+- **Browser Compatibility:** Core functions operational in modern web browsers (Chrome/Firefox/Safari) without native OS fallbacks.
 
 ## Product Scope
 
@@ -96,19 +96,19 @@ Ledgy is a local-first personal data platform designed to break the cycle of "Tr
 - **Data Portability:** System must support standardized JSON export/import for all projects to prevent platform lock-in.
 
 ### Technical Constraints
-- **Zero-Knowledge Encryption:** Remote data must be encrypted client-side with user-controlled keys.
+- **Zero-Knowledge Encryption:** Remote data must be encrypted client-side with user-controlled keys using standard WebCrypto APIs.
 - **Ghost References:** System must handle "Dangling References" (where a linked entry is deleted on another device) via a soft-delete pattern to maintain relational integrity.
 - **Schema Versioning:** Every entry must include a `schema_version` metadata field to support JIT migrations and backward compatibility.
 
-## Desktop App Specific Requirements (Tauri 2.0)
+## Deployment Specific Requirements
 
 ### Platform & Update Strategy
-- **Targets:** Native binary support for Windows, macOS, and Linux.
-- **Auto-Update:** Leveraging Tauri's updater for non-intrusive, "Pull-based" binary and schema updates.
-- **Privacy Footprint:** Zero telemetry or mandatory background pushes; no System Tray or Global Hotkeys required for MVP to ensure a non-intrusive OS presence.
+- **Targets:** primary deployment via Web Browser, followed by native binaries via Tauri wrapper.
+- **Auto-Update:** standard web-deployment caching or PWA strategies for browser; Tauri updater for binaries.
+- **Privacy Footprint:** Zero telemetry or mandatory background pushes.
 
 ### Offline-First Architecture
-- **Core Autonomy:** 100% operational without an internet connection. UI and local journals are served locally.
+- **Core Autonomy:** 100% operational without an internet connection. UI and local journals are served locally (e.g. via Service Workers).
 - **Sync Trigger:** Remote replication activates only upon network detection and explicit user configuration of a private endpoint.
 
 ## Innovation & Novel Patterns

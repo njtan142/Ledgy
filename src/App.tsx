@@ -1,50 +1,56 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useState, useEffect } from "react";
+import { getProfileDb } from "./lib/db";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
+  const [dbStatus, setDbStatus] = useState<string>("Initializing Database...");
   const [name, setName] = useState("");
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  useEffect(() => {
+    async function initDb() {
+      try {
+        const db = getProfileDb("default_profile");
+        const info = await db.getAllDocuments();
+        setDbStatus(`PouchDB Connected & Ready. Document Count: ${info.total_rows}`);
+      } catch (e: any) {
+        setDbStatus(`Database Error: ${e.message}`);
+      }
+    }
+    initDb();
+  }, []);
+
+  async function testCreateEntry() {
+    try {
+      const db = getProfileDb("default_profile");
+      await db.createDocument("test_entry", { name: name || "Anonymous User" });
+      const info = await db.getAllDocuments();
+      setDbStatus(`Saved! New Document Count: ${info.total_rows}`);
+    } catch (e: any) {
+      setDbStatus(`Failed to save: ${e.message}`);
+    }
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center justify-center font-sans">
+      <h1 className="text-4xl font-bold tracking-tight mb-8 text-emerald-500">Universal Ledgy Test</h1>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+      <p className="text-zinc-400 mb-8">{dbStatus}</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
+      <div className="flex flex-col gap-4 bg-zinc-900 p-6 rounded-lg border border-zinc-800 shadow-xl">
         <input
           id="greet-input"
           onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+          placeholder="Enter a test name..."
+          className="bg-zinc-950 border border-zinc-700 rounded-md px-4 py-2 text-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-mono"
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+        <button
+          type="button"
+          onClick={testCreateEntry}
+          className="bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-semibold py-2 px-4 rounded-md transition-colors"
+        >
+          Create Test Document
+        </button>
+      </div>
+    </div>
   );
 }
 

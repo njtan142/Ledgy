@@ -57,16 +57,16 @@ NFR16: Offline First — 100% operational without internet; sync activates only 
 #### From Architecture
 
 - **Starter Template (Epic 1 Story 1 target):** Initialize project using `npm create tauri-app@latest ledgy -- --template react-ts` then install `tailwindcss @tailwindcss/vite`. This is the first implementation story.
-- **Tech Stack:** Tauri 2.0 (Rust backend), React 19 + TypeScript (strict), Vite, Tailwind CSS, Zustand (state management), React Flow / `@xyflow/react` (node editor), React Router v7 (routing), PouchDB (local DB), Vitest (unit tests), Playwright (E2E tests).
+- **Tech Stack:** React 19 + TypeScript (strict) for Universal Web App, Vite, Tailwind CSS, Zustand (state management), React Flow / `@xyflow/react` (node editor), React Router v7 (routing), PouchDB/IndexedDB (local DB), WebCrypto (encryption), Vitest (unit tests), Playwright (E2E tests). (Optional: Tauri 2.0 shell for native desktop wrapper).
 - **Design System:** Shadcn/ui + Radix UI primitives, themed with Tailwind CSS (components copied into repo). Inter/Geist typography. JetBrains Mono for schema/IDs.
 - **State Management:** Zustand stores per domain (`useProfileStore`, `useLedgerStore`, `useNodeStore`, `useSyncStore`, `useAuthStore`, `useErrorStore`). All stores include `isLoading` and `error` fields. No local `useState` for async loading.
-- **Backend API (all via Tauri Commands):** `create_profile`, `delete_profile`, `list_profiles`, `create_entry`, `update_entry`, `delete_entry`, `trigger_sync`, `get_sync_status`, `resolve_conflict`, `verify_totp`, `encrypt_payload`, `decrypt_payload`, `load_plugin`, `invoke_plugin_command`.
+- **Backend API Layer (Frontend Libs):** All data logic happens in `src/lib/`. Capabilities include: `create_profile`, `delete_profile`, `list_profiles`, `create_entry`, `update_entry`, `delete_entry`, `trigger_sync`, `get_sync_status`, `resolve_conflict`, `verify_totp`, `encrypt_payload`, `decrypt_payload`, `load_plugin`, `invoke_plugin_command`.
 - **Feature-First Directory Structure:** `src/features/auth/`, `src/features/profiles/`, `src/features/ledger/`, `src/features/nodeEditor/`, `src/features/dashboard/`, `src/features/sync/`, `src/features/templates/`, `src/plugins/`, `src/components/`, `src/stores/`, `src/lib/`, `src/hooks/`, `src/types/`.
-- **PouchDB Document Envelope:** Every document must have `_id` (`{type}:{uuid}`), `_type`, `schema_version`, `createdAt` (ISO 8601), `updatedAt` (ISO 8601), and optionally `deletedAt` + `isDeleted` for Ghost References.
-- **Error Handling Pattern:** Tauri errors → caught in `invoke()` try/catch → dispatched to `useErrorStore` → displayed via global `<ErrorToast />`. No ad-hoc local error state in components.
+- **PouchDB Document Envelope:** Every document must have `_id` (`{type}:{uuid}`), `type`, `schema_version`, `createdAt` (ISO 8601), `updatedAt` (ISO 8601), and optionally `deletedAt` + `isDeleted` for Ghost References.
+- **Error Handling Pattern:** Pure functions throw errors → caught in React async handlers → dispatched to `useErrorStore` → displayed via global `<ErrorToast />`. No ad-hoc local error state in components.
 - **Auth Gate:** All routes except `/setup` and `/unlock` wrapped in `<AuthGuard />` checking `useAuthStore().isUnlocked`.
-- **CI/CD:** GitHub Actions for multi-platform binary builds (Windows/macOS/Linux) via GitHub Releases.
-- **Plugin Isolation:** Plugins in `src/plugins/` cannot access PouchDB directly — all data I/O goes through core ledger API commands.
+- **CI/CD:** GitHub Actions for multi-platform web deployments and binary builds (Windows/macOS/Linux) via GitHub Releases.
+- **Plugin Isolation:** Plugins in `src/plugins/` cannot access PouchDB directly — all data I/O goes through core ledger abstractions in `src/lib/`.
 - **Cross-Component Dependency Order:** Encryption must init before any PouchDB write → TOTP gates Zustand profile store → React Flow requires Zustand for node persistence → Sync layer depends on stable encryption → Plugin runtime depends on stable core ledger engine.
 
 #### From UX Design Specification
@@ -108,7 +108,7 @@ NFR16: Offline First — 100% operational without internet; sync activates only 
 ## Epic List
 
 ### Epic 1: App Foundation & Security
-Users can scaffold the project, launch the Tauri app, configure TOTP authentication, and securely unlock the app. Encryption is initialized before any data write. The three-panel shell, global error handling, and CI/CD pipeline are all operational.
+Users can scaffold the project, launch the universal web app, configure TOTP authentication, and securely unlock the app. Encryption is initialized before any data write. The three-panel shell, global error handling, and CI/CD pipeline are all operational.
 **FRs covered:** FR14
 **NFRs covered:** NFR3, NFR5, NFR13, NFR14, NFR15
 
@@ -146,7 +146,7 @@ Users can export any project's schema and node graph as a self-contained portabl
 
 ## Epic 1: App Foundation & Security
 
-Users can scaffold the project, launch the Tauri app, configure TOTP authentication, and securely unlock the app. Encryption is initialized before any data write. The three-panel shell, global error handling, and CI/CD pipeline are all operational.
+Users can scaffold the project, launch the web app, configure TOTP authentication, and securely unlock the app. Encryption is initialized before any data write. The three-panel shell, global error handling, and CI/CD pipeline are all operational.
 
 ### Story 1.1: Project Scaffold & Dev Environment
 
@@ -158,7 +158,8 @@ So that the entire team starts from a verified, buildable baseline with consiste
 
 **Given** a clean working directory
 **When** the developer runs `npm create tauri-app@latest ledgy -- --template react-ts` then installs `tailwindcss @tailwindcss/vite`
-**Then** the app compiles and launches as a native Tauri window on Windows, macOS, and Linux
+**Then** the app compiles and launches cleanly as a standard web application responding on `localhost`
+**And** it can also be optionally launched as a native Tauri window on Windows, macOS, and Linux
 **And** Vitest and Playwright are configured and a sample test passes
 **And** the installation package size is verified to be under 10MB
 
@@ -172,9 +173,9 @@ So that my encryption key is derived and Ledgy is protected without a password.
 
 **Given** the user opens Ledgy for the first time with no existing profile
 **When** they scan the generated TOTP QR code and enter the first 6-digit code to confirm setup
-**Then** the TOTP secret is stored securely and an AES-256-GCM encryption key is derived via HKDF from the secret
+**Then** the TOTP secret is stored securely and an AES-256-GCM encryption key is derived via HKDF from the secret using WebCrypto
 **And** the derived key is held in memory only — never written to disk in plaintext
-**And** the `verify_totp` Rust command validates the TOTP code correctly against RFC 6238
+**And** the `verify_totp` crypto utility validates the TOTP code correctly against RFC 6238
 **And** zero telemetry or external pings are made during this flow
 
 ### Story 1.3: App Unlock Flow & Auth Guard
@@ -204,7 +205,7 @@ So that I can navigate between areas of the app without disorientation.
 **When** the app renders
 **Then** the three-panel shell displays: left sidebar (240px, collapsible to 48px icon rail), main canvas (flex), right inspector (280px, collapsible)
 **And** React Router v7 is configured with routes for `/unlock`, `/setup`, `/profiles`, and `/app/:profileId/*`
-**And** a global `<ErrorToast />` component is rendered and wired to `useErrorStore` — all `invoke()` errors surface here without local `useState` error handling in components
+**And** a global `<ErrorToast />` component is rendered and wired to `useErrorStore` — all async errors surface here without local `useState` error handling in components
 **And** the layout responds correctly at all window-width breakpoints: ≥1280px full three-panel, 1100–1279px inspector auto-collapsed, 900–1099px both panels collapsible, <900px warning banner shown
 **And** a light/dark theme toggle is wired to a CSS class on the root element, defaulting to dark mode
 
@@ -237,9 +238,9 @@ So that profile data is never accessible across profile boundaries.
 **Acceptance Criteria:**
 
 **Given** a new profile is created
-**When** `create_profile` is invoked via Tauri command
-**Then** a dedicated PouchDB database is initialized for that profile using the `{type}:{uuid}` ID scheme with `schema_version`, `createdAt`, `updatedAt` on all documents
-**And** profiles are listed via `list_profiles` and persisted correctly across app restarts
+**When** `create_profile` is invoked via `src/lib/db.ts`
+**Then** a dedicated PouchDB (IndexedDB) database is initialized for that profile using the `{type}:{uuid}` ID scheme with `schema_version`, `createdAt`, `updatedAt` on all documents
+**And** profiles are listed via `list_profiles` and persisted correctly across app browser sessions
 **And** no profile's PouchDB instance can be accessed from another profile's context
 
 ### Story 2.2: Profile Selector UI
@@ -398,7 +399,7 @@ So that I can discover hidden relationships (like caffeine's effect on sleep).
 **When** the user wires them into a "Correlation Node" or "Arithmetic Node"
 **Then** the node computes the result (e.g., Pearson correlation coefficient or simple sum) based on the input arrays
 **And** the result is visually displayed on the node itself in real time
-**And** computation happens gracefully via async Tauri commands or web workers to prevent main-thread locking
+**And** computation happens gracefully via web workers to prevent main-thread locking
 
 ### Story 4.4: Autonomous Triggers (On-Create / On-Edit)
 
@@ -522,8 +523,8 @@ So that plugins cannot bypass the encryption or auth layers to interact with Pou
 
 **Given** the Ledgy core is running
 **When** the app initializes
-**Then** the `src/plugins/` directory is scanned for valid plugin manifests
-**And** plugins can only interact with data via exposed global Tauri commands (`create_entry`, `update_entry`, etc.)
+**Then** the `src/plugins/` directory is scanned for valid plugin manifests (compiled statically for now until dynamic import spec is built)
+**And** plugins can only interact with data via exposed global React abstractions (`create_entry`, `update_entry`, etc.)
 **And** the UI provides a "Plugin Manager" panel to enable/disable installed plugins per-profile
 
 ### Story 6.2: AI Capture Plugin: Image Ingestion & Ephemerality
@@ -600,7 +601,7 @@ So that I can share it on Discord, GitHub, or keep my own backups.
 
 **Given** the user is viewing their project workspace
 **When** they click "Export Template" from the Command Palette or profile menu
-**Then** the OS native file save dialog opens via Tauri
+**Then** the browser native file save dialog/download triggers (or Tauri equivalent if using the wrapper)
 **And** the data is saved as a visually readable `.ledgy.json` format (NFR11)
 **And** the user sees a success toast confirming the file was saved locally
 
@@ -614,6 +615,6 @@ So that I can instantly adopt a complex tracking setup built by someone else.
 
 **Given** the user is on the First-Launch Template Picker (from Epic 2)
 **When** they select "Import from File" instead of a built-in template
-**Then** the OS native file open dialog appears
+**Then** the browser file input dialog appears
 **And** selecting a valid `.ledgy.json` file parses the structure, validates the schema version, and scaffolds the PouchDB instance and Node Engine canvas
 **And** an invalid or corrupted JSON file displays a helpful inline error and aborts the creation process cleanly

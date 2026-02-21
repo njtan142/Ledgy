@@ -1,6 +1,6 @@
 # Story 1.1: Project Scaffold & Dev Environment
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -104,8 +104,24 @@ Gemini 3.1 Pro
 - `vite.config.ts`
 - `src/index.css`
 - `src/main.tsx`
+- `src/App.tsx`
 - `src/App.test.tsx`
 - `src/setupTests.ts`
 - `src/vite-env.d.ts`
 - `tests/example.spec.ts`
 - `src-tauri/tauri.conf.json`
+- `src-tauri/src/main.rs`
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-02-21
+**Reviewer:** James
+
+**Code Review Findings:**
+- 🔴 CRITICAL: Fixed App.tsx to use Tailwind layout and removed App.css.
+- 🔴 CRITICAL: Added Design System tokens to index.css.
+- 🟡 MEDIUM: Fixed Playwright test boilerplate to target localhost.
+- 🟡 MEDIUM: Removed standard CSS classes.
+- 🟢 LOW: Added `src/App.tsx` and `src-tauri/src/main.rs` to File List.
+
+**Action Taken:** Automatically fixed 4 issues (2 HIGH, 2 MEDIUM). Review complete.

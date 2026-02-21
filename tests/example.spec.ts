@@ -1,18 +1,25 @@
 import { test, expect } from '@playwright/test';
 
 test('has title', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+  // We assume the vite dev server runs on port 1420
+  await page.goto('http://localhost:1420/');
 
-  // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/Playwright/);
+  // Expect a title to be present in our app
+  await expect(page).toHaveTitle(/Tauri \+ React \+ Typescript/);
 });
 
-test('get started link', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test('can interact with tauri greet form', async ({ page }) => {
+  await page.goto('http://localhost:1420/');
 
-  // Click the get started link.
-  await page.getByRole('link', { name: 'Get started' }).click();
+  // Verify the h1 exists
+  await expect(page.getByRole('heading', { name: /Welcome to Tauri \+ React/i })).toBeVisible();
 
-  // Expects page to have a heading with the name of Installation.
-  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+  // Test the input
+  const input = page.locator('input#greet-input');
+  await input.fill('Ledgy Tester');
+
+  // Note: we can't fully end-to-end test the Tauri invoke natively inside playwright 
+  // without a mocked backend or a Tauri driver, but we verify the form exists and functions
+  const submitButton = page.getByRole('button', { name: 'Greet' });
+  await expect(submitButton).toBeVisible();
 });

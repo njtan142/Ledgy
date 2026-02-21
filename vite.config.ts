@@ -10,6 +10,19 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
 
+  define: {
+    // PouchDB requires 'global' to be defined in the browser
+    global: 'window',
+  },
+
+  resolve: {
+    alias: {
+      // Prevent Vite esbuild from trying to resolve Node.js 'events' polyfills in PouchDB
+      // by forcing it to use the pre-built browser distribution
+      pouchdb: 'pouchdb/dist/pouchdb.js',
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors
