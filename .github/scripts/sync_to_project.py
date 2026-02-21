@@ -196,22 +196,31 @@ def find_or_create_issue(repo: str, title: str, label: str, body: str) -> dict |
             print(f"  · Issue already exists: #{issue['number']} — {title}")
             return issue
 
-    # Create new issue
-    created = run_gh(
+    # Create new issue — gh issue create returns the URL, not JSON
+    url = run_gh(
         "issue", "create",
         "--repo", repo,
         "--title", title,
         "--body", body,
         "--label", label,
-        "--json", "number,id",
     )
-    if created:
-        print(f"  ✔ Created issue #{created['number']} — {title}")
+    if url:
+        # url is like "https://github.com/owner/repo/issues/123"
+        m = re.search(r"/issues/(\d+)$", str(url))
+        if m:
+            number = m.group(1)
+            created = run_gh("issue", "view", number, "--repo", repo, "--json", "number,id")
+            if created:
+                print(f"  ✔ Created issue #{created['number']} — {title}")
+                return created
+            print(f"  ⚠  Created issue but could not fetch details for: {title}", file=sys.stderr)
+        else:
+            print(f"  ⚠  Could not parse issue URL from gh output: {url}", file=sys.stderr)
     else:
         dry_run = os.getenv("DRY_RUN", "").lower() == "true"
         if dry_run:
             print(f"  [DRY RUN] Would create issue: {title}")
-    return created
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -219,11 +228,12 @@ def find_or_create_issue(repo: str, title: str, label: str, body: str) -> dict |
 # ---------------------------------------------------------------------------
 
 def get_project(owner: str, project_number: int) -> dict | None:
-    """Fetch project ID, status-field ID, and available status options."""
-    query = """
-query($login: String!, $number: Int!) {
-  repositoryOwner(login: $login) {
-    projectV2(number: $number) {
+    """Fetch project ID, status-field ID, and available status options.
+
+    GitHub's `repositoryOwner` interface does not expose `projectV2`; only the
+    concrete `User` and `Organization` types do.  We try both in turn.
+    """
+    fields_fragment = """
       id
       title
       fields(first: 30) {
@@ -235,21 +245,29 @@ query($login: String!, $number: Int!) {
           }
         }
       }
-    }
-  }
-}
 """
-    data = graphql(query, login=owner, number=project_number)
-    if not data:
-        return None
-    project = data.get("data", {}).get("repositoryOwner", {}).get("projectV2")
-    if not project:
-        print(
-            f"⚠  Project #{project_number} not found for owner '{owner}'. "
-            "Check that the project exists and the token has 'project' scope.",
-            file=sys.stderr,
-        )
-    return project
+    for owner_type in ("user", "organization"):
+        query = f"""
+query($login: String!, $number: Int!) {{
+  {owner_type}(login: $login) {{
+    projectV2(number: $number) {{{fields_fragment}    }}
+  }}
+}}
+"""
+        data = graphql(query, login=owner, number=project_number)
+        if not data:
+            continue
+        project = data.get("data", {}).get(owner_type, {}) or {}
+        project = project.get("projectV2")
+        if project:
+            return project
+
+    print(
+        f"⚠  Project #{project_number} not found for owner '{owner}'. "
+        "Check that the project exists and the token has 'project' scope.",
+        file=sys.stderr,
+    )
+    return None
 
 
 def get_status_field(project: dict) -> tuple[str | None, dict[str, str]]:
