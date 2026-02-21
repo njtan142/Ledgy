@@ -10,10 +10,14 @@ export const SetupPage: React.FC = () => {
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const hasGenerated = React.useRef(false);
     const { verifyAndRegister } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (hasGenerated.current) return;
+        hasGenerated.current = true;
+
         // Generate new secret on mount
         const rawSecret = generateSecret();
         const encoded = encodeSecret(rawSecret);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { OTPInput, SlotProps } from 'input-otp';
 import { Lock, ShieldAlert, ArrowRight } from 'lucide-react';
 import { useAuthStore } from './useAuthStore';
@@ -8,8 +8,9 @@ export const UnlockPage: React.FC = () => {
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isSubmittingRef = useRef(false);
     const [rememberMe, setRememberMe] = useState(false);
-    const { unlock } = useAuthStore();
+    const { unlock, reset } = useAuthStore();
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -20,7 +21,8 @@ export const UnlockPage: React.FC = () => {
     }, [error, code]);
 
     const handleUnlock = async (otp: string) => {
-        if (isSubmitting) return;
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         setIsSubmitting(true);
         setError(null);
         try {
@@ -37,13 +39,14 @@ export const UnlockPage: React.FC = () => {
             setCode('');
         } finally {
             setIsSubmitting(false);
+            isSubmittingRef.current = false;
         }
     };
 
     const onChange = (value: string) => {
         setCode(value);
         if (error) setError(null);
-        if (value.length === 6 && !isSubmitting) {
+        if (value.length === 6 && !isSubmittingRef.current) {
             handleUnlock(value);
         }
     };
@@ -64,7 +67,7 @@ export const UnlockPage: React.FC = () => {
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        if (code.length === 6 && !isSubmitting) {
+                        if (code.length === 6 && !isSubmittingRef.current) {
                             handleUnlock(code);
                         }
                     }}
@@ -123,9 +126,16 @@ export const UnlockPage: React.FC = () => {
 
                 <div className="pt-8 text-center space-y-4 flex flex-col items-center">
                     <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Secure Local-Only Architecture</p>
-                    <Link to="/setup" className="text-sm text-zinc-500 hover:text-emerald-400 transition-colors">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            reset();
+                            navigate('/setup');
+                        }}
+                        className="text-sm text-zinc-500 hover:text-emerald-400 transition-colors bg-transparent border-none cursor-pointer"
+                    >
                         Not you? Reset vault & start over
-                    </Link>
+                    </button>
                 </div>
             </div>
         </div>

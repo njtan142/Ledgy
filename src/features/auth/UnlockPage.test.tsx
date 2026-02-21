@@ -121,4 +121,24 @@ describe('UnlockPage', () => {
         // cleanup
         resolveUnlock!(true);
     });
+
+    it('passes rememberMe to unlock when checkbox is checked', async () => {
+        mockUnlock.mockResolvedValue(true);
+        const { container } = render(
+            <MemoryRouter>
+                <UnlockPage />
+            </MemoryRouter>
+        );
+
+        const checkbox = screen.getByLabelText(/Remember me on this device/i);
+        fireEvent.click(checkbox);
+        expect(checkbox).toBeChecked();
+
+        const input = container.querySelector('input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '123456' } });
+
+        await waitFor(() => {
+            expect(mockUnlock).toHaveBeenCalledWith('123456', true);
+        });
+    });
 });

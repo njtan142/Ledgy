@@ -56,10 +56,10 @@ so that my data is decrypted and I can access my profiles.
 - [x] [Feature] Implement session persistence / "Remember Me" so OTP isn't required on every app load [src/features/auth/useAuthStore.ts]
 
 ### Review Follow-ups (AI) - Round 3
-- [ ] [AI-Review][High] Broken "Reset Vault" Flow: The "Not you? Reset vault" link redirects to /setup but is blocked by GuestGuard; it needs to clear auth store first [src/features/auth/UnlockPage.tsx:126]
-- [ ] [AI-Review][Medium] Concurrent Submission Vulnerability: If a user pastes 6 digits and presses Enter simultaneously, both events fire in the same tick [src/features/auth/UnlockPage.tsx:46]
-- [ ] [AI-Review][Medium] Strict Mode Double QR Generation: TOTP secret is generated directly inside a useEffect, causing double generation in Strict Mode [src/features/auth/SetupPage.tsx:17]
-- [ ] [AI-Review][Medium] Missing Test Coverage: "Remember Me" checkbox was added but no tests verify its behavior [src/features/auth/UnlockPage.test.tsx:55]
+- [x] [AI-Review][High] Broken "Reset Vault" Flow: The "Not you? Reset vault" link redirects to /setup but is blocked by GuestGuard; it needs to clear auth store first [src/features/auth/UnlockPage.tsx:126]
+- [x] [AI-Review][Medium] Concurrent Submission Vulnerability: If a user pastes 6 digits and presses Enter simultaneously, both events fire in the same tick [src/features/auth/UnlockPage.tsx:46]
+- [x] [AI-Review][Medium] Strict Mode Double QR Generation: TOTP secret is generated directly inside a useEffect, causing double generation in Strict Mode [src/features/auth/SetupPage.tsx:17]
+- [x] [AI-Review][Medium] Missing Test Coverage: "Remember Me" checkbox was added but no tests verify its behavior [src/features/auth/UnlockPage.test.tsx:55]
 
 ## Dev Notes
 
@@ -104,6 +104,10 @@ Antigravity (Gemini 2.0 Flash)
 - ✅ Resolved review finding [Medium]: `UnlockPage` can trigger `handleUnlock` multiple times concurrently
 - ✅ Resolved review finding [Medium]: `UnlockPage.test.tsx` naively mocks `<OTPInput>`
 - ✅ Resolved review finding [Low]: `App.tsx` does not define a fallback catch-all route
+- ✅ Resolved review finding [High]: Broken "Reset Vault" Flow.
+- ✅ Resolved review finding [Medium]: Concurrent Submission Vulnerability.
+- ✅ Resolved review finding [Medium]: Strict Mode Double QR Generation.
+- ✅ Resolved review finding [Medium]: Missing Test Coverage for "Remember Me".
 
 ### File List
 - `src/features/auth/UnlockPage.tsx`
@@ -119,3 +123,4 @@ Antigravity (Gemini 2.0 Flash)
 ### Change Log
 - Addressed code review findings - 6 items resolved
 - Addressed Review Round 2 findings - 9 items resolved, including SetupPage vulnerabilities, Remember Me session persistence, and GuestGuard visual flash preventions.
+- Addressed Review Round 3 findings - 4 items resolved, including Reset Vault flow fixes, strict mode double generation, and testing coverage.

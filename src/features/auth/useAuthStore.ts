@@ -12,6 +12,7 @@ interface AuthState {
     unlock: (code: string, remember: boolean) => Promise<boolean>;
     verifyAndRegister: (secret: string, code: string) => Promise<boolean>;
     lock: () => void;
+    reset: () => void;
     isRegistered: () => boolean;
     initSession: () => Promise<void>;
 }
@@ -89,6 +90,10 @@ export const useAuthStore = create<AuthState>()(
 
             lock: () => {
                 set({ isUnlocked: false, encryptionKey: null, rememberMe: false });
+            },
+
+            reset: () => {
+                set({ totpSecret: null, isUnlocked: false, encryptionKey: null, rememberMe: false });
             },
 
             isRegistered: () => {
