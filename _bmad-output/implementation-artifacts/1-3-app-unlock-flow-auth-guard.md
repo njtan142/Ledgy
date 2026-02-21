@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -87,6 +87,12 @@ so that my data is decrypted and I can access my profiles.
 - [x] [AI-Review][Low] lock() clears rememberMe preference — should only clear isUnlocked and encryptionKey; user preference should persist until explicitly unchecked [src/features/auth/useAuthStore.ts:90]
 - [x] [AI-Review][Low] SetupPage navigates to '/' after registration instead of '/profiles', inconsistent with the post-auth destination set by this story [src/features/auth/SetupPage.tsx:42]
 - [x] [AI-Review][Low] isRegistered() method in useAuthStore is dead code — all guards derive registration state directly from totpSecret; remove to reduce interface noise [src/features/auth/useAuthStore.ts:86]
+
+### Review Follow-ups (AI) - Round 7
+- [ ] [AI-Review][High] Missing UI Tests for Passphrase Flow: UnlockPage.test.tsx lacks coverage for needsPassphrase state, input handling, visibility toggle, and unlockWithPassphrase call. [src/features/auth/UnlockPage.test.tsx]
+- [ ] [AI-Review][Medium] Confusing Passphrase Expiry UX: "Session expires after" option resets timer but doesn't force TOTP re-entry, making it redundant for passphrase users. [src/features/auth/useAuthStore.ts]
+- [ ] [AI-Review][Low] Missing Reset Option for Auto-Unlocked Users: "Not you? Reset vault" button inaccessible on UnlockPage due to auto-redirect. [src/features/auth/UnlockPage.tsx]
+- [ ] [AI-Review][Low] Generic Error Handling: UnlockPage.tsx displays raw err.message; sanitize to generic user-friendly messages. [src/features/auth/UnlockPage.tsx]
 
 ## Dev Notes
 
