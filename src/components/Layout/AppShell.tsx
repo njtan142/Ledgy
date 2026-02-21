@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useUIStore } from '../../stores/useUIStore';
 import { Outlet, useParams } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Moon, Sun, MonitorOff } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Moon, Sun, MonitorOff, LayoutDashboard, Settings, UserCircle, Database } from 'lucide-react';
+import { useErrorStore } from '../../stores/useErrorStore';
 
 export const AppShell: React.FC = () => {
     const {
@@ -15,9 +16,22 @@ export const AppShell: React.FC = () => {
     const { profileId } = useParams();
     const prevWidthRef = React.useRef(window.innerWidth);
 
+    const { dispatchError } = useErrorStore();
+
     useEffect(() => {
         setMounted(true);
-    }, []);
+        // Initial responsive check
+        const width = window.innerWidth;
+        if (width < 900) {
+            dispatchError("Mobile and Tablet layouts are not supported in this version.", "warning");
+        }
+        if (width < 1280) {
+            useUIStore.getState().setRightInspector(false);
+        }
+        if (width < 1100) {
+            useUIStore.getState().setLeftSidebar(false);
+        }
+    }, [dispatchError]);
 
     // Handle responsive breakpoints
     useEffect(() => {
@@ -71,7 +85,7 @@ export const AppShell: React.FC = () => {
 
             {/* Left Sidebar */}
             <aside
-                className={`flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${leftSidebarOpen ? 'w-[240px]' : 'w-[48px]'
+                className={`flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-[width] duration-300 ease-in-out shrink-0 overflow-hidden ${leftSidebarOpen ? 'w-[240px]' : 'w-[48px]'
                     }`}
             >
                 <div className="h-14 flex items-center px-3 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
@@ -87,13 +101,30 @@ export const AppShell: React.FC = () => {
                     )}
                 </div>
 
-                <div className="flex-grow overflow-y-auto overflow-x-hidden py-4">
-                    {/* Sidebar Navigation Placeholder */}
-                    <div className="space-y-1 px-2">
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-10 rounded-md bg-zinc-100/50 dark:bg-white/5 mx-1" />
-                        ))}
-                    </div>
+                <div className="flex-grow overflow-y-auto overflow-x-hidden py-4 custom-scrollbar">
+                    <nav className="space-y-1 px-2">
+                        <NavItem
+                            icon={<LayoutDashboard size={18} />}
+                            label="Dashboard"
+                            active
+                            collapsed={!leftSidebarOpen}
+                        />
+                        <NavItem
+                            icon={<Database size={18} />}
+                            label="Ledgers"
+                            collapsed={!leftSidebarOpen}
+                        />
+                        <NavItem
+                            icon={<UserCircle size={18} />}
+                            label="Profiles"
+                            collapsed={!leftSidebarOpen}
+                        />
+                        <NavItem
+                            icon={<Settings size={18} />}
+                            label="Settings"
+                            collapsed={!leftSidebarOpen}
+                        />
+                    </nav>
                 </div>
 
                 <div className="p-3 border-t border-zinc-200 dark:border-zinc-800">
@@ -123,7 +154,7 @@ export const AppShell: React.FC = () => {
 
             {/* Right Inspector */}
             <aside
-                className={`flex flex-col border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${rightInspectorOpen ? 'w-[280px]' : 'w-0'
+                className={`flex flex-col border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-md transition-[width] duration-300 ease-in-out shrink-0 overflow-hidden ${rightInspectorOpen ? 'w-[280px]' : 'w-0'
                     }`}
             >
                 <div className="h-14 flex items-center px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
@@ -149,3 +180,31 @@ export const AppShell: React.FC = () => {
         </div>
     );
 };
+
+interface NavItemProps {
+    icon: React.ReactNode;
+    label: string;
+    active?: boolean;
+    collapsed?: boolean;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ icon, label, active, collapsed }) => (
+    <div
+        className={`flex items-center h-10 px-3 mx-1 rounded-md transition-colors cursor-pointer group ${active
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-white/5'
+            }`}
+    >
+        <div className="shrink-0">{icon}</div>
+        {!collapsed && (
+            <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden transition-opacity">
+                {label}
+            </span>
+        )}
+        {collapsed && (
+            <div className="absolute left-14 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-zinc-800 text-white text-[10px] px-2 py-1 rounded pointer-events-none z-50">
+                {label}
+            </div>
+        )}
+    </div>
+);
