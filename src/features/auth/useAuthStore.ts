@@ -16,6 +16,8 @@ import { decodeSecret, verifyTotp } from '../../lib/totp';
 
 export type RememberMeExpiry = '15m' | '1h' | '8h' | '1d' | '7d' | '30d' | 'never';
 
+export const DEFAULT_EXPIRY: RememberMeExpiry = '1d';
+
 export const EXPIRY_OPTIONS: { label: string; value: RememberMeExpiry; ms: number | null }[] = [
     { label: '15 minutes', value: '15m', ms: 15 * 60 * 1000 },
     { label: '1 hour', value: '1h', ms: 60 * 60 * 1000 },
@@ -287,3 +289,7 @@ export const useAuthStore = create<AuthState>()(
 
 // NOTE: initSession() is called in main.tsx and awaited before the app renders.
 // This prevents the TOTP-screen flash for passphrase-protected sessions on cold start.
+
+export const useIsRegistered = () => {
+    return useAuthStore(state => !!(state.totpSecret || state.encryptedTotpSecret));
+};

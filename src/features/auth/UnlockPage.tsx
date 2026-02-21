@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OTPInput, SlotProps } from 'input-otp';
 import { Lock, ShieldAlert, ArrowRight, AlertTriangle, Eye, EyeOff, KeyRound } from 'lucide-react';
-import { useAuthStore, EXPIRY_OPTIONS, RememberMeExpiry } from './useAuthStore';
+import { useAuthStore, EXPIRY_OPTIONS, RememberMeExpiry, DEFAULT_EXPIRY } from './useAuthStore';
 
 export const UnlockPage: React.FC = () => {
     const [code, setCode] = useState('');
@@ -16,7 +16,7 @@ export const UnlockPage: React.FC = () => {
     const [showPassphrase, setShowPassphrase] = useState(false);
 
     // Session expiry (shown when rememberMe is checked)
-    const [expiryOption, setExpiryOption] = useState<RememberMeExpiry>('1d');
+    const [expiryOption, setExpiryOption] = useState<RememberMeExpiry>(DEFAULT_EXPIRY);
 
     const { unlock, unlockWithPassphrase, needsPassphrase, reset } = useAuthStore();
     const navigate = useNavigate();
@@ -44,7 +44,7 @@ export const UnlockPage: React.FC = () => {
                 setCode('');
             }
         } catch (err: any) {
-            console.error('Unlock error:', err);
+            console.error('Unlock error occurred');
             setError(err?.message || 'An unexpected error occurred. Please try again.');
             setCode('');
         } finally {
@@ -66,7 +66,7 @@ export const UnlockPage: React.FC = () => {
                 setError('Incorrect passphrase. Please try again.');
             }
         } catch (err: any) {
-            console.error('Passphrase unlock error:', err);
+            console.error('Passphrase unlock error occurred');
             setError(err?.message || 'An unexpected error occurred. Please try again.');
         } finally {
             setIsSubmitting(false);

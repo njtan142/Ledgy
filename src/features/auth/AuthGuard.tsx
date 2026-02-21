@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from './useAuthStore';
+import { useAuthStore, useIsRegistered } from './useAuthStore';
 
 interface AuthGuardProps {
     children: React.ReactNode;
@@ -8,9 +8,7 @@ interface AuthGuardProps {
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const isUnlocked = useAuthStore(state => state.isUnlocked);
-    const totpSecret = useAuthStore(state => state.totpSecret);
-    const encryptedTotpSecret = useAuthStore(state => state.encryptedTotpSecret);
-    const isRegistered = !!(totpSecret || encryptedTotpSecret);
+    const isRegistered = useIsRegistered();
 
     if (!isRegistered) {
         return <Navigate to="/setup" replace />;

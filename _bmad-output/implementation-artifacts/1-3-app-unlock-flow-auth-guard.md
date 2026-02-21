@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -71,10 +71,10 @@ so that my data is decrypted and I can access my profiles.
 - [x] [AI-Review][Low] unlock() silent false return when totpSecret is null gives no diagnostic signal — add console.warn to make the passphrase-session state mismatch diagnosable [src/features/auth/useAuthStore.ts:118]
 
 ### Review Follow-ups (AI) - Round 6
-- [ ] [AI-Review][High] Missing Integration Tests for Routing/Guards in App.test.tsx [src/App.test.tsx]
-- [ ] [AI-Review][Medium] DRY Violation in Guards (isRegistered logic) [src/features/auth/AuthGuard.tsx]
-- [ ] [AI-Review][Low] Potential Sensitive Error Logging in UnlockPage.tsx [src/features/auth/UnlockPage.tsx]
-- [ ] [AI-Review][Low] Hardcoded Default Expiry in UnlockPage.tsx [src/features/auth/UnlockPage.tsx]
+- [x] [AI-Review][High] Missing Integration Tests for Routing/Guards in App.test.tsx [src/App.test.tsx]
+- [x] [AI-Review][Medium] DRY Violation in Guards (isRegistered logic) [src/features/auth/AuthGuard.tsx]
+- [x] [AI-Review][Low] Potential Sensitive Error Logging in UnlockPage.tsx [src/features/auth/UnlockPage.tsx]
+- [x] [AI-Review][Low] Hardcoded Default Expiry in UnlockPage.tsx [src/features/auth/UnlockPage.tsx]
 
 ### Review Follow-ups (AI) - Round 4
 - [x] [AI-Review][High] Security Warning: "Remember Me" stored secret in plaintext localStorage with no additional protection — added inline security notice UI to UnlockPage warning users of the risk [src/features/auth/UnlockPage.tsx]
@@ -121,6 +121,10 @@ Antigravity (Gemini 2.0 Flash)
 - Abstracted `Dashboard` to `src/features/dashboard/Dashboard.tsx`
 
 ### Completion Notes List
+- ✅ Resolved review finding [High]: Missing Integration Tests for Routing/Guards in App.test.tsx - Added `setupAuthState` helper and comprehensive tests for unregistered, locked, and unlocked states.
+- ✅ Resolved review finding [Medium]: DRY Violation in Guards - Exported `useIsRegistered` from `useAuthStore` and updated `AuthGuard`, `GuestGuard`, `UnlockGuard`.
+- ✅ Resolved review finding [Low]: Potential Sensitive Error Logging - Removed error object from `console.error` in `UnlockPage.tsx`.
+- ✅ Resolved review finding [Low]: Hardcoded Default Expiry - Defined `DEFAULT_EXPIRY` in `useAuthStore` and used it in `UnlockPage.tsx`.
 - ✅ Resolved review finding [High]: Dev Agent Record -> File List is empty.
 - ✅ Resolved review finding [Medium]: UnlockPage input is not wrapped in a form.
 - ✅ Resolved review finding [Medium]: Focus is not returned to the first input slot automatically.
@@ -168,3 +172,4 @@ Antigravity (Gemini 2.0 Flash)
 - Round 4 review follow-ups resolved (2026-02-21): implemented Remember Me passphrase (PBKDF2 encryption of stored TOTP secret, needsPassphrase UI in UnlockPage, unlockWithPassphrase action); implemented session expiry selector (EXPIRY_OPTIONS, rememberMeExpiry timestamp, initSession expiry check); fixed SetupPage isSubmittingRef; added reset() mock + reset-flow test; extracted HKDF_SALT constant to crypto.ts; fixed lock() to preserve rememberMe; fixed SetupPage to navigate to /profiles; removed dead isRegistered() method; updated guards to check encryptedTotpSecret; added useAuthStore.test.ts.
 - Round 5 review follow-ups resolved (2026-02-21): fixed initSession() expiry branch to set needsPassphrase for passphrase sessions; added rememberMeExpiryMs persisted field; fixed unlockWithPassphrase to restore fresh rememberMeExpiry; added encryptedTotpSecret to App.test.tsx mock; moved initSession() to main.tsx awaited before render; replaced passphrase || undefined with passphrase.length > 0 check; added console.warn for null-totpSecret in unlock(); 3 new tests added covering all new behaviours.
 - Round 6 code review (2026-02-21): 4 action items added — 1 High (missing App.test.tsx routing tests), 1 Medium (DRY guards), 2 Low.
+- Round 6 review follow-ups resolved (2026-02-21): Added integration tests for App routing; Refactored `isRegistered` logic to `useIsRegistered` hook; Sanitized error logging in UnlockPage; Centralized `DEFAULT_EXPIRY` constant.
