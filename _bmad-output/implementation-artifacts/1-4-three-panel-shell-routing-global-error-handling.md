@@ -1,6 +1,6 @@
 # Story 1.4: Three-Panel Shell, Routing & Global Error Handling
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -113,6 +113,10 @@ Antigravity (Gemini 2.0)
 
 ### Completion Notes List
 
+- ✅ Resolved adversarial review finding [HIGH]: Unmounting Router Outlet on Mobile. Changed mobile overlay to render on top instead of replacing the router outlet.
+- ✅ Resolved adversarial review finding [MEDIUM]: Performance - Missing Debounce in Resize Handler. Added 100ms debounce to the window resize listener in AppShell.tsx.
+- ✅ Resolved adversarial review finding [MEDIUM]: Integration Test Gap. Added global ErrorToast integration test in tests/App.test.tsx.
+- ✅ Resolved adversarial review finding [LOW]: TypeScript Quality. Updated catch blocks in UnlockPage.tsx to use `catch (err: unknown)` instead of `any`.
 - Implemented `useErrorStore` for global error/warning dispatch.
 - Implemented `ErrorToast` component for global notifications.
 - Created `AppShell` with a responsive three-panel layout (Sidebar, Main, Inspector).
