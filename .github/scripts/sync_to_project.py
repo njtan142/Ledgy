@@ -405,52 +405,64 @@ def find_pr_for_branch(repo: str, branch_name: str) -> dict | None:
 def link_branch_to_issue(
     repo: str, issue_number: int, branch_name: str, commit_sha: str
 ) -> bool:
-    """Link a story issue to its branch via the createLinkedBranch mutation.
+    """Link a story issue to its PR by creating a deployment that references it.
 
-    Uses the GitHub ``createLinkedBranch`` GraphQL mutation to register
-    the branch directly on the issue so that GitHub populates the
-    issue's *Development* sidebar section.
+    Creates a GitHub deployment on *branch_name* with an ``environment_url``
+    pointing to the issue.  When an open PR exists for the branch the
+    deployment appears on the PR page, linking the issue to the pull request.
     """
-    # Fetch the issue node ID required by the GraphQL mutation
-    issue_data = run_gh(
-        "issue", "view", str(issue_number),
-        "--repo", repo,
-        "--json", "id",
-    )
-    if not issue_data or not isinstance(issue_data, dict):
-        print(f"  ⚠  Could not fetch issue #{issue_number}", file=sys.stderr)
+    pr = find_pr_for_branch(repo, branch_name)
+    if not pr:
+        print(f"  ⚠  No open PR found for branch '{branch_name}'",
+              file=sys.stderr)
         return False
 
-    issue_node_id = issue_data["id"]
+    issue_url = f"https://github.com/{repo}/issues/{issue_number}"
+    env_name = f"story-{issue_number}"
 
-    mutation = """
-mutation($issueId: ID!, $oid: GitObjectID!, $name: String!) {
-  createLinkedBranch(input: {issueId: $issueId, oid: $oid, name: $name}) {
-    linkedBranch { id }
-  }
-}
-"""
-    ref_name = f"refs/heads/{branch_name}"
-    data = graphql(mutation, issueId=issue_node_id, oid=commit_sha, name=ref_name)
+    # Create a deployment for the branch
+    deploy = run_gh(
+        "api", f"repos/{repo}/deployments",
+        "-X", "POST",
+        "-f", f"ref={branch_name}",
+        "-f", f"environment={env_name}",
+        "-f", f"description=Linked to issue #{issue_number}",
+        "-F", "auto_merge=false",
+        "-F", "required_contexts=[]",
+    )
 
     dry_run = os.getenv("DRY_RUN", "").lower() == "true"
 
-    if isinstance(data, dict):
-        errors = data.get("errors")
-        if errors:
-            msg = errors[0].get("message", "Unknown GraphQL error")
-            if "already" in msg.lower():
-                print(f"  · Branch '{branch_name}' already linked to issue #{issue_number}")
-                return True
-            print(f"  ⚠  GraphQL error linking branch: {msg}", file=sys.stderr)
-            return False
-        print(f"  ✔ Linked branch '{branch_name}' to issue #{issue_number}")
+    if not deploy or not isinstance(deploy, dict):
+        if dry_run:
+            return True
+        print(f"  ⚠  Failed to create deployment for branch '{branch_name}'",
+              file=sys.stderr)
+        return False
+
+    deploy_id = deploy.get("id")
+    if not deploy_id:
+        print(f"  ⚠  Deployment response missing id", file=sys.stderr)
+        return False
+
+    # Set deployment status with environment_url pointing to the issue
+    status = run_gh(
+        "api", f"repos/{repo}/deployments/{deploy_id}/statuses",
+        "-X", "POST",
+        "-f", "state=success",
+        "-f", f"environment_url={issue_url}",
+        "-f", f"description=Story #{issue_number}",
+    )
+
+    if status is not None:
+        print(f"  ✔ Linked issue #{issue_number} → PR #{pr['number']} "
+              f"via deployment ({pr.get('title', '?')})")
         return True
 
     if dry_run:
         return True
 
-    print(f"  ⚠  Failed to link branch '{branch_name}' to issue #{issue_number}",
+    print(f"  ⚠  Failed to create deployment status for issue #{issue_number}",
           file=sys.stderr)
     return False
 

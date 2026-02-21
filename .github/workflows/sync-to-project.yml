@@ -26,7 +26,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      issues: write      # create / read issues and linked branches
+      issues: write      # create / read issues
+      deployments: write # create deployments to link issues to PRs
       repository-projects: write  # add items to GitHub Project V2
       contents: read     # read planning artifacts
 
