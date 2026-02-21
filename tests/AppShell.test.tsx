@@ -4,14 +4,21 @@ import '@testing-library/jest-dom';
 import { MemoryRouter } from "react-router-dom";
 import { AppShell } from "../src/components/Layout/AppShell";
 import { useUIStore } from "../src/stores/useUIStore";
+import { useErrorStore } from "../src/stores/useErrorStore";
 
-// Mock useUIStore
+// Mock stores
 vi.mock("../src/stores/useUIStore", () => ({
     useUIStore: vi.fn(),
 }));
 
+vi.mock("../src/stores/useErrorStore", () => ({
+    useErrorStore: vi.fn(),
+}));
+
 describe("AppShell Component", () => {
-    const mockUseUIStore = useUIStore as unknown as ReturnType<typeof vi.fn>;
+    const mockUseUIStore = vi.mocked(useUIStore);
+    const mockUseErrorStore = vi.mocked(useErrorStore);
+
 
     const mockUIState = {
         leftSidebarOpen: true,
@@ -24,10 +31,17 @@ describe("AppShell Component", () => {
         setLeftSidebar: vi.fn(),
     };
 
+    const mockErrorState = {
+        error: null,
+        dispatchError: vi.fn(),
+        clearError: vi.fn(),
+    };
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockUseUIStore.mockReturnValue(mockUIState);
         (mockUseUIStore as any).getState = vi.fn().mockReturnValue(mockUIState);
+        mockUseErrorStore.mockReturnValue(mockErrorState);
 
         // Reset window width to desktop default
         Object.defineProperty(window, 'innerWidth', {
@@ -49,6 +63,36 @@ describe("AppShell Component", () => {
         expect(screen.getByRole("main")).toBeInTheDocument();
     });
 
+    it("performs initial responsive check on mount", () => {
+        // Mock width between 1100 and 1279
+        Object.defineProperty(window, 'innerWidth', { value: 1200 });
+
+        render(
+            <MemoryRouter>
+                <AppShell />
+            </MemoryRouter>
+        );
+
+        expect(mockUIState.setRightInspector).toHaveBeenCalledWith(false);
+    });
+
+    it("dispatches warning and collapses sidebar on mount if width < 1100", () => {
+        // Mock width < 900
+        Object.defineProperty(window, 'innerWidth', { value: 850 });
+
+        render(
+            <MemoryRouter>
+                <AppShell />
+            </MemoryRouter>
+        );
+
+        expect(mockErrorState.dispatchError).toHaveBeenCalledWith(
+            expect.stringContaining("Mobile and Tablet layouts are not supported"),
+            "warning"
+        );
+        expect(mockUIState.setLeftSidebar).toHaveBeenCalledWith(false);
+    });
+
     it("shows mobile warning banner when width < 900", () => {
         // Change window width
         Object.defineProperty(window, 'innerWidth', { value: 800 });
@@ -61,6 +105,7 @@ describe("AppShell Component", () => {
 
         expect(screen.getByText(/Mobile and Tablet layouts are not supported/i)).toBeInTheDocument();
     });
+
 
     it("hides Inspector when width is between 1100 and 1279", () => {
         // Assume resize has happened and rightInspectorOpen is false
