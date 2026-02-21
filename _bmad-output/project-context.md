@@ -4,7 +4,7 @@ user_name: 'James'
 date: '2026-02-21T14:52:00+08:00'
 sections_completed: ['technology_stack', 'language_rules', 'framework_rules', 'testing_rules', 'quality_rules', 'workflow_rules', 'anti_patterns']
 status: 'complete'
-rule_count: 22
+rule_count: 23
 optimized_for_llm: true
 ---
 
@@ -63,6 +63,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Development Workflow Rules
 
+- **Sprint Status Commits**: When a sprint status is changed (for example, in `sprint-status.yaml`), you MUST always perform a git commit. Furthermore, you must ALWAYS require user review of the commit message before committing.
 - **CI/CD Build Systems**: GitHub actions will be used to automatically compile cross-platform versions (Win/Mac/Linux).
 - **Binary Size Limits**: Do not bundle runtime engines that exponentially increase payload (e.g., Heavy AI/Gemini-nano models). The compiled application must remain under 10MB. Distribution runs through Tauri's built-in updater using GitHub Releases.
 
