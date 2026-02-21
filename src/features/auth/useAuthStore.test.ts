@@ -50,6 +50,7 @@ function resetStore() {
         encryptionKey: null,
         rememberMe: false,
         rememberMeExpiry: null,
+        rememberMeExpiryMs: null,
         needsPassphrase: false,
     });
 }
@@ -191,6 +192,53 @@ describe('useAuthStore', () => {
             expect(success).toBe(false);
             expect(useAuthStore.getState().isUnlocked).toBe(false);
         });
+
+        it('restores a fresh rememberMeExpiry from rememberMeExpiryMs after passphrase unlock', async () => {
+            // Regression: previously unlockWithPassphrase never set rememberMeExpiry,
+            // making the session eternal after the previous expiry was cleared.
+            const { decryptPayload } = await import('../../lib/crypto');
+            (decryptPayload as any).mockResolvedValue('JBSWY3DPEHPK3PXP');
+
+            useAuthStore.setState({
+                totpSecret: null,
+                encryptedTotpSecret: {
+                    iv: Array(12).fill(1),
+                    ciphertext: Array(32).fill(0),
+                    pbkdf2Salt: Array(16).fill(42),
+                },
+                rememberMeExpiryMs: 3_600_000, // 1 hour — user's original preference
+                rememberMeExpiry: null,         // cleared when previous session expired
+            });
+
+            const before = Date.now();
+            const success = await useAuthStore.getState().unlockWithPassphrase('correct-pass');
+            const after = Date.now();
+
+            expect(success).toBe(true);
+            const expiry = useAuthStore.getState().rememberMeExpiry;
+            expect(expiry).not.toBeNull();
+            expect(expiry!).toBeGreaterThanOrEqual(before + 3_600_000);
+            expect(expiry!).toBeLessThanOrEqual(after + 3_600_000);
+        });
+
+        it('leaves rememberMeExpiry null when rememberMeExpiryMs is null (never-expire preference)', async () => {
+            const { decryptPayload } = await import('../../lib/crypto');
+            (decryptPayload as any).mockResolvedValue('JBSWY3DPEHPK3PXP');
+
+            useAuthStore.setState({
+                totpSecret: null,
+                encryptedTotpSecret: {
+                    iv: Array(12).fill(1),
+                    ciphertext: Array(32).fill(0),
+                    pbkdf2Salt: Array(16).fill(42),
+                },
+                rememberMeExpiryMs: null,
+                rememberMeExpiry: null,
+            });
+
+            await useAuthStore.getState().unlockWithPassphrase('correct-pass');
+            expect(useAuthStore.getState().rememberMeExpiry).toBeNull();
+        });
     });
 
     // -----------------------------------------------------------------------
@@ -211,6 +259,29 @@ describe('useAuthStore', () => {
             expect(state.isUnlocked).toBe(false);
             expect(state.encryptionKey).toBeNull();
             expect(state.rememberMeExpiry).toBeNull();
+        });
+
+        it('sets needsPassphrase (not TOTP input) when expiry is past AND encryptedTotpSecret is set', async () => {
+            // Regression: previously the expiry branch only cleared state and returned,
+            // leaving the user stuck on the TOTP screen when totpSecret is null.
+            useAuthStore.setState({
+                rememberMe: true,
+                totpSecret: null,
+                encryptedTotpSecret: {
+                    iv: Array(12).fill(1),
+                    ciphertext: Array(32).fill(0),
+                    pbkdf2Salt: Array(16).fill(42),
+                },
+                rememberMeExpiry: Date.now() - 1000, // already expired
+            });
+
+            await useAuthStore.getState().initSession();
+
+            const state = useAuthStore.getState();
+            expect(state.isUnlocked).toBe(false);
+            expect(state.encryptionKey).toBeNull();
+            expect(state.rememberMeExpiry).toBeNull();
+            expect(state.needsPassphrase).toBe(true);
         });
 
         it('auto-unlocks when rememberMe is true, expiry is null, and no passphrase', async () => {

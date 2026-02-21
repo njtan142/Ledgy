@@ -12,6 +12,7 @@ test("renders main app without crashing", () => {
     (useAuthStore as any).mockImplementation((selector: any) => {
         const state = {
             totpSecret: null,
+            encryptedTotpSecret: null,
             isUnlocked: false,
         };
         return selector ? selector(state) : state;

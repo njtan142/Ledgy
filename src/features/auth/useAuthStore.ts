@@ -40,6 +40,8 @@ interface AuthState {
     rememberMe: boolean;
     /** Unix-ms timestamp after which the remembered session expires; null = never. */
     rememberMeExpiry: number | null;
+    /** The original expiry duration in ms chosen at unlock time; used by unlockWithPassphrase to issue a fresh expiry. null = never. */
+    rememberMeExpiryMs: number | null;
 
     // ----- Volatile (never persisted) -----
     isUnlocked: boolean;
@@ -81,6 +83,7 @@ export const useAuthStore = create<AuthState>()(
             encryptionKey: null,
             rememberMe: false,
             rememberMeExpiry: null,
+            rememberMeExpiryMs: null,
             needsPassphrase: false,
 
             setRememberMe: (val: boolean) => set({ rememberMe: val }),
@@ -96,7 +99,12 @@ export const useAuthStore = create<AuthState>()(
 
                 // Step 1: Check session expiry
                 if (rememberMeExpiry !== null && Date.now() > rememberMeExpiry) {
-                    set({ isUnlocked: false, encryptionKey: null, rememberMeExpiry: null });
+                    if (encryptedTotpSecret) {
+                        // Passphrase-protected session expired — can't auto-unlock, prompt for passphrase
+                        set({ isUnlocked: false, encryptionKey: null, rememberMeExpiry: null, needsPassphrase: true });
+                    } else {
+                        set({ isUnlocked: false, encryptionKey: null, rememberMeExpiry: null });
+                    }
                     return;
                 }
 
@@ -125,7 +133,10 @@ export const useAuthStore = create<AuthState>()(
                 expiryMs?: number | null,
             ) => {
                 const { totpSecret } = get();
-                if (!totpSecret) return false;
+                if (!totpSecret) {
+                    console.warn('unlock() called but totpSecret is null — a passphrase session may be active');
+                    return false;
+                }
 
                 try {
                     const rawSecret = decodeSecret(totpSecret);
@@ -137,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
 
                         const expiryTimestamp =
                             remember && expiryMs != null ? Date.now() + expiryMs : null;
+                        const storedExpiryMs = remember && expiryMs != null ? expiryMs : null;
 
                         if (remember && passphrase) {
                             // Encrypt the TOTP secret with a PBKDF2-derived key so it is
@@ -156,6 +168,7 @@ export const useAuthStore = create<AuthState>()(
                                 encryptedTotpSecret: encrypted,
                                 totpSecret: null, // Remove plaintext; encrypted version takes over
                                 rememberMeExpiry: expiryTimestamp,
+                                rememberMeExpiryMs: storedExpiryMs,
                                 needsPassphrase: false,
                             });
                         } else {
@@ -165,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
                                 rememberMe: remember,
                                 encryptedTotpSecret: null,
                                 rememberMeExpiry: expiryTimestamp,
+                                rememberMeExpiryMs: storedExpiryMs,
                                 needsPassphrase: false,
                             });
                         }
@@ -178,7 +192,7 @@ export const useAuthStore = create<AuthState>()(
             },
 
             unlockWithPassphrase: async (passphrase: string) => {
-                const { encryptedTotpSecret } = get();
+                const { encryptedTotpSecret, rememberMeExpiryMs } = get();
                 if (!encryptedTotpSecret) return false;
 
                 try {
@@ -192,6 +206,9 @@ export const useAuthStore = create<AuthState>()(
                     const hkdfSalt = new TextEncoder().encode(HKDF_SALT);
                     const key = await deriveKeyFromTotp(totpSecret, hkdfSalt);
 
+                    // Compute a fresh expiry using the stored duration so the session
+                    // doesn't become eternal after the previous one expired.
+                    const newExpiry = rememberMeExpiryMs !== null ? Date.now() + rememberMeExpiryMs : null;
                     set({
                         isUnlocked: true,
                         encryptionKey: key,
@@ -200,6 +217,7 @@ export const useAuthStore = create<AuthState>()(
                         // encryptedTotpSecret is present (see partialize below).
                         totpSecret,
                         needsPassphrase: false,
+                        rememberMeExpiry: newExpiry,
                     });
                     return true;
                 } catch (err) {
@@ -243,6 +261,7 @@ export const useAuthStore = create<AuthState>()(
                     encryptionKey: null,
                     rememberMe: false,
                     rememberMeExpiry: null,
+                    rememberMeExpiryMs: null,
                     needsPassphrase: false,
                 });
             },
@@ -260,10 +279,11 @@ export const useAuthStore = create<AuthState>()(
                 encryptedTotpSecret: state.encryptedTotpSecret,
                 rememberMe: state.rememberMe,
                 rememberMeExpiry: state.rememberMeExpiry,
+                rememberMeExpiryMs: state.rememberMeExpiryMs,
             } as AuthState),
         }
     )
 );
 
-// Initialize session on load
-useAuthStore.getState().initSession();
+// NOTE: initSession() is called in main.tsx and awaited before the app renders.
+// This prevents the TOTP-screen flash for passphrase-protected sessions on cold start.

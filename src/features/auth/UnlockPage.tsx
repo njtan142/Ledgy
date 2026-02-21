@@ -36,7 +36,7 @@ export const UnlockPage: React.FC = () => {
         try {
             const selectedExpiry = EXPIRY_OPTIONS.find(o => o.value === expiryOption);
             const expiryMs = selectedExpiry?.ms ?? null;
-            const success = await unlock(otp, rememberMe, passphrase || undefined, expiryMs);
+            const success = await unlock(otp, rememberMe, passphrase.length > 0 ? passphrase : undefined, expiryMs);
             if (success) {
                 navigate('/profiles');
             } else {

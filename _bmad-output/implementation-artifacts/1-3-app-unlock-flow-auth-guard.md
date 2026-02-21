@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -62,13 +62,13 @@ so that my data is decrypted and I can access my profiles.
 - [x] [AI-Review][Medium] Missing Test Coverage: "Remember Me" checkbox was added but no tests verify its behavior [src/features/auth/UnlockPage.test.tsx:55]
 
 ### Review Follow-ups (AI) - Round 5
-- [ ] [AI-Review][High] initSession() expiry branch doesn't set needsPassphrase — passphrase-protected users who hit expiry see the TOTP input instead of the passphrase prompt, and unlock() silently returns false because totpSecret is null, leaving the user stuck with "Invalid code" indefinitely [src/features/auth/useAuthStore.ts:91]
-- [ ] [AI-Review][High] No test coverage for expiry-on-passphrase-session: initSession expiry suite only tests plain remember-me (totpSecret set); add a test where rememberMeExpiry is past AND encryptedTotpSecret is set with totpSecret null — asserting needsPassphrase becomes true [src/features/auth/useAuthStore.test.ts]
-- [ ] [AI-Review][Medium] unlockWithPassphrase does not restore rememberMeExpiry — after session expiry clears it to null, the next passphrase unlock writes no new expiry, so subsequent sessions are eternal regardless of the user's original expiry preference [src/features/auth/useAuthStore.ts:182]
-- [ ] [AI-Review][Medium] App.test.tsx mock omits encryptedTotpSecret from state — all three guards select this field; the missing key returns undefined, making the test silently exercise unrealistic state and masking potential guard regressions [src/App.test.tsx:13]
-- [ ] [AI-Review][Medium] initSession() called as fire-and-forget at module scope — the returned Promise<void> is discarded; unhandled rejections are silently swallowed and the app renders before initSession completes, causing a flash of the TOTP screen for passphrase users on cold start [src/features/auth/useAuthStore.ts:268]
-- [ ] [AI-Review][Low] passphrase || undefined uses falsy coercion — replace with passphrase.length > 0 ? passphrase : undefined to avoid mishandling edge-case strings [src/features/auth/UnlockPage.tsx:45]
-- [ ] [AI-Review][Low] unlock() silent false return when totpSecret is null gives no diagnostic signal — add console.warn to make the passphrase-session state mismatch diagnosable [src/features/auth/useAuthStore.ts:118]
+- [x] [AI-Review][High] initSession() expiry branch doesn't set needsPassphrase — passphrase-protected users who hit expiry see the TOTP input instead of the passphrase prompt, and unlock() silently returns false because totpSecret is null, leaving the user stuck with "Invalid code" indefinitely [src/features/auth/useAuthStore.ts:91]
+- [x] [AI-Review][High] No test coverage for expiry-on-passphrase-session: initSession expiry suite only tests plain remember-me (totpSecret set); add a test where rememberMeExpiry is past AND encryptedTotpSecret is set with totpSecret null — asserting needsPassphrase becomes true [src/features/auth/useAuthStore.test.ts]
+- [x] [AI-Review][Medium] unlockWithPassphrase does not restore rememberMeExpiry — after session expiry clears it to null, the next passphrase unlock writes no new expiry, so subsequent sessions are eternal regardless of the user's original expiry preference [src/features/auth/useAuthStore.ts:182]
+- [x] [AI-Review][Medium] App.test.tsx mock omits encryptedTotpSecret from state — all three guards select this field; the missing key returns undefined, making the test silently exercise unrealistic state and masking potential guard regressions [src/App.test.tsx:13]
+- [x] [AI-Review][Medium] initSession() called as fire-and-forget at module scope — the returned Promise<void> is discarded; unhandled rejections are silently swallowed and the app renders before initSession completes, causing a flash of the TOTP screen for passphrase users on cold start [src/features/auth/useAuthStore.ts:268]
+- [x] [AI-Review][Low] passphrase || undefined uses falsy coercion — replace with passphrase.length > 0 ? passphrase : undefined to avoid mishandling edge-case strings [src/features/auth/UnlockPage.tsx:45]
+- [x] [AI-Review][Low] unlock() silent false return when totpSecret is null gives no diagnostic signal — add console.warn to make the passphrase-session state mismatch diagnosable [src/features/auth/useAuthStore.ts:118]
 
 ### Review Follow-ups (AI) - Round 4
 - [x] [AI-Review][High] Security Warning: "Remember Me" stored secret in plaintext localStorage with no additional protection — added inline security notice UI to UnlockPage warning users of the risk [src/features/auth/UnlockPage.tsx]
@@ -129,6 +129,13 @@ Antigravity (Gemini 2.0 Flash)
 - ✅ Resolved review finding [Medium]: Concurrent Submission Vulnerability.
 - ✅ Resolved review finding [Medium]: Strict Mode Double QR Generation.
 - ✅ Resolved review finding [Medium]: Missing Test Coverage for "Remember Me".
+- ✅ Resolved review finding [High] Round 5: initSession() expiry branch now sets needsPassphrase: true when encryptedTotpSecret is present, routing passphrase users to the passphrase prompt instead of the broken TOTP screen.
+- ✅ Resolved review finding [High] Round 5: Added test coverage for expiry-on-passphrase-session — verifies needsPassphrase becomes true and session is cleared.
+- ✅ Resolved review finding [Medium] Round 5: Added rememberMeExpiryMs persisted field; unlockWithPassphrase now computes a fresh rememberMeExpiry from it, preventing eternal sessions after expiry.
+- ✅ Resolved review finding [Medium] Round 5: App.test.tsx mock now includes encryptedTotpSecret: null so all guards exercise realistic state.
+- ✅ Resolved review finding [Medium] Round 5: Moved initSession() call to main.tsx and await it (.finally render) so the app never renders with stale auth state, eliminating TOTP-screen flash.
+- ✅ Resolved review finding [Low] Round 5: Replaced passphrase || undefined with passphrase.length > 0 ? passphrase : undefined in UnlockPage.
+- ✅ Resolved review finding [Low] Round 5: Added console.warn in unlock() when totpSecret is null to surface passphrase-session mismatches.
 
 ### File List
 - `src/features/auth/UnlockPage.tsx`
@@ -141,6 +148,7 @@ Antigravity (Gemini 2.0 Flash)
 - `src/features/auth/useAuthStore.test.ts`
 - `src/App.tsx`
 - `src/App.test.tsx`
+- `src/main.tsx`
 - `src/features/dashboard/Dashboard.tsx`
 - `src/lib/crypto.ts`
 
@@ -152,3 +160,4 @@ Antigravity (Gemini 2.0 Flash)
 - Round 4 code review: added Remember Me security warning UI to UnlockPage; fixed File List to include App.test.tsx.
 - Addressed Review Round 4 findings - 9 items resolved: PBKDF2 passphrase encryption for stored secret, session expiry selector, SetupPage isSubmittingRef, UnlockPage reset flow test, HKDF_SALT constant, lock() preserves rememberMe, SetupPage /profiles nav, removed dead isRegistered(), guards check encryptedTotpSecret.
 - Round 4 review follow-ups resolved (2026-02-21): implemented Remember Me passphrase (PBKDF2 encryption of stored TOTP secret, needsPassphrase UI in UnlockPage, unlockWithPassphrase action); implemented session expiry selector (EXPIRY_OPTIONS, rememberMeExpiry timestamp, initSession expiry check); fixed SetupPage isSubmittingRef; added reset() mock + reset-flow test; extracted HKDF_SALT constant to crypto.ts; fixed lock() to preserve rememberMe; fixed SetupPage to navigate to /profiles; removed dead isRegistered() method; updated guards to check encryptedTotpSecret; added useAuthStore.test.ts.
+- Round 5 review follow-ups resolved (2026-02-21): fixed initSession() expiry branch to set needsPassphrase for passphrase sessions; added rememberMeExpiryMs persisted field; fixed unlockWithPassphrase to restore fresh rememberMeExpiry; added encryptedTotpSecret to App.test.tsx mock; moved initSession() to main.tsx awaited before render; replaced passphrase || undefined with passphrase.length > 0 check; added console.warn for null-totpSecret in unlock(); 3 new tests added covering all new behaviours.
