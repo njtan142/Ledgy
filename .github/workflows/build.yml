@@ -1,0 +1,93 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and Draft Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Ledgy Release ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+
+      - name: Verify Binary Size
+        shell: bash
+        run: |
+          echo "Verifying size of the built binary..."
+          
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            TARGET_EXT=".AppImage"
+            DIR="src-tauri/target/release/bundle/appimage"
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            TARGET_EXT=".dmg"
+            DIR="src-tauri/target/release/bundle/dmg"
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            TARGET_EXT=".msi"
+            DIR="src-tauri/target/release/bundle/msi"
+          fi
+          
+          # Find the binary file
+          FILE=$(find "$DIR" -name "*$TARGET_EXT" | head -n 1)
+          
+          if [[ -z "$FILE" ]]; then
+            echo "Error: Built executable not found in $DIR with extension $TARGET_EXT!"
+            exit 1
+          fi
+          
+          echo "Found binary: $FILE"
+          
+          # Get file size in bytes
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            SIZE=$(stat -f%z "$FILE")
+          else
+            SIZE=$(stat -c%s "$FILE")
+          fi
+          
+          echo "Size in bytes: $SIZE"
+          
+          # 10MB threshold (10 * 1024 * 1024 = 10485760 bytes)
+          MAX_SIZE=10485760
+          
+          if (( SIZE > MAX_SIZE )); then
+            echo "Error: Binary size ($SIZE bytes) exceeds the 10MB limit ($MAX_SIZE bytes)!"
+            exit 1
+          else
+            echo "Success: Binary size ($SIZE bytes) is within the 10MB limit."
+          fi
