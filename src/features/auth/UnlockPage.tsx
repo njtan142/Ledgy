@@ -242,6 +242,19 @@ export const UnlockPage: React.FC = () => {
                             </div>
                         )}
 
+                        {/* ── Security Warning (Always shown if not passphrase protected) ── */}
+                        {!needsPassphrase && !passphrase && (
+                            <div className="w-full bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-xs font-semibold text-amber-500 uppercase tracking-wide">Vault Unsecured</p>
+                                    <p className="text-xs text-zinc-400 leading-relaxed">
+                                        Your secret is stored on this device. Set a passphrase below to encrypt it at rest.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* ── Remember Me section ── */}
                         <div className="w-full space-y-3">
                             <label className="flex items-center gap-2 self-start text-sm text-zinc-400 cursor-pointer">
@@ -322,7 +335,7 @@ export const UnlockPage: React.FC = () => {
                                 </>
                             )}
                         </button>
-                    </form>
+                    </form >
                 )}
 
                 <div className="pt-8 text-center space-y-4 flex flex-col items-center">
@@ -338,8 +351,8 @@ export const UnlockPage: React.FC = () => {
                         Not you? Reset vault & start over
                     </button>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

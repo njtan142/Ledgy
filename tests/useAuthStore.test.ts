@@ -1,10 +1,11 @@
-import { useAuthStore } from './useAuthStore';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useAuthStore } from '../src/features/auth/useAuthStore';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('../../lib/crypto', () => ({
+vi.mock('../src/lib/crypto', () => ({
     HKDF_SALT: 'ledgy-salt-v1',
     deriveKeyFromTotp: vi.fn().mockResolvedValue({ type: 'secret', algorithm: { name: 'AES-GCM' } }),
     deriveKeyFromPassphrase: vi.fn().mockResolvedValue({ type: 'secret', algorithm: { name: 'AES-GCM' } }),
@@ -15,7 +16,7 @@ vi.mock('../../lib/crypto', () => ({
     decryptPayload: vi.fn().mockResolvedValue('JBSWY3DPEHPK3PXP'),
 }));
 
-vi.mock('../../lib/totp', () => ({
+vi.mock('../src/lib/totp', () => ({
     decodeSecret: vi.fn().mockReturnValue(new Uint8Array(20)),
     verifyTotp: vi.fn().mockResolvedValue(true),
 }));
@@ -75,7 +76,7 @@ describe('useAuthStore', () => {
     // -----------------------------------------------------------------------
     describe('unlock', () => {
         it('returns true and sets isUnlocked on valid code', async () => {
-            const { verifyTotp } = await import('../../lib/totp');
+            const { verifyTotp } = await import('../src/lib/totp');
             (verifyTotp as any).mockResolvedValue(true);
 
             const success = await useAuthStore.getState().unlock('123456', false);
@@ -84,7 +85,7 @@ describe('useAuthStore', () => {
         });
 
         it('returns false and leaves locked on invalid code', async () => {
-            const { verifyTotp } = await import('../../lib/totp');
+            const { verifyTotp } = await import('../src/lib/totp');
             (verifyTotp as any).mockResolvedValue(false);
 
             const success = await useAuthStore.getState().unlock('000000', false);
@@ -93,7 +94,7 @@ describe('useAuthStore', () => {
         });
 
         it('sets rememberMe flag when remember=true', async () => {
-            const { verifyTotp } = await import('../../lib/totp');
+            const { verifyTotp } = await import('../src/lib/totp');
             (verifyTotp as any).mockResolvedValue(true);
 
             await useAuthStore.getState().unlock('123456', true);
@@ -106,8 +107,8 @@ describe('useAuthStore', () => {
     // -----------------------------------------------------------------------
     describe('unlock with passphrase', () => {
         it('clears totpSecret and stores encryptedTotpSecret when passphrase is provided', async () => {
-            const { verifyTotp } = await import('../../lib/totp');
-            const { encryptPayload } = await import('../../lib/crypto');
+            const { verifyTotp } = await import('../src/lib/totp');
+            const { encryptPayload } = await import('../src/lib/crypto');
             (verifyTotp as any).mockResolvedValue(true);
             (encryptPayload as any).mockResolvedValue({
                 iv: Array(12).fill(1),
@@ -124,7 +125,7 @@ describe('useAuthStore', () => {
         });
 
         it('stores expiry timestamp when expiryMs is provided', async () => {
-            const { verifyTotp } = await import('../../lib/totp');
+            const { verifyTotp } = await import('../src/lib/totp');
             (verifyTotp as any).mockResolvedValue(true);
 
             const before = Date.now();
@@ -138,7 +139,7 @@ describe('useAuthStore', () => {
         });
 
         it('stores null expiry when expiryMs is null (never)', async () => {
-            const { verifyTotp } = await import('../../lib/totp');
+            const { verifyTotp } = await import('../src/lib/totp');
             (verifyTotp as any).mockResolvedValue(true);
 
             await useAuthStore.getState().unlock('123456', true, undefined, null);
@@ -156,7 +157,7 @@ describe('useAuthStore', () => {
         });
 
         it('decrypts secret and sets isUnlocked on correct passphrase', async () => {
-            const { decryptPayload } = await import('../../lib/crypto');
+            const { decryptPayload } = await import('../src/lib/crypto');
             (decryptPayload as any).mockResolvedValue('JBSWY3DPEHPK3PXP');
 
             useAuthStore.setState({
@@ -175,7 +176,7 @@ describe('useAuthStore', () => {
         });
 
         it('returns false and stays locked on decryption error', async () => {
-            const { decryptPayload } = await import('../../lib/crypto');
+            const { decryptPayload } = await import('../src/lib/crypto');
             (decryptPayload as any).mockRejectedValue(new Error('Bad decrypt'));
 
             useAuthStore.setState({
@@ -195,7 +196,7 @@ describe('useAuthStore', () => {
         it('restores a fresh rememberMeExpiry from rememberMeExpiryMs after passphrase unlock', async () => {
             // Regression: previously unlockWithPassphrase never set rememberMeExpiry,
             // making the session eternal after the previous expiry was cleared.
-            const { decryptPayload } = await import('../../lib/crypto');
+            const { decryptPayload } = await import('../src/lib/crypto');
             (decryptPayload as any).mockResolvedValue('JBSWY3DPEHPK3PXP');
 
             useAuthStore.setState({
@@ -221,7 +222,7 @@ describe('useAuthStore', () => {
         });
 
         it('leaves rememberMeExpiry null when rememberMeExpiryMs is null (never-expire preference)', async () => {
-            const { decryptPayload } = await import('../../lib/crypto');
+            const { decryptPayload } = await import('../src/lib/crypto');
             (decryptPayload as any).mockResolvedValue('JBSWY3DPEHPK3PXP');
 
             useAuthStore.setState({

@@ -63,7 +63,7 @@ interface AuthState {
     unlock: (code: string, remember: boolean, passphrase?: string, expiryMs?: number | null) => Promise<boolean>;
     /** Unlock the vault using a previously set passphrase (called when needsPassphrase = true). */
     unlockWithPassphrase: (passphrase: string) => Promise<boolean>;
-    verifyAndRegister: (secret: string, code: string) => Promise<boolean>;
+    verifyAndRegister: (secret: string, code: string, remember: boolean, passphrase?: string, expiryMs?: number | null) => Promise<boolean>;
     /** Lock the vault — preserves rememberMe preference so the next unlock can restore it. */
     lock: () => void;
     /** Hard reset: clears all auth state and persisted data. */
@@ -233,7 +233,13 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            verifyAndRegister: async (secret: string, code: string) => {
+            verifyAndRegister: async (
+                secret: string,
+                code: string,
+                remember: boolean = false,
+                passphrase?: string,
+                expiryMs?: number | null
+            ) => {
                 try {
                     const rawSecret = decodeSecret(secret);
                     const isValid = await verifyTotp(rawSecret, code);
@@ -241,11 +247,42 @@ export const useAuthStore = create<AuthState>()(
                     if (isValid) {
                         const salt = new TextEncoder().encode(HKDF_SALT);
                         const key = await deriveKeyFromTotp(secret, salt);
-                        set({
-                            totpSecret: secret,
-                            isUnlocked: true,
-                            encryptionKey: key,
-                        });
+
+                        const expiryTimestamp =
+                            remember && expiryMs != null ? Date.now() + expiryMs : null;
+                        const storedExpiryMs = remember && expiryMs != null ? expiryMs : null;
+
+                        if (remember && passphrase) {
+                            const pbkdf2Salt = crypto.getRandomValues(new Uint8Array(16));
+                            const passphraseKey = await deriveKeyFromPassphrase(passphrase, pbkdf2Salt);
+                            const { iv, ciphertext } = await encryptPayload(passphraseKey, secret);
+                            const encrypted: EncryptedSecret = {
+                                iv,
+                                ciphertext: Array.from(new Uint8Array(ciphertext)),
+                                pbkdf2Salt: Array.from(pbkdf2Salt),
+                            };
+                            set({
+                                totpSecret: null,
+                                encryptedTotpSecret: encrypted,
+                                isUnlocked: true,
+                                encryptionKey: key,
+                                rememberMe: remember,
+                                rememberMeExpiry: expiryTimestamp,
+                                rememberMeExpiryMs: storedExpiryMs,
+                                needsPassphrase: false,
+                            });
+                        } else {
+                            set({
+                                totpSecret: secret,
+                                encryptedTotpSecret: null,
+                                isUnlocked: true,
+                                encryptionKey: key,
+                                rememberMe: remember,
+                                rememberMeExpiry: expiryTimestamp,
+                                rememberMeExpiryMs: storedExpiryMs,
+                                needsPassphrase: false,
+                            });
+                        }
                         return true;
                     }
                 } catch (error) {

@@ -1,6 +1,6 @@
 # Story 1.3: App Unlock Flow & Auth Guard
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -94,6 +94,11 @@ so that my data is decrypted and I can access my profiles.
 - [x] [AI-Review][Low] Missing Reset Option for Auto-Unlocked Users: "Not you? Reset vault" button inaccessible on UnlockPage due to auto-redirect. [src/features/auth/UnlockPage.tsx]
 - [x] [AI-Review][Low] Generic Error Handling: UnlockPage.tsx displays raw err.message; sanitize to generic user-friendly messages. [src/features/auth/UnlockPage.tsx]
 
+### Review Follow-ups (AI) - Round 8
+- [x] [AI-Review][High] Test Location Violation: Moved all test files to `/tests` directory to comply with project-context.md rules. [tests/UnlockPage.test.tsx, tests/useAuthStore.test.ts, tests/App.test.tsx]
+- [x] [AI-Review][Medium] Insecure Initial Setup: Updated `SetupPage` to include Passphrase and Remember Me options during registration to prevent forced plaintext storage. [src/features/auth/SetupPage.tsx]
+- [x] [AI-Review][Low] Misleading Security UI: Added permanent "Vault Unsecured" warning in `UnlockPage` and `SetupPage` when passphrase is not set. [src/features/auth/UnlockPage.tsx]
+
 ## Dev Notes
 
 - **Input OTP**: Recommend using `input-otp` or a similar highly accessible component to match the "Builder's Pride" aesthetic.
@@ -159,15 +164,15 @@ Antigravity (Gemini 2.0 Flash)
 
 ### File List
 - `src/features/auth/UnlockPage.tsx`
-- `src/features/auth/UnlockPage.test.tsx`
+- `tests/UnlockPage.test.tsx`
 - `src/features/auth/AuthGuard.tsx`
 - `src/features/auth/GuestGuard.tsx`
 - `src/features/auth/UnlockGuard.tsx`
 - `src/features/auth/SetupPage.tsx`
 - `src/features/auth/useAuthStore.ts`
-- `src/features/auth/useAuthStore.test.ts`
+- `tests/useAuthStore.test.ts`
 - `src/App.tsx`
-- `src/App.test.tsx`
+- `tests/App.test.tsx`
 - `src/main.tsx`
 - `src/features/dashboard/Dashboard.tsx`
 - `src/lib/crypto.ts`
@@ -184,3 +189,4 @@ Antigravity (Gemini 2.0 Flash)
 - Round 6 code review (2026-02-21): 4 action items added — 1 High (missing App.test.tsx routing tests), 1 Medium (DRY guards), 2 Low.
 - Round 6 review follow-ups resolved (2026-02-21): Added integration tests for App routing; Refactored `isRegistered` logic to `useIsRegistered` hook; Sanitized error logging in UnlockPage; Centralized `DEFAULT_EXPIRY` constant.
 - Round 7 review follow-ups resolved (2026-02-21): Implemented strict session expiry (logout on expiry); Added reset bypass for unlocked users (?reset=true); Improved error handling in UnlockPage; Added comprehensive UI tests in UnlockPage.test.tsx.
+- Round 8 review follow-ups resolved (2026-02-21): Moved all tests to `/tests` directory; Secured `SetupPage` with passphrase options; Added permanent security warnings for unencrypted vaults.

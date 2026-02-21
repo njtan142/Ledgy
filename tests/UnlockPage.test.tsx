@@ -1,6 +1,8 @@
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { UnlockPage } from './UnlockPage';
-import { useAuthStore } from './useAuthStore';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { UnlockPage } from '../src/features/auth/UnlockPage';
+import { useAuthStore } from '../src/features/auth/useAuthStore';
 import { MemoryRouter } from 'react-router-dom';
 
 global.ResizeObserver = class ResizeObserver {
@@ -11,8 +13,8 @@ global.ResizeObserver = class ResizeObserver {
 
 document.elementFromPoint = vi.fn();
 
-vi.mock('./useAuthStore', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('./useAuthStore')>();
+vi.mock('../src/features/auth/useAuthStore', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/features/auth/useAuthStore')>();
     return {
         ...actual,
         useAuthStore: vi.fn(),
