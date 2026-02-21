@@ -26,8 +26,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      issues: write      # create / read issues
-      pull-requests: write  # edit PR bodies to add closing references
+      issues: write      # create / read issues and linked branches
       repository-projects: write  # add items to GitHub Project V2
       contents: read     # read planning artifacts
 

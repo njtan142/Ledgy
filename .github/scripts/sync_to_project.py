@@ -405,48 +405,53 @@ def find_pr_for_branch(repo: str, branch_name: str) -> dict | None:
 def link_branch_to_issue(
     repo: str, issue_number: int, branch_name: str, commit_sha: str
 ) -> bool:
-    """Link a story issue to its PR by adding a closing reference in the PR body.
+    """Link a story issue to its branch via the createLinkedBranch mutation.
 
-    If a matching open PR exists for *branch_name*, the issue reference
-    ``Closes #<number>`` is appended to the PR body so that GitHub
-    populates the issue's *Development* sidebar section.
+    Uses the GitHub ``createLinkedBranch`` GraphQL mutation to register
+    the branch directly on the issue so that GitHub populates the
+    issue's *Development* sidebar section.
     """
-    pr = find_pr_for_branch(repo, branch_name)
-    if not pr:
-        print(f"  ⚠  No open PR found for branch '{branch_name}'",
-              file=sys.stderr)
+    # Fetch the issue node ID required by the GraphQL mutation
+    issue_data = run_gh(
+        "issue", "view", str(issue_number),
+        "--repo", repo,
+        "--json", "id",
+    )
+    if not issue_data or not isinstance(issue_data, dict):
+        print(f"  ⚠  Could not fetch issue #{issue_number}", file=sys.stderr)
         return False
 
-    body = pr.get("body", "") or ""
-    issue_ref = f"#{issue_number}"
+    issue_node_id = issue_data["id"]
 
-    # Check whether the PR body already contains a closing keyword for this issue
-    closing_patterns = [
-        f"closes {issue_ref}", f"close {issue_ref}",
-        f"fixes {issue_ref}",  f"fix {issue_ref}",
-        f"resolves {issue_ref}", f"resolve {issue_ref}",
-    ]
-    if any(pat in body.lower() for pat in closing_patterns):
-        print(f"  · PR #{pr['number']} already references issue {issue_ref}")
-        return True
+    mutation = """
+mutation($issueId: ID!, $oid: GitObjectID!, $name: String!) {
+  createLinkedBranch(input: {issueId: $issueId, oid: $oid, name: $name}) {
+    linkedBranch { id }
+  }
+}
+"""
+    ref_name = f"refs/heads/{branch_name}"
+    data = graphql(mutation, issueId=issue_node_id, oid=commit_sha, name=ref_name)
 
-    # Append a closing reference to the PR body
-    separator = "\n\n" if body.strip() else ""
-    new_body = f"{body}{separator}Closes {issue_ref}"
-
-    result = run_gh(
-        "pr", "edit", str(pr["number"]),
-        "--repo", repo,
-        "--body", new_body,
-    )
     dry_run = os.getenv("DRY_RUN", "").lower() == "true"
-    if result is not None or dry_run:
-        print(f"  ✔ Linked issue {issue_ref} → PR #{pr['number']} "
-              f"({pr.get('title', '?')})")
+
+    if isinstance(data, dict):
+        errors = data.get("errors")
+        if errors:
+            msg = errors[0].get("message", "Unknown GraphQL error")
+            if "already" in msg.lower():
+                print(f"  · Branch '{branch_name}' already linked to issue #{issue_number}")
+                return True
+            print(f"  ⚠  GraphQL error linking branch: {msg}", file=sys.stderr)
+            return False
+        print(f"  ✔ Linked branch '{branch_name}' to issue #{issue_number}")
         return True
 
-    print(f"  ⚠  Failed to update PR #{pr['number']} body with closing "
-          f"reference for issue {issue_ref}", file=sys.stderr)
+    if dry_run:
+        return True
+
+    print(f"  ⚠  Failed to link branch '{branch_name}' to issue #{issue_number}",
+          file=sys.stderr)
     return False
 
 
