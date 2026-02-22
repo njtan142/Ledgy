@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useUIStore } from '../../stores/useUIStore';
-import { Outlet, useParams, Link } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, MonitorOff } from 'lucide-react';
+import { Outlet, useParams } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen, PanelRightClose, MonitorOff } from 'lucide-react';
 import { useErrorStore } from '../../stores/useErrorStore';
 
 export const AppShell: React.FC = () => {
     const {
         leftSidebarOpen, toggleLeftSidebar,
-        rightInspectorOpen, toggleRightInspector,
-        theme
+        rightInspectorOpen, toggleRightInspector
     } = useUIStore();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
@@ -99,16 +98,10 @@ export const AppShell: React.FC = () => {
                         <>
                             <div className="px-2 pb-1">
                                 <div className="text-[10px] font-semibold tracking-wider uppercase text-zinc-600 px-2 mb-0.5 mt-2">Projects</div>
-                                <SidebarItem label="Wellness" active badge="12" />
-                                <SidebarItem label="Finances" badge="34" />
-                                <SidebarItem label="Car Maintenance" badge="8" />
                                 <div className="text-[12px] text-zinc-600 px-4 py-1.5 cursor-pointer hover:text-zinc-400 transition-colors">+ New Project</div>
                             </div>
                             <div className="px-2 mt-4 pb-1">
                                 <div className="text-[10px] font-semibold tracking-wider uppercase text-zinc-600 px-2 mb-0.5">Ledgers</div>
-                                <SidebarItem label="Caffeine Log" active />
-                                <SidebarItem label="Sleep Tracker" />
-                                <SidebarItem label="Workouts" />
                                 <div className="text-[12px] text-zinc-600 px-4 py-1.5 cursor-pointer hover:text-zinc-400 transition-colors">+ New Ledger</div>
                             </div>
                         </>
@@ -139,33 +132,11 @@ export const AppShell: React.FC = () => {
                     {rightInspectorOpen && "Entry Details"}
                 </div>
                 {rightInspectorOpen && (
-                    <div className="flex-grow overflow-y-auto custom-scrollbar">
-                        <InspectorField label="Item" value="Flat White" />
-                        <InspectorField label="Amount" value="160 mg" />
-                        <InspectorField label="Time" value="08:34 · 2026-02-21" />
-                        <InspectorField label="Mood" value={<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400">Good</span>} />
-                        <InspectorField label="Linked Entry" value={<span className="text-emerald-400 text-[12px]">Sleep #47 → 7h 20m deep sleep</span>} />
-                        <InspectorField label="Entry ID" value={<span className="font-mono text-[12px] text-zinc-400">caf_fb3a9d</span>} />
+                    <div className="flex-grow overflow-y-auto custom-scrollbar flex flex-col items-center justify-center p-8 text-zinc-500 gap-4">
+                        <p className="text-xs text-center">Select an entry to view details</p>
                     </div>
                 )}
             </aside>
         </div>
     );
 };
-
-const SidebarItem = ({ label, active, badge }: { label: string, active?: boolean, badge?: string }) => (
-    <div className={`flex items-center gap-2 px-2 py-1.5 rounded text-[13px] cursor-pointer transition-colors ${active ? 'bg-zinc-800 text-zinc-50' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50'}`}>
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? 'bg-emerald-500' : 'bg-zinc-600'}`}></span>
-        <span className="truncate flex-1">{label}</span>
-        {badge && (
-            <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 rounded-full ml-auto">{badge}</span>
-        )}
-    </div>
-);
-
-const InspectorField = ({ label, value }: { label: string, value: React.ReactNode }) => (
-    <div className="px-3.5 py-2.5 border-b border-zinc-800">
-        <div className="text-[11px] text-zinc-400 mb-1">{label}</div>
-        <div className="text-[13px] text-zinc-50">{value}</div>
-    </div>
-);
