@@ -129,6 +129,7 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
                         onChange={(value) => handleFieldChange(field.name, value)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
                         error={errors[field.name]}
+                        targetEntries={targetEntries}
                     />
                 </div>
             ))}
@@ -164,10 +165,11 @@ interface FieldInputProps {
     onChange: (value: unknown) => void;
     onKeyDown: (e: React.KeyboardEvent) => void;
     error?: string;
+    targetEntries: Record<string, LedgerEntry[]>;
 }
 
 const FieldInput = React.forwardRef<HTMLInputElement | HTMLSelectElement, FieldInputProps>(
-    ({ field, value, onChange, onKeyDown, error }, ref) => {
+    ({ field, value, onChange, onKeyDown, error, targetEntries }, ref) => {
         const baseClasses = `w-full bg-transparent border ${error ? 'border-red-500' : 'border-zinc-700'} rounded px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all`;
 
         switch (field.type) {
