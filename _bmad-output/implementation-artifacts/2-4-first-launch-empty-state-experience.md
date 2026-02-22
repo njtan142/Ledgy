@@ -1,6 +1,6 @@
 # Story 2.4: First-Launch Empty State Experience
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,8 +28,8 @@ so that I understand how to begin without being overwhelmed by choice.
   - [x] The "Create your first ledger" button should be a placeholder or simple link to the (not yet implemented) Schema Builder.
 
 ### Review Follow-ups (AI)
-- [ ] [AI-Review][Critical] `Dashboard.tsx` hardcodes a "Caffeine Log" placeholder and does not conditionally mount `EmptyDashboard`. Make it mount conditionally and fix failing tests in `Dashboard.test.tsx`.
-- [ ] [AI-Review][Medium] Update Dev Agent Record File List to include undocumented file changes (`App.tsx`, `AppShell.tsx`, `package-lock.json`).
+- [x] [AI-Review][Critical] `Dashboard.tsx` hardcodes a "Caffeine Log" placeholder and does not conditionally mount `EmptyDashboard`. Make it mount conditionally and fix failing tests in `Dashboard.test.tsx`.
+- [x] [AI-Review][Medium] Update Dev Agent Record File List to include undocumented file changes (`App.tsx`, `AppShell.tsx`, `package-lock.json`).
 
 ## Dev Notes
 
@@ -63,9 +63,17 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ Route for `/app/:profileId/` to `Dashboard` verified via `App.tsx` and tests.
 - ✅ Empty state styling applied (`src/features/dashboard/EmptyDashboard.tsx`).
 - ✅ "Create Ledger" button dispatches an info event noting Template Picker deferral.
+- ✅ Resolved review finding [Critical]: Conditionally mounted EmptyDashboard in Dashboard.tsx and fixed tests.
+- ✅ Resolved review finding [Medium]: Updated Dev Agent Record File List to include undocumented changes.
 
 ### File List
 - `src/features/dashboard/Dashboard.tsx`
 - `src/features/dashboard/Dashboard.test.tsx`
 - `src/features/dashboard/EmptyDashboard.tsx`
 - `src/features/dashboard/EmptyDashboard.test.tsx`
+- `src/App.tsx`
+- `src/features/app-shell/AppShell.tsx`
+- `package-lock.json`
+
+### Change Log
+- Addressed code review findings - 2 items resolved (Date: 2026-02-22)
