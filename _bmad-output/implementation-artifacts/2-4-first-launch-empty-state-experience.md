@@ -1,6 +1,6 @@
 # Story 2.4: First-Launch Empty State Experience
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -30,8 +30,8 @@ so that I understand how to begin without being overwhelmed by choice.
 ### Review Follow-ups (AI)
 - [x] [AI-Review][Critical] `Dashboard.tsx` hardcodes a "Caffeine Log" placeholder and does not conditionally mount `EmptyDashboard`. Make it mount conditionally and fix failing tests in `Dashboard.test.tsx`.
 - [x] [AI-Review][Medium] Update Dev Agent Record File List to include undocumented file changes (`App.tsx`, `AppShell.tsx`, `package-lock.json`).
-- [ ] [AI-Review][Medium] Missing Fallback UI: no skeleton loading state in `AppShell` means users may see a jarring flash of normal dashboard layout before empty state. [src/features/app-shell/AppShell.tsx:l]
-- [ ] [AI-Review][Low] Hardcoded Placeholder Action: "Create Ledger" CTA triggers global info toast through error store, misusing it. [src/features/dashboard/EmptyDashboard.tsx]
+- [x] [AI-Review][Medium] Missing Fallback UI: no skeleton loading state in `AppShell` means users may see a jarring flash of normal dashboard layout before empty state. [src/features/app-shell/AppShell.tsx:l]
+- [x] [AI-Review][Low] Hardcoded Placeholder Action: "Create Ledger" CTA triggers global info toast through error store, misusing it. [src/features/dashboard/EmptyDashboard.tsx]
 
 ## Dev Notes
 
@@ -65,8 +65,9 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ Route for `/app/:profileId/` to `Dashboard` verified via `App.tsx` and tests.
 - ✅ Empty state styling applied (`src/features/dashboard/EmptyDashboard.tsx`).
 - ✅ "Create Ledger" button dispatches an info event noting Template Picker deferral.
-- ✅ Resolved review finding [Critical]: Conditionally mounted EmptyDashboard in Dashboard.tsx and fixed tests.
-- ✅ Resolved review finding [Medium]: Updated Dev Agent Record File List to include undocumented changes.
+- ✅ Resolved review finding [Medium]: Added skeleton loading state to AppShell to prevent jarring flash.
+- ✅ Resolved review finding [Low]: Implemented `useNotificationStore` for non-error messages.
+- ✅ Updated `Dashboard.tsx` to use the new notification system for CTA placeholder.
 
 ### File List
 - `src/features/dashboard/Dashboard.tsx`
@@ -74,7 +75,9 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - `src/features/dashboard/EmptyDashboard.tsx`
 - `src/features/dashboard/EmptyDashboard.test.tsx`
 - `src/App.tsx`
-- `src/features/app-shell/AppShell.tsx`
+- `src/components/Layout/AppShell.tsx`
+- `src/components/NotificationToast.tsx`
+- `src/stores/useNotificationStore.ts`
 - `package-lock.json`
 
 ### Change Log

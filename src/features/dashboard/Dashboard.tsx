@@ -2,17 +2,17 @@ import React from 'react';
 import { useUIStore } from '../../stores/useUIStore';
 import { PanelRightOpen } from 'lucide-react';
 import { EmptyDashboard } from './EmptyDashboard';
-import { useErrorStore } from '../../stores/useErrorStore';
+import { useNotificationStore } from '../../stores/useNotificationStore';
 
 export const Dashboard: React.FC = () => {
     const { toggleRightInspector, rightInspectorOpen } = useUIStore();
-    const dispatchError = useErrorStore(state => state.dispatchError);
+    const addNotification = useNotificationStore(state => state.addNotification);
 
     // Placeholder until ledgers are implemented
     const hasLedgers = false;
 
     const handleCreateLedger = () => {
-        dispatchError('Schema Builder not yet implemented. Template Picker is deferred.', 'info');
+        addNotification('Schema Builder not yet implemented. Template Picker is deferred.', 'info');
     };
 
     return (

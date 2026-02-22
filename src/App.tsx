@@ -7,6 +7,7 @@ import { GuestGuard } from "./features/auth/GuestGuard";
 import { UnlockGuard } from "./features/auth/UnlockGuard";
 import { AppShell } from "./components/Layout/AppShell";
 import { ErrorToast } from "./components/ErrorToast";
+import { NotificationToast } from "./components/NotificationToast";
 import { ProfileSelector } from "./features/profiles/ProfileSelector";
 import { useUIStore } from "./stores/useUIStore";
 import { useEffect } from "react";
@@ -26,6 +27,7 @@ function App() {
   return (
     <>
       <ErrorToast />
+      <NotificationToast />
       <Routes>
         {/* Public Routes */}
         <Route

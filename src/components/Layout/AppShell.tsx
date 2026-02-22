@@ -55,7 +55,18 @@ export const AppShell: React.FC = () => {
         };
     }, []);
 
-    if (!mounted) return null;
+    if (!mounted) {
+        return (
+            <div className="flex h-screen w-full bg-[#0d0d0f] animate-pulse">
+                {/* Left Sidebar Skeleton */}
+                <div className="w-[220px] bg-zinc-900 border-r border-zinc-800 shrink-0" />
+                {/* Main Content Skeleton */}
+                <div className="flex-1 bg-zinc-950" />
+                {/* Right Inspector Skeleton (optional, but good for consistency) */}
+                <div className="w-0 bg-zinc-900 border-l border-zinc-800 shrink-0" />
+            </div>
+        );
+    }
 
     return (
         <div className="relative flex h-screen w-full bg-[#0d0d0f] text-zinc-50 font-sans overflow-hidden">

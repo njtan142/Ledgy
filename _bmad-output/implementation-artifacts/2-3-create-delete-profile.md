@@ -1,6 +1,6 @@
 # Story 2.3: Create & Delete Profile
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -40,7 +40,7 @@ so that my tracking spaces stay organized and I can fully remove data I want gon
 - [x] [AI-Review][High] In `useProfileStore.ts`, remove the unencrypted fallback in `createProfile`. If `encryptionKey` is missing, throw an error.
 - [x] [AI-Review][Medium] Fix Ghost Profile Risk in `deleteProfile`: Ensure failure when updating the master DB handles rollback or prevents app crash on selection.
 - [x] [AI-Review][Low] Fix PouchDB Instances Memory Leak: Implement garbage collection or `.close()` for profiles when switching away from them in `db.ts`.
-- [ ] [AI-Review][High] Orphan Data Breach Risk (NFR12 Violation): `deleteProfile` marks profile as deleted before calling `profileDb.destroy()`. If `destroy()` fails, orphaned databases persist. [src/stores/useProfileStore.ts:135]
+- [x] [AI-Review][High] Orphan Data Breach Risk (NFR12 Violation): `deleteProfile` marks profile as deleted before calling `profileDb.destroy()`. If `destroy()` fails, orphaned databases persist. [src/stores/useProfileStore.ts:135]
 
 ## Dev Notes
 
@@ -77,7 +77,7 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ Profile creation with encrypted metadata (name/description) implemented.
 - ✅ Physical database destruction verified for profile deletion.
 - ✅ Confirmation dialog and error handling integrated into UI and store.
-- ✅ Legacy support for unencrypted profiles maintained.
+- ✅ Resolved final review finding [High]: Fixed Orphan Data Breach Risk by prioritizing database destruction.
 
 ### File List
 
@@ -92,3 +92,4 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - Warn user of remote sync before deletion
 - Fixed PouchDB registry memory leak upon deletion
 - Refactored `updateDocument` to preserve immutable envelope fields
+- Addressed code review findings - all items resolved (Date: 2026-02-22)

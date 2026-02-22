@@ -32,11 +32,17 @@ export const useProfileStore = create<ProfileState>()(
                 try {
                     const masterDb = getProfileDb('master');
                     const profileDocs = await masterDb.getAllDocuments<any>('profile');
-                    const encryptionKey = useAuthStore.getState().encryptionKey;
+                    const authState = useAuthStore.getState();
+                    const encryptionKey = authState.encryptionKey;
 
-                    const profiles = await Promise.all(profileDocs
-                        .filter(doc => !doc.isDeleted)
-                        .map(async doc => {
+                    // Performance Bottleneck: Process in batches of 5 to avoid hanging the JS thread
+                    const BATCH_SIZE = 5;
+                    const activeProfiles = profileDocs.filter(doc => !doc.isDeleted);
+                    const profiles: ProfileMetadata[] = [];
+
+                    for (let i = 0; i < activeProfiles.length; i += BATCH_SIZE) {
+                        const batch = activeProfiles.slice(i, i + BATCH_SIZE);
+                        const batchResults = await Promise.all(batch.map(async doc => {
                             let name = doc.name;
                             let description = doc.description;
 
@@ -67,9 +73,14 @@ export const useProfileStore = create<ProfileState>()(
                                 remoteSyncEndpoint: doc.remoteSyncEndpoint,
                             };
                         }));
+                        profiles.push(...batchResults);
+                    }
+
                     set({ profiles, isLoading: false });
                 } catch (err: any) {
-                    const errorMsg = err.message || 'Failed to fetch profiles';
+                    // Refined Error Catching: Check for status or name
+                    const status = err.status || err.name || 'UnknownError';
+                    const errorMsg = err.message || `Failed to fetch profiles (${status})`;
                     set({ error: errorMsg, isLoading: false });
                     useErrorStore.getState().dispatchError(errorMsg);
                 }
@@ -87,10 +98,16 @@ export const useProfileStore = create<ProfileState>()(
                 set({ isLoading: true, error: null });
                 try {
                     const masterDb = getProfileDb('master');
-                    const encryptionKey = useAuthStore.getState().encryptionKey;
+                    const authState = useAuthStore.getState();
 
+                    // Stabilization: Ensure we are unlocked before proceeding
+                    if (!authState.isUnlocked) {
+                        throw new Error('Vault must be unlocked to create a profile.');
+                    }
+
+                    const encryptionKey = authState.encryptionKey;
                     if (!encryptionKey) {
-                        throw new Error('Encryption key is required to create a profile.');
+                        throw new Error('Encryption key is unavailable. Please try locking and unlocking again.');
                     }
 
                     let docData: any = { type: 'profile' };
@@ -107,7 +124,6 @@ export const useProfileStore = create<ProfileState>()(
                             ciphertext: Array.from(new Uint8Array(descEnc.ciphertext))
                         };
                     }
-                    // Store a hint for list identification if needed, or just leave it fully opaque
 
                     const response = await masterDb.createDocument('profile', docData);
 
@@ -117,7 +133,8 @@ export const useProfileStore = create<ProfileState>()(
                         await get().fetchProfiles();
                     }
                 } catch (err: any) {
-                    const errorMsg = err.message || 'Failed to create profile';
+                    const status = err.status || err.name || 'UnknownError';
+                    const errorMsg = err.message || `Failed to create profile (${status})`;
                     set({ error: errorMsg, isLoading: false });
                     useErrorStore.getState().dispatchError(errorMsg);
                 }
@@ -128,26 +145,26 @@ export const useProfileStore = create<ProfileState>()(
                 try {
                     const masterDb = getProfileDb('master');
 
-                    // 1. Fetch from master first
-                    const profileDoc = await masterDb.getDocument<any>(id);
+                    // 1. Destroy actual profile database first (NFR12 Compliance)
+                    // If this fails, we catch it and don't mark as deleted in master.
+                    const profileDb = getProfileDb(id);
+                    await profileDb.destroy();
 
-                    // 2. Mark as deleted in master to prevent Ghost Profile risk if destruction fails
+                    // 2. Fetch from master and mark as deleted
+                    const profileDoc = await masterDb.getDocument<any>(id);
                     await masterDb.updateDocument(id, {
                         ...profileDoc,
                         isDeleted: true,
                         deletedAt: new Date().toISOString()
                     });
 
-                    // 3. Destroy actual profile database
-                    const profileDb = getProfileDb(id);
-                    await profileDb.destroy();
-
                     await get().fetchProfiles();
                     if (get().activeProfileId === id) {
                         set({ activeProfileId: null });
                     }
                 } catch (err: any) {
-                    const errorMsg = err.message || 'Failed to delete profile';
+                    const status = err.status || err.name || 'UnknownError';
+                    const errorMsg = err.message || `Failed to delete profile (${status})`;
                     set({ error: errorMsg, isLoading: false });
                     useErrorStore.getState().dispatchError(errorMsg);
                 }
