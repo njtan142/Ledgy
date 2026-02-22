@@ -19,6 +19,7 @@ import { LedgerSourceNode } from './nodes/LedgerSourceNode';
 import { CorrelationNode } from './nodes/CorrelationNode';
 import { ArithmeticNode } from './nodes/ArithmeticNode';
 import { TriggerNode } from './nodes/TriggerNode';
+import { DashboardOutputNode } from './nodes/DashboardOutputNode';
 import { DataEdge } from './edges/DataEdge';
 
 // Custom node types
@@ -27,6 +28,7 @@ const nodeTypes = {
     correlation: CorrelationNode,
     arithmetic: ArithmeticNode,
     trigger: TriggerNode,
+    dashboardOutput: DashboardOutputNode,
 };
 
 // Custom edge types

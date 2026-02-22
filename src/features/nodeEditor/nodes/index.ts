@@ -6,3 +6,5 @@ export { ArithmeticNode } from './ArithmeticNode';
 export type { ArithmeticNodeData } from './ArithmeticNode';
 export { TriggerNode } from './TriggerNode';
 export type { TriggerNodeData } from './TriggerNode';
+export { DashboardOutputNode } from './DashboardOutputNode';
+export type { DashboardOutputNodeData } from './DashboardOutputNode';
