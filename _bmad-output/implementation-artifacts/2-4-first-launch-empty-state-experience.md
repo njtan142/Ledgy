@@ -1,6 +1,6 @@
 # Story 2.4: First-Launch Empty State Experience
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,6 +26,10 @@ so that I understand how to begin without being overwhelmed by choice.
   - [x] Implement logic to detect when the ledger list is empty (for now, it will always be empty).
 - [x] Task 3: Placeholder CTA
   - [x] The "Create your first ledger" button should be a placeholder or simple link to the (not yet implemented) Schema Builder.
+
+### Review Follow-ups (AI)
+- [ ] [AI-Review][Critical] `Dashboard.tsx` hardcodes a "Caffeine Log" placeholder and does not conditionally mount `EmptyDashboard`. Make it mount conditionally and fix failing tests in `Dashboard.test.tsx`.
+- [ ] [AI-Review][Medium] Update Dev Agent Record File List to include undocumented file changes (`App.tsx`, `AppShell.tsx`, `package-lock.json`).
 
 ## Dev Notes
 

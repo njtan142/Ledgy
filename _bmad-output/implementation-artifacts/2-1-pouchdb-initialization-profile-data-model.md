@@ -1,6 +1,6 @@
 # Story 2.1: PouchDB Initialization & Profile Data Model
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -33,6 +33,9 @@ so that profile data is never accessible across profile boundaries.
   - [x] Add unit tests verifying `db` isolation between sample profiles.
 - [x] Task 4: Integration with Auth (AC: 6)
   - [x] Ensure `useProfileStore` is only accessible after `useAuthStore().isUnlocked` is true.
+
+### Review Follow-ups (AI)
+- [ ] [AI-Review][High] In `useProfileStore.ts`, remove the unencrypted fallback in `createProfile`. If `encryptionKey` is missing, throw an error instead of saving in plain text.
 
 ## Dev Notes
 
