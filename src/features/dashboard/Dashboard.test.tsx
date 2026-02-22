@@ -6,8 +6,6 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 describe('Dashboard Component', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Mock window.alert
-        vi.spyOn(window, 'alert').mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -27,7 +25,7 @@ describe('Dashboard Component', () => {
         expect(screen.getByText('Welcome to Ledgy!')).toBeInTheDocument();
     });
 
-    it('shows alert when creating a ledger (placeholder for Epic 3)', () => {
+    it('opens Schema Builder when clicking Create Ledger', () => {
         render(
             <MemoryRouter initialEntries={['/app/profile1']}>
                 <Routes>
@@ -39,8 +37,7 @@ describe('Dashboard Component', () => {
         const createBtn = screen.getByRole('button', { name: /Create Ledger/i });
         fireEvent.click(createBtn);
 
-        expect(window.alert).toHaveBeenCalledWith(
-            'Schema Builder will be available in Epic 3. This will let you define custom ledger schemas with field types.'
-        );
+        // Schema Builder modal should appear
+        expect(screen.getByText('Create Ledger Schema')).toBeInTheDocument();
     });
 });

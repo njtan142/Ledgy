@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useUIStore } from '../../stores/useUIStore';
 import { PanelRightOpen } from 'lucide-react';
 import { EmptyDashboard } from './EmptyDashboard';
-import { SchemaBuilder } from './SchemaBuilder';
+import { SchemaBuilder } from '../ledger/SchemaBuilder';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 
 export const Dashboard: React.FC = () => {
