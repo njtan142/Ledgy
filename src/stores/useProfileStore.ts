@@ -87,24 +87,23 @@ export const useProfileStore = create<ProfileState>()(
 
                     let docData: any = { type: 'profile' };
 
-                    if (encryptionKey) {
-                        const nameEnc = await encryptPayload(encryptionKey, name);
-                        docData.name_enc = {
-                            iv: nameEnc.iv,
-                            ciphertext: Array.from(new Uint8Array(nameEnc.ciphertext))
-                        };
-                        if (description) {
-                            const descEnc = await encryptPayload(encryptionKey, description);
-                            docData.description_enc = {
-                                iv: descEnc.iv,
-                                ciphertext: Array.from(new Uint8Array(descEnc.ciphertext))
-                            };
-                        }
-                        // Store a hint for list identification if needed, or just leave it fully opaque
-                    } else {
-                        docData.name = name;
-                        docData.description = description;
+                    if (!encryptionKey) {
+                        throw new Error('Encryption key is required to create a profile.');
                     }
+
+                    const nameEnc = await encryptPayload(encryptionKey, name);
+                    docData.name_enc = {
+                        iv: nameEnc.iv,
+                        ciphertext: Array.from(new Uint8Array(nameEnc.ciphertext))
+                    };
+                    if (description) {
+                        const descEnc = await encryptPayload(encryptionKey, description);
+                        docData.description_enc = {
+                            iv: descEnc.iv,
+                            ciphertext: Array.from(new Uint8Array(descEnc.ciphertext))
+                        };
+                    }
+                    // Store a hint for list identification if needed, or just leave it fully opaque
 
                     const response = await masterDb.createDocument('profile', docData);
 

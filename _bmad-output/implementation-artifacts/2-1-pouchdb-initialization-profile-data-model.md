@@ -1,6 +1,6 @@
 # Story 2.1: PouchDB Initialization & Profile Data Model
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -35,7 +35,7 @@ so that profile data is never accessible across profile boundaries.
   - [x] Ensure `useProfileStore` is only accessible after `useAuthStore().isUnlocked` is true.
 
 ### Review Follow-ups (AI)
-- [ ] [AI-Review][High] In `useProfileStore.ts`, remove the unencrypted fallback in `createProfile`. If `encryptionKey` is missing, throw an error instead of saving in plain text.
+- [x] [AI-Review][High] In `useProfileStore.ts`, remove the unencrypted fallback in `createProfile`. If `encryptionKey` is missing, throw an error instead of saving in plain text.
 
 ## Dev Notes
 
@@ -91,3 +91,7 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - `src/stores/useProfileStore.test.ts`
 - `src/setupTests.ts`
 - `package.json` (added `pouchdb-adapter-memory`)
+
+### Change Log
+- Addressed code review findings - 1 item resolved (Date: 2026-02-22)
+
