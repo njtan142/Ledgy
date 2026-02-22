@@ -15,6 +15,18 @@ import '@xyflow/react/dist/style.css';
 import { useNodeStore } from '../../stores/useNodeStore';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { EmptyCanvasGuide } from './EmptyCanvasGuide';
+import { LedgerSourceNode } from './nodes/LedgerSourceNode';
+import { DataEdge } from './edges/DataEdge';
+
+// Custom node types
+const nodeTypes = {
+    ledgerSource: LedgerSourceNode,
+};
+
+// Custom edge types
+const edgeTypes = {
+    data: DataEdge,
+};
 
 export const NodeCanvas: React.FC = () => {
     const { activeProfileId } = useProfileStore();
@@ -42,10 +54,17 @@ export const NodeCanvas: React.FC = () => {
 
     const onConnect = useCallback(
         (params: Connection) => {
+            // Extract data type from source handle
+            const dataType = params.sourceHandle?.split('-')[1] || 'unknown';
+            
             const newEdge: Edge = {
                 ...params,
-                id: `edge-${params.source}-${params.target}`,
-                type: 'default',
+                id: `edge-${params.source}-${params.target}-${params.sourceHandle}-${params.targetHandle}`,
+                type: 'data',
+                data: {
+                    dataType,
+                    sampleData: `${dataType} flow`,
+                },
             };
             setRfEdges((eds) => addEdge(newEdge, eds));
         },
@@ -81,6 +100,9 @@ export const NodeCanvas: React.FC = () => {
                     onConnect={onConnect}
                     onViewportChange={onViewportChange}
                     fitView
+                    nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
+                    defaultEdgeOptions={{ type: 'data' }}
                     className="bg-zinc-950"
                 >
                     <Background color="#3f3f46" gap={20} />
@@ -106,6 +128,9 @@ export const NodeCanvas: React.FC = () => {
                 onViewportChange={onViewportChange}
                 viewport={viewport}
                 fitView
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                defaultEdgeOptions={{ type: 'data' }}
                 className="bg-zinc-950"
             >
                 <Background color="#3f3f46" gap={20} />
