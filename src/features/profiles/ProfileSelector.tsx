@@ -33,8 +33,14 @@ export const ProfileSelector: React.FC = () => {
     const handleConfirmCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!createName.trim()) return;
-        await useProfileStore.getState().createProfile(createName.trim(), createDesc.trim());
-        setIsCreateDialogOpen(false);
+        try {
+            const newProfileId = await useProfileStore.getState().createProfile(createName.trim(), createDesc.trim());
+            setIsCreateDialogOpen(false);
+            // Auto-select the newly created profile
+            handleSelectProfile(newProfileId);
+        } catch (err) {
+            // Error already handled by store
+        }
     };
 
     const handleOpenDelete = (e: React.MouseEvent, id: string) => {

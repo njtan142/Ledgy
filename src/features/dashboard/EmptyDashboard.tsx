@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 
 interface EmptyDashboardProps {
     onActionClick: () => void;
@@ -7,9 +7,9 @@ interface EmptyDashboardProps {
 
 export const EmptyDashboard: React.FC<EmptyDashboardProps> = ({ onActionClick }) => {
     return (
-        <div className="flex flex-col items-center justify-center p-8 bg-zinc-950/50 rounded-2xl border border-zinc-900 border-dashed text-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center p-8 bg-zinc-950/50 rounded-2xl border border-zinc-900 border-dashed text-center min-h-[60vh]">
             <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-6">
-                <span className="text-3xl" role="img" aria-label="Waving hand">👋</span>
+                <Sparkles size={32} className="text-emerald-500" aria-hidden="true" />
             </div>
             <h2 className="text-2xl font-bold text-zinc-100 mb-2">Welcome to Ledgy!</h2>
             <p className="text-zinc-400 max-w-sm mb-8">

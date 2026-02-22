@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ProfileMetadata } from '../types/profile';
-import { getProfileDb, closeProfileDb } from '../lib/db';
+import { getProfileDb, closeProfileDb, create_profile_encrypted, list_profiles } from '../lib/db';
 import { useErrorStore } from './useErrorStore';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { encryptPayload, decryptPayload } from '../lib/crypto';
@@ -15,7 +15,7 @@ interface ProfileState {
     // Actions
     fetchProfiles: () => Promise<void>;
     setActiveProfile: (id: string) => void;
-    createProfile: (name: string, description?: string) => Promise<void>;
+    createProfile: (name: string, description?: string) => Promise<string>;
     deleteProfile: (id: string) => Promise<void>;
 }
 
@@ -31,11 +31,11 @@ export const useProfileStore = create<ProfileState>()(
                 set({ isLoading: true, error: null });
                 try {
                     const masterDb = getProfileDb('master');
-                    const profileDocs = await masterDb.getAllDocuments<any>('profile');
+                    const profileDocs = await list_profiles(masterDb);
                     const authState = useAuthStore.getState();
                     const encryptionKey = authState.encryptionKey;
 
-                    // Performance Bottleneck: Process in batches of 5 to avoid hanging the JS thread
+                    // Performance: Process in batches of 5 to avoid hanging the JS thread
                     const BATCH_SIZE = 5;
                     const activeProfiles = profileDocs.filter(doc => !doc.isDeleted);
                     const profiles: ProfileMetadata[] = [];
@@ -94,7 +94,7 @@ export const useProfileStore = create<ProfileState>()(
                 set({ activeProfileId: id });
             },
 
-            createProfile: async (name: string, description?: string) => {
+            createProfile: async (name: string, description?: string): Promise<string> => {
                 set({ isLoading: true, error: null });
                 try {
                     const masterDb = getProfileDb('master');
@@ -110,33 +110,64 @@ export const useProfileStore = create<ProfileState>()(
                         throw new Error('Encryption key is unavailable. Please try locking and unlocking again.');
                     }
 
-                    let docData: any = { type: 'profile' };
+                    // Validate: Prevent duplicate profile names
+                    const existingProfiles = await list_profiles(masterDb);
+                    const authStateCurrent = useAuthStore.getState();
+                    const key = authStateCurrent.encryptionKey;
+                    
+                    // Check for duplicate names by decrypting and comparing
+                    for (const doc of existingProfiles) {
+                        if (doc.name_enc && key) {
+                            try {
+                                const iv = new Uint8Array(doc.name_enc.iv);
+                                const ciphertext = new Uint8Array(doc.name_enc.ciphertext).buffer;
+                                const existingName = await decryptPayload(key, iv, ciphertext);
+                                if (existingName.toLowerCase() === name.toLowerCase()) {
+                                    throw new Error(`A profile with the name "${name}" already exists.`);
+                                }
+                            } catch (e) {
+                                console.error('Failed to decrypt profile name for validation:', e);
+                            }
+                        }
+                    }
 
+                    // Encrypt the profile metadata
                     const nameEnc = await encryptPayload(encryptionKey, name);
-                    docData.name_enc = {
+                    const encryptedName = {
                         iv: nameEnc.iv,
                         ciphertext: Array.from(new Uint8Array(nameEnc.ciphertext))
                     };
+                    
+                    let encryptedDescription = undefined;
                     if (description) {
                         const descEnc = await encryptPayload(encryptionKey, description);
-                        docData.description_enc = {
+                        encryptedDescription = {
                             iv: descEnc.iv,
                             ciphertext: Array.from(new Uint8Array(descEnc.ciphertext))
                         };
                     }
 
-                    const response = await masterDb.createDocument('profile', docData);
+                    // Use the DAL function to create the profile with encrypted metadata
+                    const profileId = await create_profile_encrypted(masterDb, encryptedName, encryptedDescription);
 
-                    if (response.ok) {
-                        const profileDb = getProfileDb(response.id);
-                        await profileDb.createDocument('profile_init', { initialized: true });
-                        await get().fetchProfiles();
-                    }
+                    // Initialize the profile database with encrypted metadata
+                    const profileDb = getProfileDb(profileId);
+                    await profileDb.createDocument('profile_init', {
+                        initialized: true,
+                        name_enc: encryptedName,
+                        description_enc: encryptedDescription
+                    });
+                    
+                    await get().fetchProfiles();
+                    
+                    // Return the profile ID so UI can auto-select it
+                    return profileId;
                 } catch (err: any) {
                     const status = err.status || err.name || 'UnknownError';
                     const errorMsg = err.message || `Failed to create profile (${status})`;
                     set({ error: errorMsg, isLoading: false });
                     useErrorStore.getState().dispatchError(errorMsg);
+                    throw err;
                 }
             },
 
@@ -145,12 +176,13 @@ export const useProfileStore = create<ProfileState>()(
                 try {
                     const masterDb = getProfileDb('master');
 
-                    // 1. Destroy actual profile database first (NFR12 Compliance)
-                    // If this fails, we catch it and don't mark as deleted in master.
+                    // NFR12 Compliance: Destroy actual profile database FIRST
+                    // If this fails, we MUST NOT mark as deleted in master (rollback safety)
                     const profileDb = getProfileDb(id);
                     await profileDb.destroy();
+                    // Note: destroy() already calls delete profileDatabases[this.profileId]
 
-                    // 2. Fetch from master and mark as deleted
+                    // Only after successful destroy, mark as deleted in master
                     const profileDoc = await masterDb.getDocument<any>(id);
                     await masterDb.updateDocument(id, {
                         ...profileDoc,

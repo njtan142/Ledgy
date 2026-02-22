@@ -32,9 +32,9 @@ so that I understand how to begin without being overwhelmed by choice.
 - [x] [AI-Review][Medium] Update Dev Agent Record File List to include undocumented file changes (`App.tsx`, `AppShell.tsx`, `package-lock.json`).
 - [x] [AI-Review][Medium] Missing Fallback UI: no skeleton loading state in `AppShell` means users may see a jarring flash of normal dashboard layout before empty state. [src/features/app-shell/AppShell.tsx:l]
 - [x] [AI-Review][Low] Hardcoded Placeholder Action: "Create Ledger" CTA triggers global info toast through error store, misusing it. [src/features/dashboard/EmptyDashboard.tsx]
-- [ ] [AI-Review][Medium] UX Flaw: `AppShell` displays raw `profileId` instead of human-readable Profile Name. Fetch profile details in `AppShell`. [src/components/Layout/AppShell.tsx:96]
-- [ ] [AI-Review][Low] Styling Fragility: `EmptyDashboard` uses hardcoded `min-h-[400px]` which may affect responsiveness. [src/features/dashboard/EmptyDashboard.tsx:10]
-- [ ] [AI-Review][Low] Accessibility: `EmptyDashboard` relies on emoji for illustration. Use SVG icon. [src/features/dashboard/EmptyDashboard.tsx:12]
+- [x] [AI-Review][Medium] UX Flaw: `AppShell` displays raw `profileId` instead of human-readable Profile Name. Fetch profile details in `AppShell`. [src/components/Layout/AppShell.tsx:96]
+- [x] [AI-Review][Low] Styling Fragility: `EmptyDashboard` uses hardcoded `min-h-[400px]` which may affect responsiveness. [src/features/dashboard/EmptyDashboard.tsx:10]
+- [x] [AI-Review][Low] Accessibility: `EmptyDashboard` relies on emoji for illustration. Use SVG icon. [src/features/dashboard/EmptyDashboard.tsx:12]
 
 ## Dev Notes
 
@@ -71,6 +71,9 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ Resolved review finding [Medium]: Added skeleton loading state to AppShell to prevent jarring flash.
 - ✅ Resolved review finding [Low]: Implemented `useNotificationStore` for non-error messages.
 - ✅ Updated `Dashboard.tsx` to use the new notification system for CTA placeholder.
+- ✅ AppShell now displays profile name instead of raw profileId.
+- ✅ EmptyDashboard uses responsive `min-h-[60vh]` and SVG icon (Lucide Sparkles).
+- ✅ All review follow-ups resolved (7 items).
 
 ### File List
 - `src/features/dashboard/Dashboard.tsx`
@@ -85,3 +88,5 @@ Antigravity (Gemini 2.0 Flash Thinking)
 
 ### Change Log
 - Addressed code review findings - 2 items resolved (Date: 2026-02-22)
+- AppShell displays profile name, EmptyDashboard uses responsive height and SVG icon (Date: 2026-02-22)
+- All review follow-ups resolved - 7 items completed (Date: 2026-02-22)

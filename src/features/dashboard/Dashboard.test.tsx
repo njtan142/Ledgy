@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Dashboard } from './Dashboard';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { useErrorStore } from '../../stores/useErrorStore';
+import { useNotificationStore } from '../../stores/useNotificationStore';
 
 describe('Dashboard Component', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        useErrorStore.setState({ error: null });
+        useNotificationStore.setState({ notifications: [] });
     });
 
     it('renders empty dashboard initially', () => {
@@ -24,7 +24,7 @@ describe('Dashboard Component', () => {
     });
 
     it('dispatches an info message when creating a ledger (placeholder logic)', () => {
-        const dispatchErrorSpy = vi.spyOn(useErrorStore.getState(), 'dispatchError');
+        const addNotificationSpy = vi.spyOn(useNotificationStore.getState(), 'addNotification');
 
         render(
             <MemoryRouter initialEntries={['/app/profile1']}>
@@ -37,7 +37,7 @@ describe('Dashboard Component', () => {
         const createBtn = screen.getByRole('button', { name: /Create Ledger/i });
         fireEvent.click(createBtn);
 
-        expect(dispatchErrorSpy).toHaveBeenCalledWith(
+        expect(addNotificationSpy).toHaveBeenCalledWith(
             'Schema Builder not yet implemented. Template Picker is deferred.',
             'info'
         );

@@ -41,9 +41,9 @@ so that my tracking spaces stay organized and I can fully remove data I want gon
 - [x] [AI-Review][Medium] Fix Ghost Profile Risk in `deleteProfile`: Ensure failure when updating the master DB handles rollback or prevents app crash on selection.
 - [x] [AI-Review][Low] Fix PouchDB Instances Memory Leak: Implement garbage collection or `.close()` for profiles when switching away from them in `db.ts`.
 - [x] [AI-Review][High] Orphan Data Breach Risk (NFR12 Violation): `deleteProfile` marks profile as deleted before calling `profileDb.destroy()`. If `destroy()` fails, orphaned databases persist. [src/stores/useProfileStore.ts:135]
-- [ ] [AI-Review][Medium] UX Improvement: `createProfile` should return the new profile ID so UI can auto-select it. [src/stores/useProfileStore.ts:97]
-- [ ] [AI-Review][Medium] Untestable Logic: Sync Warning logic in UI is unreachable as `createProfile` cannot set `remoteSyncEndpoint`. [src/features/profiles/ProfileSelector.tsx:193]
-- [ ] [AI-Review][Low] Duplicate Names: Add validation to prevent duplicate profile names. [src/stores/useProfileStore.ts:97]
+- [x] [AI-Review][Medium] UX Improvement: `createProfile` should return the new profile ID so UI can auto-select it. [src/stores/useProfileStore.ts:97]
+- [x] [AI-Review][Medium] Untestable Logic: Sync Warning logic in UI is unreachable as `createProfile` cannot set `remoteSyncEndpoint`. [src/features/profiles/ProfileSelector.tsx:193]
+- [x] [AI-Review][Low] Duplicate Names: Add validation to prevent duplicate profile names. [src/stores/useProfileStore.ts:97]
 
 ## Dev Notes
 
@@ -81,6 +81,9 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ Physical database destruction verified for profile deletion.
 - ✅ Confirmation dialog and error handling integrated into UI and store.
 - ✅ Resolved final review finding [High]: Fixed Orphan Data Breach Risk by prioritizing database destruction.
+- ✅ `createProfile` now returns profile ID for auto-selection in UI.
+- ✅ Duplicate name validation added to prevent conflicts.
+- ✅ All review follow-ups resolved (12 items).
 
 ### File List
 
@@ -96,3 +99,5 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - Fixed PouchDB registry memory leak upon deletion
 - Refactored `updateDocument` to preserve immutable envelope fields
 - Addressed code review findings - all items resolved (Date: 2026-02-22)
+- Added profile ID return for auto-selection and duplicate name validation (Date: 2026-02-22)
+- All review follow-ups resolved - 12 items completed (Date: 2026-02-22)

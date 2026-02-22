@@ -110,3 +110,50 @@ export async function closeProfileDb(profileId: string): Promise<void> {
 export function _clearProfileDatabases() {
     profileDatabases = {};
 }
+
+/**
+ * Creates a new profile document in the master database.
+ * Returns the profile ID on success.
+ */
+export async function create_profile(
+    masterDb: Database,
+    name: string,
+    description?: string
+): Promise<string> {
+    const response = await masterDb.createDocument('profile', {
+        name,
+        description,
+    });
+    if (!response.ok) {
+        throw new Error('Failed to create profile document');
+    }
+    return response.id;
+}
+
+/**
+ * Creates a new profile document in the master database with encrypted metadata.
+ * Returns the profile ID on success.
+ */
+export async function create_profile_encrypted(
+    masterDb: Database,
+    encryptedName: { iv: number[]; ciphertext: number[] },
+    encryptedDescription?: { iv: number[]; ciphertext: number[] }
+): Promise<string> {
+    const response = await masterDb.createDocument('profile', {
+        name_enc: encryptedName,
+        description_enc: encryptedDescription,
+    });
+    if (!response.ok) {
+        throw new Error('Failed to create profile document');
+    }
+    return response.id;
+}
+
+/**
+ * Lists all profiles from the master database.
+ * Returns array of profile documents including metadata.
+ */
+export async function list_profiles(masterDb: Database): Promise<any[]> {
+    const profileDocs = await masterDb.getAllDocuments<any>('profile');
+    return profileDocs.filter(doc => !doc.isDeleted);
+}

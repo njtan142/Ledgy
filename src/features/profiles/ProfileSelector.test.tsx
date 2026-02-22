@@ -43,7 +43,7 @@ describe('ProfileSelector', () => {
     });
 
     it('opens create dialog and calls createProfile on submit', async () => {
-        const createProfileSpy = vi.spyOn(useProfileStore.getState(), 'createProfile').mockResolvedValue(undefined);
+        const createProfileSpy = vi.spyOn(useProfileStore.getState(), 'createProfile').mockResolvedValue('profile:123' as any);
 
         renderWithRouter(<ProfileSelector />);
 

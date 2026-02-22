@@ -39,10 +39,10 @@ so that profile data is never accessible across profile boundaries.
 - [x] [AI-Review][High] Encryption Key Race Condition: fetching `encryptionKey` synchronously from `useAuthStore.getState()` in `createProfile` could throw or lead to unencrypted state if not stabilized. [src/stores/useProfileStore.ts:90]
 - [x] [AI-Review][Medium] Performance Bottleneck in `fetchProfiles`: decrypting and mapping every profile with `Promise.all` simultaneously could hang JS thread. [src/stores/useProfileStore.ts:37]
 - [x] [AI-Review][Low] Broad error catching in `useProfileStore`: check `err.name` or `err.status` instead of simply grabbing `err.message` for DB errors. [src/stores/useProfileStore.ts:71]
-- [ ] [AI-Review][High] Missing Implementation: Task requires `create_profile` and `list_profiles` in `src/lib/db.ts`, but they are missing. Logic is coupled in `useProfileStore.ts`. [src/lib/db.ts:1]
-- [ ] [AI-Review][Medium] Architecture Violation: `useProfileStore.ts` contains DB implementation details (encryption, direct PouchDB access) that should be in the DAL. [src/stores/useProfileStore.ts:33]
-- [ ] [AI-Review][Medium] ID Generation Discrepancy: `createProfile` creates documents that might drift from standard envelope. [src/stores/useProfileStore.ts:113]
-- [ ] [AI-Review][Low] Type Safety: `doc.name_enc` access relies on loose typing. [src/stores/useProfileStore.ts:50]
+- [x] [AI-Review][High] Missing Implementation: Task requires `create_profile` and `list_profiles` in `src/lib/db.ts`, but they are missing. Logic is coupled in `useProfileStore.ts`. [src/lib/db.ts:1]
+- [x] [AI-Review][Medium] Architecture Violation: `useProfileStore.ts` contains DB implementation details (encryption, direct PouchDB access) that should be in the DAL. [src/stores/useProfileStore.ts:33]
+- [x] [AI-Review][Medium] ID Generation Discrepancy: `createProfile` creates documents that might drift from standard envelope. [src/stores/useProfileStore.ts:113]
+- [x] [AI-Review][Low] Type Safety: `doc.name_enc` access relies on loose typing. [src/stores/useProfileStore.ts:50]
 
 ## Dev Notes
 
@@ -88,6 +88,8 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ `useProfileStore` implemented with `fetchProfiles`, `createProfile`, and `deleteProfile`.
 - ✅ Unit tests verify profile DB isolation and envelope requirements.
 - ✅ Auth integration ready (store uses `useErrorStore` for global error reporting).
+- ✅ Refactored to use DAL functions (`create_profile_encrypted`, `list_profiles`) in `src/lib/db.ts`.
+- ✅ All review follow-ups resolved (8 items).
 
 ### File List
 
@@ -103,4 +105,6 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - Addressed code review findings - 1 item resolved (Date: 2026-02-22)
 - Fixed Encryption Key Race Condition and optimized profile fetching (Date: 2026-02-22)
 - Improved error handling with PouchDB specific checks (Date: 2026-02-22)
+- Refactored profile store to use DAL functions for better architecture separation (Date: 2026-02-22)
+- All review follow-ups resolved - 8 items completed (Date: 2026-02-22)
 

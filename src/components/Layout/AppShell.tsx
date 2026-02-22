@@ -3,6 +3,7 @@ import { useUIStore } from '../../stores/useUIStore';
 import { Outlet, useParams } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, MonitorOff } from 'lucide-react';
 import { useErrorStore } from '../../stores/useErrorStore';
+import { useProfileStore } from '../../stores/useProfileStore';
 
 export const AppShell: React.FC = () => {
     const {
@@ -15,6 +16,10 @@ export const AppShell: React.FC = () => {
     const { profileId } = useParams();
     const prevWidthRef = React.useRef(window.innerWidth);
     const { dispatchError } = useErrorStore();
+    
+    // Fetch profile name for display
+    const [profileName, setProfileName] = useState<string>('');
+    const { profiles } = useProfileStore();
 
     useEffect(() => {
         setMounted(true);
@@ -29,6 +34,16 @@ export const AppShell: React.FC = () => {
             useUIStore.getState().setLeftSidebar(false);
         }
     }, [dispatchError]);
+
+    // Update profile name when profiles list changes or profileId changes
+    useEffect(() => {
+        if (profileId && profiles.length > 0) {
+            const profile = profiles.find(p => p.id === profileId);
+            if (profile) {
+                setProfileName(profile.name);
+            }
+        }
+    }, [profileId, profiles]);
 
     useEffect(() => {
         let timeoutId: number;
@@ -89,11 +104,11 @@ export const AppShell: React.FC = () => {
                 <div className="px-4 pt-3.5 pb-2.5 border-b border-zinc-800 shrink-0 flex items-center">
                     {leftSidebarOpen ? (
                         <div className="flex-1 overflow-hidden">
-                            <div className="text-sm font-semibold flex items-center gap-2">
-                                🌿 Ledgy
+                            <div className="flex items-center gap-2">
+                                <div className="text-sm font-semibold">🌿 Ledgy</div>
                             </div>
                             <div className="text-[11px] text-zinc-400 mt-0.5 truncate">
-                                Personal · {profileId || 'James'}
+                                Personal · {profileName || 'Loading...'}
                             </div>
                         </div>
                     ) : (
