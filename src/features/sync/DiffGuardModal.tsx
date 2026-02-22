@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
 import { X, Check, RotateCcw, SkipForward } from 'lucide-react';
 import { ConflictEntry } from './ConflictListSheet';
+import { useProfileStore } from '../../stores/useProfileStore';
+import { useSyncStore } from '../../stores/useSyncStore';
+import { resolveConflict, skipConflict } from '../../services/syncService';
+import { useErrorStore } from '../../stores/useErrorStore';
 
 interface DiffGuardModalProps {
     conflict: ConflictEntry;
@@ -13,6 +17,7 @@ interface DiffGuardModalProps {
 /**
  * Diff Guard Modal - Side-by-side comparison of conflicting versions
  * Story 5-3: Conflict Detection & Diff Guard Layout
+ * Story 5-4: Conflict Resolution (Accept/Reject)
  */
 export const DiffGuardModal: React.FC<DiffGuardModalProps> = ({
     conflict,
@@ -21,6 +26,11 @@ export const DiffGuardModal: React.FC<DiffGuardModalProps> = ({
     onSkip,
     onClose,
 }) => {
+    const { activeProfileId } = useProfileStore();
+    const { removeConflict } = useSyncStore();
+    const { dispatchError } = useErrorStore();
+    const [isResolving, setIsResolving] = React.useState(false);
+
     const { localVersion, remoteVersion, conflictingFields } = conflict;
 
     // Get all field names from both versions
@@ -30,6 +40,47 @@ export const DiffGuardModal: React.FC<DiffGuardModalProps> = ({
         Object.keys(remoteVersion.data || {}).forEach(f => fields.add(f));
         return Array.from(fields);
     }, [localVersion.data, remoteVersion.data]);
+
+    const handleAcceptLocal = async () => {
+        if (!activeProfileId) {
+            dispatchError('No active profile', 'error');
+            return;
+        }
+
+        setIsResolving(true);
+        try {
+            await resolveConflict(activeProfileId, conflict.entryId, 'local', conflict);
+            removeConflict(conflict.entryId);
+            onAcceptLocal();
+        } catch (err: any) {
+            dispatchError(err.message || 'Failed to accept local version', 'error');
+        } finally {
+            setIsResolving(false);
+        }
+    };
+
+    const handleAcceptRemote = async () => {
+        if (!activeProfileId) {
+            dispatchError('No active profile', 'error');
+            return;
+        }
+
+        setIsResolving(true);
+        try {
+            await resolveConflict(activeProfileId, conflict.entryId, 'remote', conflict);
+            removeConflict(conflict.entryId);
+            onAcceptRemote();
+        } catch (err: any) {
+            dispatchError(err.message || 'Failed to accept remote version', 'error');
+        } finally {
+            setIsResolving(false);
+        }
+    };
+
+    const handleSkip = () => {
+        skipConflict();
+        onSkip();
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -120,22 +171,25 @@ export const DiffGuardModal: React.FC<DiffGuardModalProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={onSkip}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition-colors"
+                            onClick={handleSkip}
+                            disabled={isResolving}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-300 rounded transition-colors"
                         >
                             <SkipForward size={14} />
                             Skip
                         </button>
                         <button
-                            onClick={onAcceptRemote}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors"
+                            onClick={handleAcceptRemote}
+                            disabled={isResolving}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
                             <RotateCcw size={14} />
                             Accept Remote
                         </button>
                         <button
-                            onClick={onAcceptLocal}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+                            onClick={handleAcceptLocal}
+                            disabled={isResolving}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
                         >
                             <Check size={14} />
                             Accept Local
