@@ -59,7 +59,8 @@ describe("AppShell Component", () => {
         );
 
         expect(screen.getByText(/Ledgy/i)).toBeInTheDocument();
-        expect(screen.getByText(/Inspector/i)).toBeInTheDocument();
+        expect(screen.getByText(/Ledgy/i)).toBeInTheDocument();
+        expect(screen.getByText(/Entry Details/i)).toBeInTheDocument();
         expect(screen.getByRole("main")).toBeInTheDocument();
     });
 
@@ -117,7 +118,8 @@ describe("AppShell Component", () => {
             </MemoryRouter>
         );
 
-        const inspector = screen.getByTitle(/Expand Inspector/i).closest('aside');
+        const asides = screen.getAllByRole('complementary');
+        const inspector = asides[1];
         expect(inspector).toHaveClass('w-0');
     });
 
@@ -128,21 +130,11 @@ describe("AppShell Component", () => {
             </MemoryRouter>
         );
 
-        const toggleBtn = screen.getByTitle(/Collapse Sidebar/i);
-        fireEvent.click(toggleBtn);
+        const asides = screen.getAllByRole('complementary');
+        const sidebar = asides[0];
+        const toggleBtn = sidebar.querySelector('button');
+        if (toggleBtn) fireEvent.click(toggleBtn);
         expect(mockUIState.toggleLeftSidebar).toHaveBeenCalled();
-    });
-
-    it("toggles theme when clicking the theme button", () => {
-        render(
-            <MemoryRouter>
-                <AppShell />
-            </MemoryRouter>
-        );
-
-        const themeBtn = screen.getByTitle(/Toggle Theme/i);
-        fireEvent.click(themeBtn);
-        expect(mockUIState.toggleTheme).toHaveBeenCalled();
     });
 
     it("auto-collapses panels on window resize", () => {

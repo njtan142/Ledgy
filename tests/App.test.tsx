@@ -16,6 +16,9 @@ vi.mock("../src/features/auth/UnlockPage", () => ({
 vi.mock("../src/features/dashboard/Dashboard", () => ({
     Dashboard: () => <div data-testid="dashboard-page">Dashboard Page</div>,
 }));
+vi.mock("../src/features/profiles/ProfileSelector", () => ({
+    ProfileSelector: () => <div data-testid="profile-selector">Profile Selector Placeholder</div>,
+}));
 
 // Mock useAuthStore and useIsRegistered
 vi.mock("../src/features/auth/useAuthStore", () => ({
@@ -24,16 +27,25 @@ vi.mock("../src/features/auth/useAuthStore", () => ({
 }));
 
 // Mock useUIStore to avoid hydration/persistence issues in tests
-vi.mock("../src/stores/useUIStore", () => ({
-    useUIStore: vi.fn(() => ({
+vi.mock("../src/stores/useUIStore", () => {
+    const mockState = {
         leftSidebarOpen: true,
         rightInspectorOpen: true,
         theme: 'dark',
         toggleLeftSidebar: vi.fn(),
         toggleRightInspector: vi.fn(),
         toggleTheme: vi.fn(),
-    })),
-}));
+        setRightInspector: vi.fn(),
+        setLeftSidebar: vi.fn(),
+    };
+    return {
+        useUIStore: Object.assign(vi.fn((selector?: any) => {
+            return selector ? selector(mockState) : mockState;
+        }), {
+            getState: vi.fn(() => mockState)
+        })
+    };
+});
 
 describe("App Routing Integration", () => {
     const mockUseAuthStore = useAuthStore as unknown as ReturnType<typeof vi.fn>;
