@@ -1,0 +1,242 @@
+# Story 3.2: Ledger Data Table & Inline Entry Routing
+
+Status: ready-for-dev
+
+<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+## Story
+
+As a user,
+I want to view my ledger in a dense data table and add/edit entries inline (via keyboard),
+So that tracking data feels as fast as thought.
+
+## Acceptance Criteria
+
+1. **Table Display:** Ledger entries display in a dense, scrollable data table with one row per entry and columns matching the schema fields. [Source: epics.md#Story 3.2]
+2. **Inline Add:** Pressing `N` or clicking "Add Entry" inserts a new inline row at the top of the table (no modal dialog). [Source: epics.md#Story 3.2]
+3. **Keyboard Navigation:** User can `Tab` between fields, `Enter` to commit, `Escape` to cancel, and `↑/↓` arrow keys to navigate rows. [Source: epics.md#Story 3.2]
+4. **Inline Edit:** Clicking any cell or pressing `Enter` on a selected row enables inline edit mode for that field. [Source: epics.md#Story 3.2]
+5. **Field-Type Inputs:** Each field type renders appropriate input: Text → text input, Number → number input, Date → date picker, Relation → combobox with target entries. [Source: epics.md#Story 3.2]
+6. **Commit Persistence:** Pressing `Enter` on the last field or clicking outside commits the entry to PouchDB via `create_entry` or `update_entry`. [Source: epics.md#Story 3.2]
+7. **Input Latency:** All input fields respond in <50ms (NFR1). [Source: epics.md#Story 3.2]
+8. **WCAG Compliance:** Table meets WCAG 2.1 AA contrast and keyboard navigation requirements. [Source: epics.md#Story 3.2]
+9. **Empty State:** Empty ledger shows instructional CTA: "No entries yet. Press N to create your first entry." [Source: UX Design Spec]
+
+## Tasks / Subtasks
+
+- [ ] Task 1: Ledger Table Component Foundation (AC: 1, 9)
+  - [ ] Create `LedgerTable` component in `src/features/ledger/`.
+  - [ ] Integrate Tanstack Table (`@tanstack/react-table`) for table logic.
+  - [ ] Render table headers from schema fields.
+  - [ ] Render rows from `list_entries` query.
+  - [ ] Implement empty state CTA.
+- [ ] Task 2: Inline Entry Row (AC: 2, 3, 4, 5)
+  - [ ] Implement `InlineEntryRow` component for add/edit mode.
+  - [ ] Handle `N` key global listener within ledger view.
+  - [ ] Implement `Tab`/`Enter`/`Escape` keyboard handlers.
+  - [ ] Implement `↑/↓` arrow key row navigation.
+  - [ ] Render field-type-specific inputs (Text, Number, Date, Relation).
+  - [ ] Relation field: Show combobox with target ledger entries.
+- [ ] Task 3: Entry Commit & Persistence (AC: 6, 7)
+  - [ ] Wire `create_entry` on `Enter` commit or blur.
+  - [ ] Wire `update_entry` for inline edits.
+  - [ ] Implement optimistic UI update before PouchDB confirmation.
+  - [ ] Handle errors via `useErrorStore` → `<ErrorToast />`.
+  - [ ] Verify input latency <50ms (profile with React DevTools).
+- [ ] Task 4: Accessibility & WCAG Compliance (AC: 8)
+  - [ ] Add `role="grid"`, `role="row"`, `role="gridcell"` ARIA attributes.
+  - [ ] Ensure focus ring: 2px emerald, offset-2.
+  - [ ] Verify contrast ratios meet WCAG 2.1 AA.
+  - [ ] Add `aria-label` to action buttons.
+  - [ ] Test with keyboard-only navigation.
+- [ ] Task 5: Integration & Testing
+  - [ ] Wire `LedgerTable` to Dashboard ledger selection.
+  - [ ] Add unit tests for `LedgerTable` rendering and keyboard handlers.
+  - [ ] Add unit tests for `InlineEntryRow` commit/cancel logic.
+  - [ ] Add integration test for full entry creation flow.
+  - [ ] Run Playwright E2E test for keyboard navigation.
+
+## Dev Notes
+
+### Technical Requirements
+
+**CRITICAL: Use existing git branch for Epic 3**
+- You MUST be on branch `epic/epic-3` for all commits
+- Do NOT create a new branch or work on main
+- All Epic 3 stories (3-1, 3-2, 3-3, 3-4) share this branch
+
+**Performance Guardrails:**
+- Input latency MUST be <50ms — profile with React DevTools Performance tab
+- Use `React.memo()` on `LedgerTable` rows to prevent unnecessary re-renders
+- Debounce PouchDB writes on blur (150ms) to batch rapid edits
+- Virtualize table rows if >100 entries (use `@tanstack/react-virtual`)
+
+**Architecture Compliance:**
+- All data operations go through `useLedgerStore` — no direct PouchDB calls in components
+- Error handling: catch in async handlers → dispatch to `useErrorStore` → display via `<ErrorToast />`
+- Loading state: `useLedgerStore().isLoading` — no local `useState` for async loading
+- Document envelope: All entries must have `_id: entry:${uuid}`, `type: 'entry'`, `schema_version`, `createdAt`, `updatedAt`
+
+**Code Patterns from Story 3.1:**
+- Follow `SchemaBuilder.tsx` component structure for consistency
+- Use same shadcn/ui components: `Table`, `Input`, `Select`, `Button`, `Card`
+- Co-locate tests: `LedgerTable.test.tsx` next to `LedgerTable.tsx`
+- Use `camelCase` for all TypeScript variables and PouchDB fields
+
+### Library/Framework Requirements
+
+**Required Dependencies:**
+- `@tanstack/react-table` — Table logic and state management
+- `@tanstack/react-virtual` — Row virtualization for large datasets (optional if >100 entries)
+- `date-fns` — Date formatting and parsing (if not already installed)
+
+**DO NOT Install:**
+- Heavy table libraries (e.g., AG-Grid, Material-UI Table) — violates NFR3 (<10MB binary)
+- Date picker libraries — use native `<input type="date" />` for MVP
+
+### File Structure Requirements
+
+```
+src/features/ledger/
+├── LedgerTable.tsx          # NEW: Main table component
+├── LedgerTable.test.tsx     # NEW: Unit tests
+├── InlineEntryRow.tsx       # NEW: Inline add/edit row
+├── InlineEntryRow.test.tsx  # NEW: Unit tests
+├── SchemaBuilder.tsx        # EXISTING: From Story 3.1
+└── useLedgerStore.ts        # EXISTING: Extend with entry queries
+```
+
+### Testing Requirements
+
+**Unit Tests (Vitest):**
+- `LedgerTable` renders empty state correctly
+- `LedgerTable` renders entries with correct field values
+- `InlineEntryRow` handles `N` key trigger
+- `InlineEntryRow` commits on `Enter`, cancels on `Escape`
+- `InlineEntryRow` validates required fields
+- Keyboard navigation (`↑/↓/Tab`) works correctly
+
+**Integration Tests:**
+- Full entry creation flow: Press `N` → fill fields → `Enter` → entry appears in table
+- Inline edit: Click cell → modify → blur → change persists
+- Relation field: Select target entry → link saves correctly
+
+**E2E Tests (Playwright):**
+- Keyboard-only navigation through entire table
+- Input latency measurement (automated performance test)
+
+### Previous Story Intelligence (from 3-1)
+
+**Files Created/Modified:**
+- `src/types/ledger.ts` — LedgerSchema, LedgerEntry, SchemaField, FieldType types
+- `src/lib/db.ts` — create_schema, update_schema, list_schemas, get_schema, create_entry, update_entry, delete_entry
+- `src/stores/useLedgerStore.ts` — Zustand store with full CRUD operations
+- `src/features/ledger/SchemaBuilder.tsx` — Schema builder UI component
+- `src/features/dashboard/Dashboard.tsx` — Integrated SchemaBuilder
+
+**Code Patterns Established:**
+- Schema document structure:
+  ```typescript
+  {
+    _id: `schema:${uuid}`,
+    _type: 'schema',
+    schema_version: 1,
+    createdAt: ISO8601,
+    updatedAt: ISO8601,
+    name: string,
+    fields: Array<{
+      name: string,
+      type: 'text' | 'number' | 'date' | 'relation',
+      relationTarget?: string
+    }>
+  }
+  ```
+- Entry document structure (follow same pattern):
+  ```typescript
+  {
+    _id: `entry:${uuid}`,
+    _type: 'entry',
+    schema_version: 1,
+    createdAt: ISO8601,
+    updatedAt: ISO8601,
+    ledgerId: string,
+    fields: Record<string, string | number | Date>
+  }
+  ```
+
+**Testing Approach:**
+- 65 tests passing in Story 3-1
+- Use `describe()` blocks for component, integration, and edge cases
+- Mock PouchDB in unit tests
+- Use `renderWithProviders()` wrapper for React Testing Library
+
+**Problems Encountered & Solutions:**
+- Dashboard integration required replacing placeholder alert with actual modal
+- Ensure all tests co-located with source files
+
+### Git Intelligence (Recent Commits)
+
+Recent work on Epic 3 (Story 3-1) established:
+- Schema Builder UI with field management
+- DAL functions for schema/entry CRUD
+- Zustand store for ledger state
+- Dashboard integration
+
+**Commit Pattern:**
+- Feature commits: `feat(epic-3): {description}`
+- Fix commits: `fix(epic-3): {description}`
+- Always push after story completion and create PR to main
+
+### Project Context Reference
+
+**Critical Rules from project-context.md:**
+- TypeScript strict mode enforced
+- `camelCase` for TypeScript variables, PouchDB fields
+- `PascalCase` for React components
+- `snake_case` for Tauri Rust commands
+- ISO 8601 dates with timezone offset
+- Zustand stores own `isLoading` and `error`
+- No local `useState` for async loading
+- Errors dispatched to `useErrorStore` → `<ErrorToast />`
+- Auth guard wraps all routes except `/setup` and `/unlock`
+- PouchDB envelope: `_id: {type}:{uuid}`, `type`, `schema_version`, `createdAt`, `updatedAt`
+- Ghost References: `isDeleted: true`, `deletedAt: timestamp`
+- Plugin isolation: No direct PouchDB access from plugins
+- Zero telemetry — no analytics libraries
+- Branch creation: Work on `epic/epic-3` branch
+- Tests co-located: `{filename}.test.tsx` next to `{filename}.tsx`
+
+### References
+
+- [Source: planning-artifacts/epics.md#Story 3.2]
+- [Source: planning-artifacts/architecture.md#Frontend Architecture]
+- [Source: planning-artifacts/architecture.md#PouchDB Document Envelope]
+- [Source: planning-artifacts/architecture.md#Implementation Patterns]
+- [Source: docs/project-context.md#Critical Implementation Rules]
+- [Source: implementation-artifacts/3-1-schema-builder-ui.md#Dev Agent Record]
+
+## Dev Agent Record
+
+### Agent Model Used
+
+{{agent_model_name_version}}
+
+### Implementation Plan
+
+<!-- To be filled by dev agent -->
+
+### Debug Log References
+
+<!-- To be filled by dev agent -->
+
+### Completion Notes List
+
+<!-- To be filled by dev agent -->
+
+### File List
+
+<!-- To be filled by dev agent -->
+
+### Change Log
+
+<!-- To be filled by dev agent -->
