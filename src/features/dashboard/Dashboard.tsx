@@ -5,6 +5,7 @@ import { EmptyDashboard } from './EmptyDashboard';
 import { SchemaBuilder } from '../ledger/SchemaBuilder';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { LedgerTable } from '../ledger/LedgerTable';
+import { ExportTemplateButton } from '../templates/ExportTemplateButton';
 
 export const Dashboard: React.FC = () => {
     const { toggleRightInspector, rightInspectorOpen } = useUIStore();
@@ -46,11 +47,15 @@ export const Dashboard: React.FC = () => {
                     )}
                 </div>
 
-                {!rightInspectorOpen && (
-                    <button onClick={toggleRightInspector} className="ml-2 text-zinc-400 hover:text-zinc-200" title="Open Inspector">
-                        <PanelRightOpen size={16} />
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    {hasLedgers && <ExportTemplateButton />}
+                    
+                    {!rightInspectorOpen && (
+                        <button onClick={toggleRightInspector} className="ml-2 text-zinc-400 hover:text-zinc-200" title="Open Inspector">
+                            <PanelRightOpen size={16} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Table Area / Main Content */}

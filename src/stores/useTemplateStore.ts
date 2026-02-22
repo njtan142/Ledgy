@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { useErrorStore } from './useErrorStore';
+import { useProfileStore } from './useProfileStore';
+import { getProfileDb } from '../lib/db';
 import { TemplateExport, TemplateImportResult } from '../types/templates';
+import {
+    export_template,
+    generateTemplateFilename,
+    downloadTemplateBrowser,
+    saveTemplateTauri,
+    isTauri,
+} from '../lib/templateExport';
 
 interface TemplateState {
     isExporting: boolean;
@@ -8,7 +17,7 @@ interface TemplateState {
     error: string | null;
 
     // Actions
-    exportTemplate: (profileId: string, includeNodeGraph?: boolean) => Promise<TemplateExport>;
+    exportTemplate: (includeNodeGraph?: boolean) => Promise<void>;
     importTemplate: (template: TemplateExport, profileId: string) => Promise<TemplateImportResult>;
 }
 
@@ -17,20 +26,38 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
     isImporting: false,
     error: null,
 
-    exportTemplate: async (profileId: string, includeNodeGraph = false) => {
+    exportTemplate: async (includeNodeGraph = true) => {
         set({ isExporting: true, error: null });
         try {
-            // TODO: Implement export_schema_graph in db.ts
-            // TODO: Use Tauri dialog for file save
-            const template: TemplateExport = {
-                exportVersion: '1.0',
-                exportedAt: new Date().toISOString(),
-                profileName: `Profile ${profileId}`,
-                schemas: [],
-                nodeGraph: includeNodeGraph ? undefined : undefined,
-            };
+            const state = useProfileStore.getState();
+            if (!state.activeProfileId) {
+                throw new Error('No active profile selected');
+            }
+
+            const db = getProfileDb(state.activeProfileId);
+            const profile = state.profiles.find(p => p.id === state.activeProfileId);
+            const profileName = profile?.name || `Profile ${state.activeProfileId}`;
+
+            // Export template
+            const template = await export_template(db, includeNodeGraph, profileName);
+            const filename = generateTemplateFilename(profileName);
+
+            // Save based on environment
+            if (isTauri()) {
+                const filePath = await saveTemplateTauri(template, filename);
+                if (filePath) {
+                    console.log('Template saved to:', filePath);
+                } else {
+                    // User cancelled
+                    set({ isExporting: false });
+                    return;
+                }
+            } else {
+                // Browser download
+                downloadTemplateBrowser(template, filename);
+            }
+
             set({ isExporting: false });
-            return template;
         } catch (err: any) {
             const errorMsg = err.message || 'Failed to export template';
             set({ error: errorMsg, isExporting: false });
