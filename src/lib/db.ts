@@ -73,6 +73,12 @@ export class Database {
         delete profileDatabases[this.profileId];
         return result;
     }
+
+    async close() {
+        const result = await this.db.close();
+        delete profileDatabases[this.profileId];
+        return result;
+    }
 }
 
 // Global registry for currently active profile DBs
@@ -86,6 +92,16 @@ export function getProfileDb(profileId: string): Database {
         profileDatabases[profileId] = new Database(profileId);
     }
     return profileDatabases[profileId];
+}
+
+/**
+ * Closes and removes a profile DB from the active registry.
+ * This is important for garbage collection when switching profiles.
+ */
+export async function closeProfileDb(profileId: string): Promise<void> {
+    if (profileDatabases[profileId]) {
+        await profileDatabases[profileId].close();
+    }
 }
 
 /**

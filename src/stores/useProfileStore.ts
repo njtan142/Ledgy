@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ProfileMetadata } from '../types/profile';
-import { getProfileDb } from '../lib/db';
+import { getProfileDb, closeProfileDb } from '../lib/db';
 import { useErrorStore } from './useErrorStore';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { encryptPayload, decryptPayload } from '../lib/crypto';
@@ -75,7 +75,11 @@ export const useProfileStore = create<ProfileState>()(
                 }
             },
 
-            setActiveProfile: (id: string) => {
+            setActiveProfile: async (id: string) => {
+                const currentId = get().activeProfileId;
+                if (currentId && currentId !== id) {
+                    await closeProfileDb(currentId);
+                }
                 set({ activeProfileId: id });
             },
 
@@ -85,11 +89,11 @@ export const useProfileStore = create<ProfileState>()(
                     const masterDb = getProfileDb('master');
                     const encryptionKey = useAuthStore.getState().encryptionKey;
 
-                    let docData: any = { type: 'profile' };
-
                     if (!encryptionKey) {
                         throw new Error('Encryption key is required to create a profile.');
                     }
+
+                    let docData: any = { type: 'profile' };
 
                     const nameEnc = await encryptPayload(encryptionKey, name);
                     docData.name_enc = {
@@ -123,15 +127,20 @@ export const useProfileStore = create<ProfileState>()(
                 set({ isLoading: true, error: null });
                 try {
                     const masterDb = getProfileDb('master');
-                    const profileDb = getProfileDb(id);
-                    await profileDb.destroy();
 
+                    // 1. Fetch from master first
                     const profileDoc = await masterDb.getDocument<any>(id);
+
+                    // 2. Mark as deleted in master to prevent Ghost Profile risk if destruction fails
                     await masterDb.updateDocument(id, {
                         ...profileDoc,
                         isDeleted: true,
                         deletedAt: new Date().toISOString()
                     });
+
+                    // 3. Destroy actual profile database
+                    const profileDb = getProfileDb(id);
+                    await profileDb.destroy();
 
                     await get().fetchProfiles();
                     if (get().activeProfileId === id) {

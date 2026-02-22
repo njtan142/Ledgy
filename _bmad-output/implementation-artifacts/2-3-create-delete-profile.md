@@ -1,6 +1,6 @@
 # Story 2.3: Create & Delete Profile
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -37,9 +37,9 @@ so that my tracking spaces stay organized and I can fully remove data I want gon
 - [x] [AI-Review][High] Add logic to check for a configured remote sync endpoint and warn user that remote data must be purged separately before deletion.
 - [x] [AI-Review][Medium] Fix memory leak in `src/lib/db.ts` by removing closed PouchDB instances from `profileDatabases` registry upon deletion.
 - [x] [AI-Review][Medium] Fix `updateDocument()` in `src/lib/db.ts` to prevent overwriting immutable envelope fields like `createdAt` and `schema_version`.
-- [ ] [AI-Review][High] In `useProfileStore.ts`, remove the unencrypted fallback in `createProfile`. If `encryptionKey` is missing, throw an error.
-- [ ] [AI-Review][Medium] Fix Ghost Profile Risk in `deleteProfile`: Ensure failure when updating the master DB handles rollback or prevents app crash on selection.
-- [ ] [AI-Review][Low] Fix PouchDB Instances Memory Leak: Implement garbage collection or `.close()` for profiles when switching away from them in `db.ts`.
+- [x] [AI-Review][High] In `useProfileStore.ts`, remove the unencrypted fallback in `createProfile`. If `encryptionKey` is missing, throw an error.
+- [x] [AI-Review][Medium] Fix Ghost Profile Risk in `deleteProfile`: Ensure failure when updating the master DB handles rollback or prevents app crash on selection.
+- [x] [AI-Review][Low] Fix PouchDB Instances Memory Leak: Implement garbage collection or `.close()` for profiles when switching away from them in `db.ts`.
 
 ## Dev Notes
 
