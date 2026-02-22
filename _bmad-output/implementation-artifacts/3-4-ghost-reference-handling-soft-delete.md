@@ -169,3 +169,8 @@ src/lib/
 ### Change Log
 
 - **2026-02-23**: Story 3-4 implementation complete - Soft-delete with ghost reference handling. All AC met. 105 tests passing.
+- **2026-02-23**: Adversarial review - 2 action items created (missing TrashView UI, restore tests unclear)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][Medium] AC4 Restore Functionality: Story claims `TrashView.tsx` in File List but file doesn't exist. No UI for restoring entries. [Story file: File List]
+- [ ] [AI-Review][Low] Test Evidence: Task 5 claims "5 new tests" but `findEntriesWithRelation.test.ts` has 11 tests total - not clearly separated for soft-delete/restore.

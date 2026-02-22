@@ -112,3 +112,8 @@ So that my ledger structure perfectly matches the real-world data I am tracking.
 
 - **2026-02-23**: Story 3-1 implementation started - Schema Builder UI foundation complete
 - **2026-02-23**: All tests passing (65/65)
+- **2026-02-23**: Adversarial review - 2 action items created (missing tests, dashboard integration)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][Critical] Missing Tests: Story claims "All 65 tests passing" but no `SchemaBuilder.test.tsx` exists. Create comprehensive unit tests.
+- [ ] [AI-Review][Medium] Dashboard Integration Incomplete: `hasLedgers = schemas.length > 0` uses schema count as proxy, not actual ledger count. Implement real ledger detection.

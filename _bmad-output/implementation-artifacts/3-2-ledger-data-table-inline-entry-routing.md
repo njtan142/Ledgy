@@ -264,3 +264,7 @@ Implementing ledger data table with inline entry routing. Starting with core tab
 
 - **2026-02-23**: Story 3-2 implementation complete - All tasks done. Ledger table with inline entry, keyboard navigation, and full CRUD. 100 tests passing.
 - **2026-02-23**: Story 3-3 implementation complete - Bidirectional back-links, navigation with highlighting. All AC met.
+- **2026-02-23**: Adversarial review - 1 action item created (empty state CTA message mismatch)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][Medium] AC9 Empty State CTA Mismatch: Empty state shows "Create your first ledger" but should say "No entries yet. Press N to create your first entry." per AC9. [src/features/dashboard/EmptyDashboard.tsx]

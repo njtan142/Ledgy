@@ -174,3 +174,9 @@ src/workers/
 ### Change Log
 
 - **2026-02-23**: Story 4-3 implementation complete - Correlation and arithmetic compute nodes with web worker execution. All AC met. 105 tests passing.
+- **2026-02-23**: Adversarial review - 3 action items created (missing worker tests, calculation accuracy tests, main-thread blocking tests)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][High] Missing Worker Tests: Web worker exists but no `computation.worker.test.ts` exists. Test Pearson correlation accuracy and arithmetic operations.
+- [ ] [AI-Review][High] Task 5 Incomplete: Claims "Unit tests for correlation calculation accuracy" - no tests exist. Add tests with known input/output pairs.
+- [ ] [AI-Review][Medium] AC4 Web Worker: No tests proving main-thread doesn't block during computation. Add performance tests.

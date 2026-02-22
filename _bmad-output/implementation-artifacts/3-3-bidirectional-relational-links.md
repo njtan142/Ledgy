@@ -169,3 +169,9 @@ Implementing bidirectional relational links for Story 3.3. Creating relation tag
 ### Change Log
 
 - **2026-02-23**: Story 3-3 implementation - Tasks 1-2 complete. Relation chips display, combobox selector functional. 85 tests passing.
+- **2026-02-23**: Adversarial review - 3 action items created (incomplete wiring, missing back-links tests, navigation highlighting)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][High] Task 2 Incomplete: `RelationCombobox` not wired to `list_entries` - doesn't populate from actual ledger entries. [src/features/ledger/RelationCombobox.tsx]
+- [ ] [AI-Review][High] Task 3 Incomplete: `BackLinksPanel.tsx` exists but has no tests, query logic untested. [src/features/ledger/BackLinksPanel.tsx]
+- [ ] [AI-Review][High] Task 4 Incomplete: Navigation with highlighting claimed but `LedgerView.tsx` highlighting not implemented. [src/features/ledger/LedgerView.tsx]

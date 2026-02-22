@@ -183,3 +183,9 @@ src/stores/
 ### Change Log
 
 - **2026-02-23**: Story 4-4 implementation complete - Autonomous triggers with loop prevention. All AC met. 105 tests passing.
+- **2026-02-23**: Adversarial review - 3 action items created (missing integration, no event subscribers, missing tests)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][Critical] AC2 Event Detection: `triggerEngine.ts` exists but no integration with `useLedgerStore` - event emission claimed but no subscribers wired. [src/stores/useLedgerStore.ts]
+- [ ] [AI-Review][High] Missing Tests: Task 5 claims "Integration test: Create entry → trigger fires" - no tests exist. Add `triggerEngine.test.ts`.
+- [ ] [AI-Review][High] AC3 Downstream Execution: No evidence triggers actually execute downstream nodes. Wire trigger engine to node execution.

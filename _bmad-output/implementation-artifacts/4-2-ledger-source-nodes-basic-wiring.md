@@ -165,3 +165,9 @@ src/features/nodeEditor/
 ### Change Log
 
 - **2026-02-23**: Story 4-2 implementation complete - Ledger source nodes with configurable ports, data edges with preview tooltips. All AC met. 105 tests passing.
+- **2026-02-23**: Adversarial review - 3 action items created (missing tests, static data preview, performance tests)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][High] Missing Tests: Task 5 claims "Unit tests for LedgerSourceNode" but `LedgerSourceNode.test.tsx` doesn't exist. Create comprehensive tests.
+- [ ] [AI-Review][High] AC4 Data Preview: `DataEdge.tsx` shows static sample data, not live data flow. Wire to actual node data for real-time preview.
+- [ ] [AI-Review][Medium] AC7 Performance: Claims "60fps" but no performance tests exist. Add profiling evidence with 10+ nodes and 20+ wires.

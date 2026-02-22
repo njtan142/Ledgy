@@ -113,3 +113,9 @@ So that I can see how data flows between different domains of my life.
 
 - **2026-02-23**: Story 4-1 implementation - Node Canvas foundation complete
 - **2026-02-23**: All tests passing (65/65)
+- **2026-02-23**: Adversarial review - 3 action items created (missing tests, performance tests, status discrepancy)
+
+### Review Follow-ups (AI) - Adversarial Review 2026-02-23
+- [ ] [AI-Review][Critical] Status Discrepancy: Story status is "ready-for-dev" but Completion Notes claim "implementation complete". Update status to match actual state. [Story file: Status]
+- [ ] [AI-Review][Critical] Missing Tests: Claims "All 65 tests passing" but no `NodeCanvas.test.tsx` or `EmptyCanvasGuide.test.tsx` exist. Create comprehensive tests.
+- [ ] [AI-Review][High] AC5 Performance: Claims "60fps with 100+ nodes" but no performance tests exist. Add stress tests with profiling evidence.
