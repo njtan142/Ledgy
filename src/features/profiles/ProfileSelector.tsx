@@ -12,6 +12,7 @@ export const ProfileSelector: React.FC = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [createName, setCreateName] = useState('');
     const [createDesc, setCreateDesc] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
 
     const [deleteProfileId, setDeleteProfileId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -34,6 +35,7 @@ export const ProfileSelector: React.FC = () => {
     const handleConfirmCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!createName.trim()) return;
+        setIsCreating(true);
         try {
             const newProfileId = await useProfileStore.getState().createProfile(createName.trim(), createDesc.trim());
             setIsCreateDialogOpen(false);
@@ -42,6 +44,8 @@ export const ProfileSelector: React.FC = () => {
             navigate(`/app/${newProfileId}`);
         } catch (err) {
             // Error already handled by store
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -182,9 +186,12 @@ export const ProfileSelector: React.FC = () => {
                             </button>
                             <button
                                 type="submit"
-                                disabled={!createName.trim()}
-                                className="px-4 py-2 rounded-lg font-medium bg-emerald-500 text-white dark:text-zinc-950 hover:bg-emerald-600 dark:hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:ring-2 focus:ring-emerald-500/50"
+                                disabled={!createName.trim() || isCreating}
+                                className="px-4 py-2 rounded-lg font-medium bg-emerald-500 text-white dark:text-zinc-950 hover:bg-emerald-600 dark:hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:ring-2 focus:ring-emerald-500/50 flex items-center gap-2"
                             >
+                                {isCreating && (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                )}
                                 Create
                             </button>
                         </div>
@@ -205,12 +212,14 @@ export const ProfileSelector: React.FC = () => {
                                 <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-4">
                                     <span className="font-semibold text-red-600 dark:text-red-400">This will permanently delete all local data for this profile.</span> This operation cannot be undone.
                                 </p>
-                                {/* Sync Warning - Always shown since sync is planned for Epic 5 */}
-                                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3">
-                                    <p className="text-amber-700 dark:text-amber-500 text-sm font-medium">
-                                        Note: When sync is enabled (Epic 5), remote data must be purged separately.
-                                    </p>
-                                </div>
+                                {/* Sync Warning - Only shown if profile has remote sync configured (AC5) */}
+                                {profileToDelete.remoteSyncEndpoint && (
+                                    <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3">
+                                        <p className="text-amber-700 dark:text-amber-500 text-sm font-medium">
+                                            Warning: This profile has a configured sync endpoint. You must purge remote data separately.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

@@ -6,13 +6,14 @@ import { EmptyDashboard } from './EmptyDashboard';
 export const Dashboard: React.FC = () => {
     const { toggleRightInspector, rightInspectorOpen } = useUIStore();
 
-    // TODO: Implement actual ledger detection when ledgers are implemented in Epic 3
-    // For now, always show empty state as per Story 2.4 requirements
+    // TODO: Replace with actual ledger count check when Epic 3 (Relational Ledger Engine) is implemented
+    // Current implementation: Always shows empty state for Story 2.4 MVP
+    // Future: const hasLedgers = ledgers.length > 0;
     const hasLedgers = false;
 
     const handleCreateLedger = () => {
-        // Placeholder until Schema Builder is implemented (Epic 3)
-        // Using a simple alert for now since notification system is meant for user feedback, not feature placeholders
+        // TODO: Replace alert with proper modal/route to Schema Builder when Epic 3 is implemented
+        // For now, using alert to avoid misusing the notification system for unimplemented features
         alert('Schema Builder will be available in Epic 3. This will let you define custom ledger schemas with field types.');
     };
 
