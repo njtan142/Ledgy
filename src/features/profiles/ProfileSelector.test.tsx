@@ -42,7 +42,7 @@ describe('ProfileSelector', () => {
         // Navigation verification usually requires mocking useNavigate or checking window.location
     });
 
-    it('calls createProfile on "New Profile" click', async () => {
+    it('opens create dialog and calls createProfile on submit', async () => {
         const createProfileSpy = vi.spyOn(useProfileStore.getState(), 'createProfile').mockResolvedValue(undefined);
 
         renderWithRouter(<ProfileSelector />);
@@ -50,6 +50,13 @@ describe('ProfileSelector', () => {
         const newProfileBtn = screen.getByText('New Profile');
         fireEvent.click(newProfileBtn);
 
-        expect(createProfileSpy).toHaveBeenCalled();
+        const nameInput = screen.getByPlaceholderText('e.g. Personal Ledger');
+        fireEvent.change(nameInput, { target: { value: 'My New Profile' } });
+
+        // There are multiple "Create" texts (heading + button), so we find the button specifically
+        const createSubmitBtn = screen.getAllByText('Create').find(el => el.tagName === 'BUTTON');
+        if (createSubmitBtn) fireEvent.click(createSubmitBtn);
+
+        expect(createProfileSpy).toHaveBeenCalledWith('My New Profile', '');
     });
 });

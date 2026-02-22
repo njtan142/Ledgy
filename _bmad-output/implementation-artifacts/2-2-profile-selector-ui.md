@@ -1,6 +1,6 @@
 # Story 2.2: Profile Selector UI
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,7 +32,7 @@ so that I can choose which workspace to enter.
   - [x] Integrate with auth layer properly.
 
 ### Review Follow-ups (AI)
-- [ ] [AI-Review][High] Fix the theme (dark or light mode) selection as it is currently not working.
+- [x] [AI-Review][High] Fix the theme (dark or light mode) selection as it is currently not working.
 
 ## Dev Notes
 
@@ -72,6 +72,7 @@ Antigravity (Gemini 2.0 Flash Thinking)
 - ✅ Profile list rendering with name, description, and creation date.
 - ✅ Active selection navigation to `/app/:profileId`.
 - ✅ "New Profile" button functional for quick creation.
+- ✅ Resolved review finding [High]: Fix the theme (dark or light mode) selection as it is currently not working.
 
 ### File List
 
