@@ -1,30 +1,63 @@
 import PouchDB from 'pouchdb';
 import { v4 as uuidv4 } from 'uuid';
+import { LedgyDocument } from '../types/profile';
 
-// In a real implementation we would dynamically load plugins or use different adapters
-// For now, standard indexeddb adapter is the default in the browser
+// We use the 'pouchdb-browser' which includes the IndexedDB adapter by default
 export class Database {
     private db: PouchDB.Database;
+    private profileId: string;
 
     constructor(profileId: string) {
-        this.db = new PouchDB(`ledgy_${profileId}`);
+        this.profileId = profileId;
+        // Architecture: "Ensure database naming/prefixing prevents intersection."
+        // Format: ledgy_profile_{id}
+        this.db = new PouchDB(`ledgy_profile_${profileId}`);
     }
 
-    // Example core operation
-    async createDocument(type: string, data: any) {
-        const doc = {
+    /**
+     * Create a new document with the standard Ledgy envelope.
+     * ID Scheme: {type}:{uuid}
+     */
+    async createDocument<T extends object>(type: string, data: T): Promise<PouchDB.Core.Response> {
+        const now = new Date().toISOString();
+        const doc: LedgyDocument & T = {
             _id: `${type}:${uuidv4()}`,
             type: type,
             schema_version: 1,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: now,
+            updatedAt: now,
             ...data,
         };
         return await this.db.put(doc);
     }
 
-    async getAllDocuments() {
-        return await this.db.allDocs({ include_docs: true });
+    async getDocument<T>(id: string): Promise<T & PouchDB.Core.IdMeta & PouchDB.Core.GetMeta> {
+        return await this.db.get<T>(id);
+    }
+
+    async updateDocument<T extends object>(id: string, data: T): Promise<PouchDB.Core.Response> {
+        const existing = await this.db.get<LedgyDocument>(id);
+
+        // Prevent overwriting immutable envelope fields
+        const { _id, _rev, createdAt, schema_version, type, ...restData } = data as any;
+
+        const updatedDoc = {
+            ...existing,
+            ...restData,
+            updatedAt: new Date().toISOString(),
+        };
+        return await this.db.put(updatedDoc);
+    }
+
+    async getAllDocuments<T>(type?: string): Promise<T[]> {
+        const result = await this.db.allDocs({
+            include_docs: true,
+            startkey: type ? `${type}:` : undefined,
+            endkey: type ? `${type}:\ufff0` : undefined,
+        });
+        return result.rows
+            .map(row => row.doc as unknown as T)
+            .filter(doc => doc !== undefined);
     }
 
     // Example sync operation
@@ -34,14 +67,46 @@ export class Database {
             retry: true,
         });
     }
+
+    async destroy() {
+        const result = await this.db.destroy();
+        delete profileDatabases[this.profileId];
+        return result;
+    }
+
+    async close() {
+        const result = await this.db.close();
+        delete profileDatabases[this.profileId];
+        return result;
+    }
 }
 
 // Global registry for currently active profile DBs
-const profileDatabases: Record<string, Database> = {};
+let profileDatabases: Record<string, Database> = {};
 
+/**
+ * Returns a dedicated PouchDB instance for a given profile ID.
+ */
 export function getProfileDb(profileId: string): Database {
     if (!profileDatabases[profileId]) {
         profileDatabases[profileId] = new Database(profileId);
     }
     return profileDatabases[profileId];
+}
+
+/**
+ * Closes and removes a profile DB from the active registry.
+ * This is important for garbage collection when switching profiles.
+ */
+export async function closeProfileDb(profileId: string): Promise<void> {
+    if (profileDatabases[profileId]) {
+        await profileDatabases[profileId].close();
+    }
+}
+
+/**
+ * Internal helper to clear the registry (mainly for tests).
+ */
+export function _clearProfileDatabases() {
+    profileDatabases = {};
 }

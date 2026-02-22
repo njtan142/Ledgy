@@ -1,0 +1,84 @@
+# Story 2.4: First-Launch Empty State Experience
+
+Status: review
+
+<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+## Story
+
+As a new user,
+I want to see a clean welcome state when I create my first profile,
+so that I understand how to begin without being overwhelmed by choice.
+
+## Acceptance Criteria
+
+1. **Dashboard Landing:** A freshly created profile with no ledgers lands on the main dashboard showing a helpful empty state. [Source: epics.md#Story 2.4]
+2. **Onboarding Message:** The UI displays an instructional CTA: "Welcome to Ledgy! Create your first ledger to get started." [Source: epics.md#Story 2.4]
+3. **Template Deferral:** The "Template Picker" logic is deferred until built-in templates are defined in a later epic. [Source: epics.md#Story 2.4]
+
+## Tasks / Subtasks
+
+- [x] Task 1: Dashboard Base Page (AC: 1)
+  - [x] Implement `DashboardPage` in `src/features/dashboard/`.
+  - [x] Configure route for `/app/:profileId/` to render `DashboardPage`.
+- [x] Task 2: Empty State Component (AC: 2)
+  - [x] Create `EmptyDashboard` component with the welcome message and CTA.
+  - [x] Implement logic to detect when the ledger list is empty (for now, it will always be empty).
+- [x] Task 3: Placeholder CTA
+  - [x] The "Create your first ledger" button should be a placeholder or simple link to the (not yet implemented) Schema Builder.
+
+### Review Follow-ups (AI)
+- [x] [AI-Review][Critical] `Dashboard.tsx` hardcodes a "Caffeine Log" placeholder and does not conditionally mount `EmptyDashboard`. Make it mount conditionally and fix failing tests in `Dashboard.test.tsx`.
+- [x] [AI-Review][Medium] Update Dev Agent Record File List to include undocumented file changes (`App.tsx`, `AppShell.tsx`, `package-lock.json`).
+- [x] [AI-Review][Medium] Missing Fallback UI: no skeleton loading state in `AppShell` means users may see a jarring flash of normal dashboard layout before empty state. [src/features/app-shell/AppShell.tsx:l]
+- [x] [AI-Review][Low] Hardcoded Placeholder Action: "Create Ledger" CTA triggers global info toast through error store, misusing it. [src/features/dashboard/EmptyDashboard.tsx]
+
+## Dev Notes
+
+- **Empty States:** Ledger empty → instructional CTA. [Source: UX Design Spec#Empty States]
+- **Design System:** Use `shadcn/ui` components.
+- **Breakpoints:** Ensure the dashboard shell (from Epic 1) handles the empty state correctly across all breakpoints.
+
+### Project Structure Notes
+
+- Dashboard logic in `src/features/dashboard/`.
+
+### References
+
+- [Source: planning-artifacts/epics.md#Story 2.4]
+- [Source: planning-artifacts/ux-design-specification.md#Empty States]
+
+## Dev Agent Record
+
+### Agent Model Used
+
+Antigravity (Gemini 2.0 Flash Thinking)
+
+### Debug Log References
+
+- Set up `EmptyDashboard` component with Lucide `Plus` icon and welcome layout.
+- Rewrote `Dashboard.tsx` to mount `EmptyDashboard` conditionally.
+- Implemented temporary placeholder function for CTA using global `dispatchError('...', 'info')`.
+
+### Completion Notes List
+
+- ✅ Route for `/app/:profileId/` to `Dashboard` verified via `App.tsx` and tests.
+- ✅ Empty state styling applied (`src/features/dashboard/EmptyDashboard.tsx`).
+- ✅ "Create Ledger" button dispatches an info event noting Template Picker deferral.
+- ✅ Resolved review finding [Medium]: Added skeleton loading state to AppShell to prevent jarring flash.
+- ✅ Resolved review finding [Low]: Implemented `useNotificationStore` for non-error messages.
+- ✅ Updated `Dashboard.tsx` to use the new notification system for CTA placeholder.
+
+### File List
+- `src/features/dashboard/Dashboard.tsx`
+- `src/features/dashboard/Dashboard.test.tsx`
+- `src/features/dashboard/EmptyDashboard.tsx`
+- `src/features/dashboard/EmptyDashboard.test.tsx`
+- `src/App.tsx`
+- `src/components/Layout/AppShell.tsx`
+- `src/components/NotificationToast.tsx`
+- `src/stores/useNotificationStore.ts`
+- `package-lock.json`
+
+### Change Log
+- Addressed code review findings - 2 items resolved (Date: 2026-02-22)

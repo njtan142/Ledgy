@@ -9,7 +9,7 @@
     EVERYTHING needed for flawless implementation</critical>
   <critical>COMMON LLM MISTAKES TO PREVENT: reinventing wheels, wrong libraries, wrong file locations, breaking regressions, ignoring UX,
     vague implementations, lying about completion, not learning from past work</critical>
-  <critical>Always include a technical requirement for the developer to create and use a new git branch for the story</critical>
+  <critical>Always include a technical requirement for the developer to use the existing git branch for the epic</critical>
   <critical>🚨 EXHAUSTIVE ANALYSIS REQUIRED: You must thoroughly analyze ALL artifacts to extract critical context - do NOT be lazy or skim!
     This is the most important function in the entire development process!</critical>
   <critical>🔬 UTILIZE SUBPROCESSES AND SUBAGENTS: Use research subagents, subprocesses or parallel processing if available to thoroughly
@@ -336,7 +336,7 @@
 
       **Next Steps:**
       1. Review the comprehensive story in {{story_file}}
-      2. Create a new git branch for this story (e.g. `feature/story-{{story_key}}`)
+      2. Ensure you are on the correct git branch for this epic (e.g. `epic/epic-{{epic_num}}`)
       3. Run dev agents `dev-story` for optimized implementation
       4. Run `code-review` when complete (auto-marks done)
       5. Optional: If Test Architect module installed, run `/bmad:tea:automate` after `dev-story` to generate guardrail tests
