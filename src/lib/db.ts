@@ -326,13 +326,26 @@ export async function update_entry(
 
 /**
  * Lists all entries for a specific ledger/schema.
+ * Filters out soft-deleted entries by default.
  * @param db - Profile database instance
  * @param ledgerId - Ledger identifier to filter by
- * @returns Array of entry documents
+ * @returns Array of entry documents (excluding soft-deleted)
  */
 export async function list_entries(db: Database, ledgerId: string): Promise<LedgerEntry[]> {
     const entryDocs = await db.getAllDocuments<LedgerEntry>('entry');
     return entryDocs.filter(doc => !doc.isDeleted && doc.ledgerId === ledgerId);
+}
+
+/**
+ * Lists all entries for a specific ledger/schema including soft-deleted entries.
+ * Used for ghost reference detection.
+ * @param db - Profile database instance
+ * @param ledgerId - Ledger identifier to filter by
+ * @returns Array of all entry documents (including soft-deleted)
+ */
+export async function list_all_entries(db: Database, ledgerId: string): Promise<LedgerEntry[]> {
+    const entryDocs = await db.getAllDocuments<LedgerEntry>('entry');
+    return entryDocs.filter(doc => doc.ledgerId === ledgerId);
 }
 
 /**
@@ -374,6 +387,19 @@ export async function delete_entry(db: Database, entryId: string): Promise<void>
     await db.updateDocument(entryId, {
         isDeleted: true,
         deletedAt: new Date().toISOString(),
+    });
+}
+
+/**
+ * Restores a soft-deleted entry by unsetting isDeleted and deletedAt flags.
+ * @param db - Profile database instance
+ * @param entryId - Entry document ID to restore
+ */
+export async function restore_entry(db: Database, entryId: string): Promise<void> {
+    const entry = await db.getDocument<LedgerEntry>(entryId);
+    await db.updateDocument(entryId, {
+        isDeleted: false,
+        deletedAt: undefined,
     });
 }
 

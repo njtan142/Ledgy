@@ -12,7 +12,7 @@ interface LedgerTableProps {
 }
 
 export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEntryId }) => {
-    const { schemas, entries, fetchEntries } = useLedgerStore();
+    const { schemas, entries, fetchEntries, allEntries } = useLedgerStore();
     const { activeProfileId } = useProfileStore();
     const [isAddingEntry, setIsAddingEntry] = useState(false);
     const [selectedRow, setSelectedRow] = useState<number>(-1);
@@ -144,7 +144,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                                 className="flex-1 px-3 py-2.5 text-sm text-zinc-300 border-r border-zinc-800 last:border-r-0"
                                 role="gridcell"
                             >
-                                {renderFieldValue(entry.data[field.name], field.type, entry, field, schemaId)}
+                                {renderFieldValue(entry.data[field.name], field.type, entry, field, schemaId, allEntries ? Object.values(allEntries).flat() : undefined)}
                             </div>
                         ))}
                     </div>
@@ -163,7 +163,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
     );
 };
 
-function renderFieldValue(value: unknown, type: string, entry?: LedgerEntry, field?: SchemaField, schemaId?: string): React.ReactNode {
+function renderFieldValue(value: unknown, type: string, entry?: LedgerEntry, field?: SchemaField, schemaId?: string, allEntries?: LedgerEntry[]): React.ReactNode {
     if (value === null || value === undefined) {
         return <span className="text-zinc-600 italic">-</span>;
     }
@@ -174,12 +174,20 @@ function renderFieldValue(value: unknown, type: string, entry?: LedgerEntry, fie
         case 'number':
             return typeof value === 'number' ? value.toLocaleString() : String(value);
         case 'relation':
+            // Check if target entries are deleted (ghost references - Story 3-4)
+            const values = Array.isArray(value) ? value as string[] : [value as string];
+            const deletedEntryIds = allEntries
+                ? new Set(allEntries.filter(e => e.isDeleted).map(e => e._id))
+                : new Set<string>();
+            const hasDeletedTarget = values.some(v => deletedEntryIds.has(v));
+            
             // Render as Tag Chip with navigation (Story 3-3)
             return (
                 <RelationTagChip
                     value={value as string | string[]}
                     targetLedgerId={field?.relationTarget}
                     entryId={entry?._id}
+                    isGhost={hasDeletedTarget}
                     onClick={() => {
                         // TODO: Navigate to target ledger (Story 3-3, Task 4)
                         console.log('Navigate to', field?.relationTarget);

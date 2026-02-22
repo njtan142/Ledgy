@@ -11,13 +11,16 @@ import {
     create_entry,
     update_entry,
     list_entries,
+    list_all_entries,
     delete_entry,
+    restore_entry,
     find_entries_with_relation_to,
 } from '../lib/db';
 
 interface LedgerState {
     schemas: LedgerSchema[];
-    entries: Record<string, LedgerEntry[]>; // keyed by ledgerId
+    entries: Record<string, LedgerEntry[]>; // keyed by ledgerId (excluding deleted)
+    allEntries: Record<string, LedgerEntry[]>; // keyed by ledgerId (including deleted)
     backLinks: Record<string, LedgerEntry[]>; // keyed by targetEntryId
     isLoading: boolean;
     error: string | null;
@@ -31,11 +34,13 @@ interface LedgerState {
     createEntry: (profileId: string, schemaId: string, ledgerId: string, data: Record<string, unknown>) => Promise<string>;
     updateEntry: (entryId: string, data: Record<string, unknown>) => Promise<void>;
     deleteEntry: (entryId: string) => Promise<void>;
+    restoreEntry: (entryId: string) => Promise<void>;
 }
 
 export const useLedgerStore = create<LedgerState>((set, get) => ({
     schemas: [],
     entries: {},
+    allEntries: {},
     backLinks: {},
     isLoading: false,
     error: null,
@@ -110,8 +115,10 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
             const db = getProfileDb(profileId);
             const entries = await list_entries(db, ledgerId);
+            const allEntries = await list_all_entries(db, ledgerId);
             set({
                 entries: { ...get().entries, [ledgerId]: entries },
+                allEntries: { ...get().allEntries, [ledgerId]: allEntries },
                 isLoading: false
             });
         } catch (err: any) {
@@ -195,11 +202,33 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
             const db = getProfileDb(state.activeProfileId);
             const entry = await db.getDocument<any>(entryId);
             await delete_entry(db, entryId);
-            
+
             // Refresh entries for the ledger
             await get().fetchEntries(state.activeProfileId, entry.ledgerId);
         } catch (err: any) {
             const errorMsg = err.message || 'Failed to delete entry';
+            set({ error: errorMsg, isLoading: false });
+            useErrorStore.getState().dispatchError(errorMsg);
+            throw err;
+        }
+    },
+
+    restoreEntry: async (entryId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const state = useProfileStore.getState();
+            if (!state.activeProfileId) {
+                throw new Error('No active profile selected');
+            }
+
+            const db = getProfileDb(state.activeProfileId);
+            const entry = await db.getDocument<any>(entryId);
+            await restore_entry(db, entryId);
+
+            // Refresh entries for the ledger
+            await get().fetchEntries(state.activeProfileId, entry.ledgerId);
+        } catch (err: any) {
+            const errorMsg = err.message || 'Failed to restore entry';
             set({ error: errorMsg, isLoading: false });
             useErrorStore.getState().dispatchError(errorMsg);
             throw err;
