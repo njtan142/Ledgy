@@ -1,6 +1,6 @@
 # Story 2.4: First-Launch Empty State Experience
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -18,14 +18,14 @@ so that I understand how to begin without being overwhelmed by choice.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Dashboard Base Page (AC: 1)
-  - [ ] Implement `DashboardPage` in `src/features/dashboard/`.
-  - [ ] Configure route for `/app/:profileId/` to render `DashboardPage`.
-- [ ] Task 2: Empty State Component (AC: 2)
-  - [ ] Create `EmptyDashboard` component with the welcome message and CTA.
-  - [ ] Implement logic to detect when the ledger list is empty (for now, it will always be empty).
-- [ ] Task 3: Placeholder CTA
-  - [ ] The "Create your first ledger" button should be a placeholder or simple link to the (not yet implemented) Schema Builder.
+- [x] Task 1: Dashboard Base Page (AC: 1)
+  - [x] Implement `DashboardPage` in `src/features/dashboard/`.
+  - [x] Configure route for `/app/:profileId/` to render `DashboardPage`.
+- [x] Task 2: Empty State Component (AC: 2)
+  - [x] Create `EmptyDashboard` component with the welcome message and CTA.
+  - [x] Implement logic to detect when the ledger list is empty (for now, it will always be empty).
+- [x] Task 3: Placeholder CTA
+  - [x] The "Create your first ledger" button should be a placeholder or simple link to the (not yet implemented) Schema Builder.
 
 ## Dev Notes
 
@@ -46,10 +46,22 @@ so that I understand how to begin without being overwhelmed by choice.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Antigravity (Gemini 2.0 Flash Thinking)
 
 ### Debug Log References
 
+- Set up `EmptyDashboard` component with Lucide `Plus` icon and welcome layout.
+- Rewrote `Dashboard.tsx` to mount `EmptyDashboard` conditionally.
+- Implemented temporary placeholder function for CTA using global `dispatchError('...', 'info')`.
+
 ### Completion Notes List
 
+- ✅ Route for `/app/:profileId/` to `Dashboard` verified via `App.tsx` and tests.
+- ✅ Empty state styling applied (`src/features/dashboard/EmptyDashboard.tsx`).
+- ✅ "Create Ledger" button dispatches an info event noting Template Picker deferral.
+
 ### File List
+- `src/features/dashboard/Dashboard.tsx`
+- `src/features/dashboard/Dashboard.test.tsx`
+- `src/features/dashboard/EmptyDashboard.tsx`
+- `src/features/dashboard/EmptyDashboard.test.tsx`
