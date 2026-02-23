@@ -1,8 +1,19 @@
 # Story 3.2: Ledger Data Table & Inline Entry Routing
 
-Status: done
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+## Open Issues (2026-02-23)
+
+1. **Sidebar "New Ledger" Button Non-Functional:** AppShell sidebar shows "+ New Ledger" but has no onClick handler - decorative only
+
+### Review Follow-ups (AI) - UI Audit 2026-02-23
+- [ ] [AI-Review][High] Sidebar "New Ledger" Non-Functional: AppShell sidebar "+ New Ledger" has no onClick handler. Fix: Wire to `setIsSchemaBuilderOpen(true)` (requires lifting state or using store). [src/components/Layout/AppShell.tsx:141]
+
+### Review Follow-ups (AI) - Code Review 2026-02-23
+- [ ] [AI-Review][High] Sidebar "+ New Ledger" Decorative Only: Uses `cursor-pointer` but no `onClick` handler - purely decorative, non-functional. [src/components/Layout/AppShell.tsx:162]
+- [ ] [AI-Review][Medium] Story File List vs Git Mismatch: Story lists source files but git shows only documentation changes - implementation fixes not committed. [git diff]
 
 ## Story
 

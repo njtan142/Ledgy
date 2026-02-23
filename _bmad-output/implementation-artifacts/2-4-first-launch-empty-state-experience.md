@@ -1,8 +1,26 @@
 # Story 2.4: First-Launch Empty State Experience
 
-Status: done
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+
+## Open Issues (2026-02-23)
+
+1. **EmptyDashboard CTA Text Incorrect:** Button says "Create Ledger" but should say "Create Project" per Epic 2 Story 2.4 requirements
+2. **Sidebar Buttons Non-Functional:** "+ New Project" and "+ New Ledger" in AppShell sidebar are decorative only (no onClick handlers)
+
+### Review Follow-ups (AI) - UI Audit 2026-02-23
+- [ ] [AI-Review][High] EmptyDashboard CTA Text: Button says "Create Ledger" but should say "Create Project" per Epic 2 Story 2.4. Fix: `EmptyDashboard.tsx` line 21 change text. [src/features/dashboard/EmptyDashboard.tsx:21]
+- [ ] [AI-Review][High] Sidebar "New Project" Non-Functional: AppShell sidebar "+ New Project" has no onClick handler. Fix: Wrap in `<button>` with `navigate('/profiles')`. [src/components/Layout/AppShell.tsx:136]
+- [ ] [AI-Review][Medium] Dashboard SchemaBuilder Integration: CTA flow unclear between "Create Project" (Epic 2) vs "Create Ledger" (Epic 3). Fix: Clarify CTA navigates to profile creation, add separate ledger button in toolbar. [src/features/dashboard/Dashboard.tsx]
+
+### Review Follow-ups (AI) - Code Review 2026-02-23
+- [ ] [AI-Review][High] EmptyDashboard Button Text: `<span>Create Ledger</span>` should say "Create Project" - Epic 2 is about Profiles/Projects, not ledgers (Epic 3). [src/features/dashboard/EmptyDashboard.tsx:23]
+- [ ] [AI-Review][High] Sidebar "+ New Project" Decorative Only: Uses `cursor-pointer` but no `onClick` handler - purely decorative, non-functional. [src/components/Layout/AppShell.tsx:157]
+- [ ] [AI-Review][High] Sidebar "+ New Ledger" Decorative Only: Uses `cursor-pointer` but no `onClick` handler - purely decorative, non-functional. [src/components/Layout/AppShell.tsx:162]
+- [ ] [AI-Review][Medium] Dashboard CTA Flow Confusing: `handleCreateLedger()` opens SchemaBuilder when no ledgers exist, conflating Epic 2 (Projects) with Epic 3 (Ledgers). [src/features/dashboard/Dashboard.tsx:18]
+- [ ] [AI-Review][Medium] Story File List vs Git Mismatch: Story lists source files but git shows only documentation changes - implementation fixes not committed. [git diff]
+- [ ] [AI-Review][Low] Missing aria-label: EmptyDashboard button lacks `aria-label` for screen reader accessibility. [src/features/dashboard/EmptyDashboard.tsx:18]
 
 ## Story
 
