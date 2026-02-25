@@ -10,15 +10,17 @@ export interface SyncConfig extends LedgyDocument {
         iv: number[];
         ciphertext: number[];
     };
-    remoteUrl?: string; // Legacy unencrypted
+    remoteUrl?: string;
     username_enc?: {
         iv: number[];
         ciphertext: number[];
     };
+    username?: string;
     password_enc?: {
         iv: number[];
         ciphertext: number[];
     };
+    password?: string;
     syncDirection: 'upload' | 'two-way';
     continuous: boolean;
     lastSyncAt?: string;

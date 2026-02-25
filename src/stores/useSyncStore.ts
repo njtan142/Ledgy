@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getProfileDb } from '../lib/db';
+import { getProfileDb, save_sync_config, get_sync_config, setup_sync } from '../lib/db';
 import { useErrorStore } from './useErrorStore';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { SyncConfig, SyncStatus } from '../types/sync';
@@ -51,7 +51,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         const current = get().conflicts;
         const remaining = current.filter(c => c.entryId !== entryId);
         set({ conflicts: remaining });
-        
+
         // Update sync status
         if (remaining.length === 0) {
             set({
@@ -107,13 +107,13 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const authState = useAuthStore.getState();
-            if (!authState.isUnlocked) {
+            if (!authState.isUnlocked || !authState.encryptionKey) {
                 throw new Error('Vault must be unlocked to load sync config.');
             }
 
             const db = getProfileDb(profileId);
-            // TODO: Implement get_sync_config in db.ts
-            set({ isLoading: false });
+            const config = await get_sync_config(db, profileId, authState.encryptionKey);
+            set({ syncConfig: config, isLoading: false });
         } catch (err: any) {
             const errorMsg = err.message || 'Failed to load sync config';
             set({ error: errorMsg, isLoading: false });
@@ -125,13 +125,16 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const authState = useAuthStore.getState();
-            if (!authState.isUnlocked) {
+            if (!authState.isUnlocked || !authState.encryptionKey) {
                 throw new Error('Vault must be unlocked to save sync config.');
             }
 
             const db = getProfileDb(profileId);
-            // TODO: Implement save_sync_config in db.ts with encryption
-            set({ isLoading: false });
+            await save_sync_config(db, profileId, config, authState.encryptionKey);
+
+            // Reload after save to get fully populated object
+            const updatedConfig = await get_sync_config(db, profileId, authState.encryptionKey);
+            set({ syncConfig: updatedConfig, isLoading: false });
         } catch (err: any) {
             const errorMsg = err.message || 'Failed to save sync config';
             set({ error: errorMsg, isLoading: false });
@@ -140,21 +143,79 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     },
 
     triggerSync: async (profileId: string) => {
+        const { syncConfig, syncStatus } = get();
+        if (syncStatus.status === 'syncing') return;
+
         set({ isLoading: true, error: null });
         try {
             const authState = useAuthStore.getState();
-            if (!authState.isUnlocked) {
-                throw new Error('Vault must be unlocked to trigger sync.');
+            if (!authState.isUnlocked || !authState.encryptionKey) {
+                throw new Error('Vault must be unlocked for sync.');
             }
 
-            // TODO: Implement PouchDB replication in db.ts
-            set({ 
-                syncStatus: { ...get().syncStatus, status: 'syncing' },
-                isLoading: false 
+            // Ensure config is loaded
+            let config = syncConfig;
+            if (!config || config.profileId !== profileId) {
+                const db = getProfileDb(profileId);
+                config = await get_sync_config(db, profileId, authState.encryptionKey);
+                if (!config) {
+                    throw new Error('Sync not configured for this profile.');
+                }
+                set({ syncConfig: config });
+            }
+
+            // Cancel existing sync if any
+            const db = getProfileDb(profileId);
+            db.cancelSync();
+
+            // Setup new sync
+            const sync = setup_sync(profileId, config);
+            set({ syncStatus: { ...get().syncStatus, status: 'syncing' }, isLoading: false });
+
+            (sync as any).on('change', (info: any) => {
+                console.log('Sync change:', info);
+                set({
+                    syncStatus: {
+                        ...get().syncStatus,
+                        lastSync: new Date().toISOString()
+                    }
+                });
             });
+
+            (sync as any).on('paused', (err: any) => {
+                console.log('Sync paused:', err);
+                set({ syncStatus: { ...get().syncStatus, status: 'idle' } });
+            });
+
+            (sync as any).on('active', () => {
+                console.log('Sync active');
+                set({ syncStatus: { ...get().syncStatus, status: 'syncing' } });
+            });
+
+            (sync as any).on('error', (err: any) => {
+                console.error('Sync error:', err);
+                set({
+                    syncStatus: { ...get().syncStatus, status: 'offline' },
+                    error: `Sync error: ${err?.message || 'Unknown error'}`
+                });
+                useErrorStore.getState().dispatchError(`Sync failed: ${err?.message || 'Unknown error'}`);
+            });
+
+            if (!config.continuous) {
+                (sync as any).on('complete', () => {
+                    set({
+                        syncStatus: {
+                            ...get().syncStatus,
+                            status: 'idle',
+                            lastSync: new Date().toISOString()
+                        }
+                    });
+                });
+            }
+
         } catch (err: any) {
             const errorMsg = err.message || 'Failed to trigger sync';
-            set({ error: errorMsg, isLoading: false });
+            set({ error: errorMsg, isLoading: false, syncStatus: { status: 'offline' } });
             useErrorStore.getState().dispatchError(errorMsg);
         }
     },

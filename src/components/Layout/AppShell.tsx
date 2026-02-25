@@ -4,8 +4,8 @@ import { Outlet, useParams } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, MonitorOff } from 'lucide-react';
 import { useErrorStore } from '../../stores/useErrorStore';
 import { useProfileStore } from '../../stores/useProfileStore';
-import { useSyncStore } from '../../stores/useSyncStore';
-import { SyncStatusBadge } from '../../features/sync/SyncStatusBadge';
+import { SyncStatusButton } from '../../features/sync/SyncStatusButton';
+import { SyncConfigDialog } from '../../features/sync/SyncConfigDialog';
 
 export const AppShell: React.FC = () => {
     const {
@@ -18,7 +18,8 @@ export const AppShell: React.FC = () => {
     const { profileId } = useParams();
     const prevWidthRef = React.useRef(window.innerWidth);
     const { dispatchError } = useErrorStore();
-    
+    const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+
     // Fetch profile name for display
     const { profiles, fetchProfiles, isLoading: isStoreLoading } = useProfileStore();
     const profile = profiles.find(p => p.id === profileId);
@@ -125,8 +126,8 @@ export const AppShell: React.FC = () => {
                     ) : (
                         <div className="flex-1 flex justify-center">🌿</div>
                     )}
-                    <button 
-                        onClick={toggleLeftSidebar} 
+                    <button
+                        onClick={toggleLeftSidebar}
                         className="text-zinc-400 hover:text-zinc-200 ml-1"
                         aria-label={leftSidebarOpen ? "Close sidebar" : "Open sidebar"}
                     >
@@ -157,10 +158,9 @@ export const AppShell: React.FC = () => {
                             <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
                             Local Only
                         </div>
-                        <SyncStatusBadge
-                            state="synced"
-                            lastSyncTime={new Date().toISOString()}
-                            onClick={() => {}}
+                        <SyncStatusButton
+                            profileId={profileId || ''}
+                            onClick={() => setIsSyncDialogOpen(true)}
                         />
                     </div>
                 )}
@@ -176,8 +176,8 @@ export const AppShell: React.FC = () => {
                 className={`flex flex-col bg-zinc-900 border-l border-zinc-800 transition-[width] duration-300 ease-in-out shrink-0 overflow-hidden ${rightInspectorOpen ? 'w-[260px]' : 'w-0'}`}
             >
                 <div className="h-12 flex items-center px-3.5 border-b border-zinc-800 shrink-0 text-[12px] font-semibold text-zinc-400 uppercase tracking-wider">
-                    <button 
-                        onClick={toggleRightInspector} 
+                    <button
+                        onClick={toggleRightInspector}
                         className="mr-2 text-zinc-400 hover:text-zinc-200"
                         aria-label="Close inspector panel"
                     >
@@ -191,6 +191,13 @@ export const AppShell: React.FC = () => {
                     </div>
                 )}
             </aside>
+
+            {/* Sync Configuration Dialog */}
+            <SyncConfigDialog
+                profileId={profileId || ''}
+                isOpen={isSyncDialogOpen}
+                onClose={() => setIsSyncDialogOpen(false)}
+            />
         </div>
     );
 };
