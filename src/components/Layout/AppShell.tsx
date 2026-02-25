@@ -4,8 +4,10 @@ import { Outlet, useParams } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, MonitorOff } from 'lucide-react';
 import { useErrorStore } from '../../stores/useErrorStore';
 import { useProfileStore } from '../../stores/useProfileStore';
+import { useSyncStore } from '../../stores/useSyncStore';
 import { SyncStatusButton } from '../../features/sync/SyncStatusButton';
 import { SyncConfigDialog } from '../../features/sync/SyncConfigDialog';
+import { SyncStatusSheet } from '../../features/sync/SyncStatusSheet';
 
 export const AppShell: React.FC = () => {
     const {
@@ -19,6 +21,8 @@ export const AppShell: React.FC = () => {
     const prevWidthRef = React.useRef(window.innerWidth);
     const { dispatchError } = useErrorStore();
     const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+    const [isSyncSheetOpen, setIsSyncSheetOpen] = useState(false);
+    const { syncStatus } = useSyncStore();
 
     // Fetch profile name for display
     const { profiles, fetchProfiles, isLoading: isStoreLoading } = useProfileStore();
@@ -160,7 +164,7 @@ export const AppShell: React.FC = () => {
                         </div>
                         <SyncStatusButton
                             profileId={profileId || ''}
-                            onClick={() => setIsSyncDialogOpen(true)}
+                            onClick={() => setIsSyncSheetOpen(true)}
                         />
                     </div>
                 )}
@@ -198,6 +202,27 @@ export const AppShell: React.FC = () => {
                 isOpen={isSyncDialogOpen}
                 onClose={() => setIsSyncDialogOpen(false)}
             />
+
+            {/* Sync Status Sheet */}
+            <SyncStatusSheet
+                profileId={profileId || ''}
+                isOpen={isSyncSheetOpen}
+                onClose={() => setIsSyncSheetOpen(false)}
+                onOpenSettings={() => {
+                    setIsSyncSheetOpen(false);
+                    setIsSyncDialogOpen(true);
+                }}
+            />
+
+            {/* ARIA Live Region for Sync Announcements */}
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+            >
+                {`Sync status changed to ${syncStatus.status}`}
+            </div>
         </div>
     );
 };
