@@ -38,23 +38,23 @@ describe('Dashboard Component', () => {
 
     it('renders empty dashboard initially', () => {
         render(
-            <MemoryRouter initialEntries={['/app/profile1']}>
+            <MemoryRouter initialEntries={['/app/profile1/project/proj1']}>
                 <Routes>
-                    <Route path="/app/:profileId" element={<Dashboard />} />
+                    <Route path="/app/:profileId/project/:projectId" element={<Dashboard />} />
                 </Routes>
             </MemoryRouter>
         );
 
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Ledger Dashboard')).toBeInTheDocument();
         expect(screen.getByText('Welcome to Ledgy!')).toBeInTheDocument();
         expect(mockFetchSchemas).toHaveBeenCalledWith('profile1');
     });
 
     it('opens Schema Builder when clicking Create Ledger', () => {
         render(
-            <MemoryRouter initialEntries={['/app/profile1']}>
+            <MemoryRouter initialEntries={['/app/profile1/project/proj1']}>
                 <Routes>
-                    <Route path="/app/:profileId" element={<Dashboard />} />
+                    <Route path="/app/:profileId/project/:projectId" element={<Dashboard />} />
                 </Routes>
             </MemoryRouter>
         );
@@ -69,21 +69,21 @@ describe('Dashboard Component', () => {
         // Mock populated store
         (useLedgerStoreModule.useLedgerStore as any).mockReturnValue({
             schemas: [
-                { _id: 'ledger1', name: 'My Ledger', ledgerId: 'l1', fields: [] },
-                { _id: 'ledger2', name: 'Another Ledger', ledgerId: 'l2', fields: [] }
+                { _id: 'ledger1', name: 'My Ledger', projectId: 'proj1', fields: [] },
+                { _id: 'ledger2', name: 'Another Ledger', projectId: 'proj1', fields: [] }
             ],
             fetchSchemas: mockFetchSchemas,
         });
 
         render(
-            <MemoryRouter initialEntries={['/app/profile1']}>
+            <MemoryRouter initialEntries={['/app/profile1/project/proj1']}>
                 <Routes>
-                    <Route path="/app/:profileId" element={<Dashboard />} />
+                    <Route path="/app/:profileId/project/:projectId" element={<Dashboard />} />
                 </Routes>
             </MemoryRouter>
         );
 
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Ledger Dashboard')).toBeInTheDocument();
         expect(screen.queryByText('Welcome to Ledgy!')).not.toBeInTheDocument();
         
         // Check for ledger selector

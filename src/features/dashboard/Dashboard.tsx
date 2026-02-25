@@ -23,8 +23,8 @@ export const Dashboard: React.FC = () => {
         }
     }, [profileId, fetchSchemas]);
 
-    // Ledger detection: Use schema count as proxy for ledgers
-    const hasLedgers = schemas.length > 0;
+    // Ledger detection: Use schema count for this specific project
+    const hasLedgers = projectSchemas.length > 0;
 
     const handleSelectLedger = (schemaId: string) => {
         setSelectedLedgerId(schemaId);
@@ -35,8 +35,8 @@ export const Dashboard: React.FC = () => {
             {/* Toolbar */}
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800 bg-zinc-900 shrink-0">
                 <div className="flex-1 flex items-baseline gap-2">
-                    <h1 className="text-sm font-semibold">Project Dashboard</h1>
-                    {projectSchemas.length > 0 && (
+                    <h1 className="text-sm font-semibold">Ledger Dashboard</h1>
+                    {hasLedgers && (
                         <select
                             value={selectedLedgerId || ''}
                             onChange={(e) => handleSelectLedger(e.target.value)}
@@ -71,7 +71,7 @@ export const Dashboard: React.FC = () => {
 
             {/* Table Area / Main Content */}
             <div className="flex-1 overflow-hidden">
-                {projectSchemas.length === 0 ? (
+                {!hasLedgers ? (
                     <div className="h-full flex items-center justify-center">
                         <EmptyDashboard onActionClick={() => setSchemaBuilderOpen(true)} />
                     </div>
