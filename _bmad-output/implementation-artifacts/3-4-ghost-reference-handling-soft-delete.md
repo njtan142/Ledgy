@@ -1,6 +1,6 @@
 # Story 3.4: Ghost Reference Handling (Soft-Delete)
 
-Status: done
+Status: review
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 3.1: Schema Builder UI
 
-Status: done
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

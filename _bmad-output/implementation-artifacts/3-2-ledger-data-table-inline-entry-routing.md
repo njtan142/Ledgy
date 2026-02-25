@@ -1,6 +1,6 @@
 # Story 3.2: Ledger Data Table & Inline Entry Routing
 
-Status: done
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
