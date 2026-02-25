@@ -4,23 +4,30 @@
   --color-zinc-900: #18181b;
   --color-zinc-950: #09090b;
   --color-emerald-500: #10b981;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
 
-  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+/* 
+  Tailwind CSS v4 Dark Mode Configuration (Class-based)
+  This tells Tailwind to trigger the 'dark:' variant when a .dark class is present 
+  on the element or any of its ancestors (like <html> or <body>).
+*/
+@variant dark (&:where(.dark, .dark *));
 
-  @keyframes caret-blink {
+:root {
+  color-scheme: light;
+}
 
-    0%,
-    70%,
-    100% {
-      opacity: 1;
-    }
+.dark {
+  color-scheme: dark;
+}
 
-    20%,
-    50% {
-      opacity: 0;
-    }
-  }
+body {
+  @apply antialiased transition-colors duration-200 bg-white text-zinc-900;
+}
+
+.dark body {
+  @apply bg-zinc-950 text-zinc-100;
 }
 
 @layer utilities {

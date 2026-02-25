@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Outlet } from 'react-router-dom';
 import {
-    LayoutDashboard,
-    Database,
-    Network,
     Settings,
-    Menu,
-    Plus,
     LogOut,
-    ChevronLeft,
-    ChevronRight,
     PanelLeftClose,
     PanelLeftOpen,
     PanelRightClose,
-    MonitorOff
+    Sun,
+    Moon,
+    FolderKanban,
+    Network,
 } from 'lucide-react';
-import { useErrorStore } from '../../stores/useErrorStore';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { useSyncStore } from '../../stores/useSyncStore';
 import { useUIStore } from '../../stores/useUIStore';
@@ -32,13 +27,16 @@ export const AppShell: React.FC = () => {
         toggleLeftSidebar,
         toggleRightInspector,
         setLeftSidebar,
+        theme,
+        toggleTheme
     } = useUIStore();
+
+    const navigate = useNavigate();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
     const [mounted, setMounted] = useState(false);
     const { profileId } = useParams();
     const prevWidthRef = React.useRef(window.innerWidth);
-    const { dispatchError } = useErrorStore();
     const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
     const [isSyncSheetOpen, setIsSyncSheetOpen] = useState(false);
     const [isConflictListOpen, setIsConflictListOpen] = useState(false);
@@ -46,7 +44,7 @@ export const AppShell: React.FC = () => {
     const { syncStatus, conflicts } = useSyncStore();
 
     // Fetch profile name for display
-    const { profiles, fetchProfiles, isLoading: isStoreLoading } = useProfileStore();
+    const { profiles, fetchProfiles } = useProfileStore();
     const activeProfile = profiles.find(p => p.id === profileId);
     const profileName = activeProfile?.name || 'Personal';
 
@@ -86,14 +84,17 @@ export const AppShell: React.FC = () => {
                 </div>
 
                 <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-900 rounded-lg transition-colors group">
-                        <LayoutDashboard size={18} className="group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
-                        <span className="text-sm font-medium">Dashboard</span>
+                    <button
+                        onClick={() => navigate(`/app/${profileId}/projects`)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group ${window.location.pathname.includes('/projects')
+                            ? 'bg-zinc-200 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-900'
+                            }`}
+                    >
+                        <FolderKanban size={18} className="group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
+                        <span className="text-sm font-medium">Projects</span>
                     </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-900 rounded-lg group">
-                        <Database size={18} />
-                        <span className="text-sm font-medium">Ledgers</span>
-                    </button>
+                    {/* Placeholder for other navigation if needed */}
                 </nav>
 
                 {/* Sidebar Footer */}
@@ -110,7 +111,10 @@ export const AppShell: React.FC = () => {
                             onClick={() => setIsSyncSheetOpen(true)}
                         />
                     </div>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-900 rounded-lg transition-colors group">
+                    <button
+                        onClick={() => navigate(`/app/${profileId}/settings`)}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-900 rounded-lg transition-colors group"
+                    >
                         <Settings size={18} />
                         <span className="text-sm font-medium">Settings</span>
                     </button>
@@ -139,6 +143,14 @@ export const AppShell: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-zinc-600 dark:text-zinc-400 transition-colors"
+                            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                        >
+                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        </button>
+                        <div className="h-4 w-px bg-zinc-200 dark:border-zinc-800" />
                         <button
                             onClick={toggleRightInspector}
                             className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-zinc-600 dark:text-zinc-400 transition-colors"
