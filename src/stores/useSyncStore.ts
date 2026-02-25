@@ -172,14 +172,51 @@ export const useSyncStore = create<SyncState>((set, get) => ({
             const sync = setup_sync(profileId, config);
             set({ syncStatus: { ...get().syncStatus, status: 'syncing' }, isLoading: false });
 
-            (sync as any).on('change', (info: any) => {
-                console.log('Sync change:', info);
+            (sync as any).on('change', async (info: any) => {
                 set({
                     syncStatus: {
                         ...get().syncStatus,
                         lastSync: new Date().toISOString()
                     }
                 });
+
+                // Support both replication and changes event formats
+                const docs = info.docs || (info.change && info.change.docs);
+
+                if (docs) {
+                    const profile_db = getProfileDb(profileId);
+                    for (const doc of docs) {
+                        if (doc._conflicts && doc._conflicts.length > 0) {
+                            // Fetch all versions to create ConflictEntry
+                            try {
+                                const localDoc = await (profile_db as any).db.get(doc._id);
+                                const remoteDoc = await (profile_db as any).db.get(doc._id, { rev: doc._conflicts[0] });
+
+                                const fields = Object.keys({ ...localDoc, ...remoteDoc }).filter(f => !f.startsWith('_') && f !== 'type' && f !== 'schema_version');
+                                const conflictingFields = fields.filter(f => JSON.stringify(localDoc[f]) !== JSON.stringify(remoteDoc[f]));
+
+                                get().addConflict({
+                                    entryId: doc._id,
+                                    entryName: localDoc.title || localDoc.name || doc._id,
+                                    ledgerName: localDoc.ledgerName || 'Unknown Ledger',
+                                    localVersion: {
+                                        data: localDoc,
+                                        timestamp: localDoc.updatedAt || new Date().toISOString(),
+                                        deviceId: 'Local'
+                                    },
+                                    remoteVersion: {
+                                        data: remoteDoc,
+                                        timestamp: remoteDoc.updatedAt || new Date().toISOString(),
+                                        deviceId: 'Remote'
+                                    },
+                                    conflictingFields
+                                });
+                            } catch (err) {
+                                console.error('Error fetching conflict documents:', err);
+                            }
+                        }
+                    }
+                }
             });
 
             (sync as any).on('paused', (err: any) => {

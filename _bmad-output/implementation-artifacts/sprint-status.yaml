@@ -88,7 +88,10 @@ development_status:
   # ✅ SyncStatusButton opens sheet on click
   # ✅ 5 distinct sync states implemented and tested
   # ✅ ARIA live announcements for state changes
-  5-3-conflict-detection-diff-guard-layout: ready-for-dev
+  5-3-conflict-detection-diff-guard-layout: review
+  # ✅ Automated scanning for _conflicts in replicate events
+  # ✅ Wired "Resolve All" to ConflictListSheet
+  # ✅ Integrated DiffGuardModal with side-by-side highlighting
   5-4-conflict-resolution-accept-reject: ready-for-dev
   5-5-remote-purge-right-to-be-forgotten: ready-for-dev
   epic-5-retrospective: optional

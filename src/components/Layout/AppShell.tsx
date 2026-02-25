@@ -1,18 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { useUIStore } from '../../stores/useUIStore';
-import { Outlet, useParams } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, PanelRightClose, MonitorOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, Outlet } from 'react-router-dom';
+import {
+    LayoutDashboard,
+    Database,
+    Network,
+    Settings,
+    Menu,
+    Plus,
+    LogOut,
+    ChevronLeft,
+    ChevronRight,
+    PanelLeftClose,
+    PanelLeftOpen,
+    PanelRightClose,
+    MonitorOff
+} from 'lucide-react';
 import { useErrorStore } from '../../stores/useErrorStore';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { useSyncStore } from '../../stores/useSyncStore';
+import { useUIStore } from '../../stores/useUIStore';
 import { SyncStatusButton } from '../../features/sync/SyncStatusButton';
 import { SyncConfigDialog } from '../../features/sync/SyncConfigDialog';
 import { SyncStatusSheet } from '../../features/sync/SyncStatusSheet';
+import { ConflictListSheet, ConflictEntry } from '../../features/sync/ConflictListSheet';
+import { DiffGuardModal } from '../../features/sync/DiffGuardModal';
 
 export const AppShell: React.FC = () => {
     const {
-        leftSidebarOpen, toggleLeftSidebar,
-        rightInspectorOpen, toggleRightInspector
+        leftSidebarOpen,
+        rightInspectorOpen,
+        toggleLeftSidebar,
+        toggleRightInspector,
+        setLeftSidebar,
     } = useUIStore();
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
@@ -22,179 +41,118 @@ export const AppShell: React.FC = () => {
     const { dispatchError } = useErrorStore();
     const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
     const [isSyncSheetOpen, setIsSyncSheetOpen] = useState(false);
-    const { syncStatus } = useSyncStore();
+    const [isConflictListOpen, setIsConflictListOpen] = useState(false);
+    const [selectedConflict, setSelectedConflict] = useState<ConflictEntry | null>(null);
+    const { syncStatus, conflicts } = useSyncStore();
 
     // Fetch profile name for display
     const { profiles, fetchProfiles, isLoading: isStoreLoading } = useProfileStore();
-    const profile = profiles.find(p => p.id === profileId);
-    const profileName = profile?.name || '';
-    const isLoadingProfile = isStoreLoading || (!profile && profiles.length === 0);
+    const activeProfile = profiles.find(p => p.id === profileId);
+    const profileName = activeProfile?.name || 'Personal';
 
     useEffect(() => {
         setMounted(true);
-        const width = window.innerWidth;
-        if (width < 900) {
-            dispatchError("Mobile and Tablet layouts are not supported in this version.", "warning");
-        }
-        if (width < 1280) {
-            useUIStore.getState().setRightInspector(false);
-        }
-        if (width < 1100) {
-            useUIStore.getState().setLeftSidebar(false);
-        }
-    }, [dispatchError]);
+        fetchProfiles();
 
-    // Fetch profiles on mount if empty
-    useEffect(() => {
-        if (profiles.length === 0 && profileId) {
-            fetchProfiles();
-        }
-    }, [profileId, profiles.length, fetchProfiles]);
-
-    useEffect(() => {
-        let timeoutId: number;
         const handleResize = () => {
-            clearTimeout(timeoutId);
-            timeoutId = window.setTimeout(() => {
-                const width = window.innerWidth;
-                const prevWidth = prevWidthRef.current;
-                setIsMobile(width < 900);
-                if (prevWidth >= 1280 && width < 1280) {
-                    useUIStore.getState().setRightInspector(false);
-                }
-                if (prevWidth >= 1100 && width < 1100) {
-                    useUIStore.getState().setRightInspector(false);
-                    useUIStore.getState().setLeftSidebar(false);
-                }
-                prevWidthRef.current = width;
-            }, 100);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(timeoutId);
-        };
-    }, []);
+            const width = window.innerWidth;
+            const mobile = width < 900;
+            setIsMobile(mobile);
 
-    if (!mounted) {
-        return (
-            <div className="flex h-screen w-full bg-[#0d0d0f] animate-in fade-in duration-500">
-                {/* Left Sidebar Skeleton */}
-                <div className="w-[220px] bg-zinc-900 border-r border-zinc-800 shrink-0">
-                    <div className="h-14 bg-zinc-800/50 animate-pulse" />
-                </div>
-                {/* Main Content Skeleton */}
-                <div className="flex-1 bg-zinc-950">
-                    <div className="h-full bg-zinc-900/30 animate-pulse" />
-                </div>
-                {/* Right Inspector Skeleton */}
-                <div className="w-[260px] bg-zinc-900 border-l border-zinc-800 shrink-0">
-                    <div className="h-14 bg-zinc-800/50 animate-pulse" />
-                </div>
-            </div>
-        );
-    }
+            if (mobile && prevWidthRef.current >= 900) {
+                setLeftSidebar(false);
+            }
+            prevWidthRef.current = width;
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [fetchProfiles, setLeftSidebar]);
+
+    if (!mounted) return null;
 
     return (
-        <div className="relative flex h-screen w-full bg-[#0d0d0f] text-zinc-50 font-sans overflow-hidden">
-            {isMobile && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-950/95 backdrop-blur-sm p-6 text-center">
-                    <div className="max-w-xs space-y-4">
-                        <MonitorOff size={48} className="mx-auto text-emerald-500" />
-                        <h1 className="text-xl font-bold italic tracking-tight">Ledgy Desktop</h1>
-                        <p className="text-zinc-400 text-sm">
-                            Mobile and Tablet layouts are not supported in this version.
-                        </p>
-                    </div>
-                </div>
-            )}
-
+        <div className="h-screen w-full flex bg-zinc-50 dark:bg-black overflow-hidden select-none">
             {/* Left Sidebar */}
             <aside
-                className={`flex flex-col bg-zinc-900 border-r border-zinc-800 transition-[width] duration-300 ease-in-out shrink-0 overflow-hidden ${leftSidebarOpen ? 'w-[220px]' : 'w-[48px]'}`}
+                className={`flex flex-col bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 ease-in-out shrink-0 overflow-hidden ${leftSidebarOpen ? 'w-64' : 'w-0 border-r-0'
+                    }`}
             >
-                <div className="px-4 pt-3.5 pb-2.5 border-b border-zinc-800 shrink-0 flex items-center">
-                    {leftSidebarOpen ? (
-                        <div className="flex-1 overflow-hidden">
-                            <div className="flex items-center gap-2">
-                                <div className="text-sm font-semibold">🌿 Ledgy</div>
-                            </div>
-                            <div className="text-[11px] text-zinc-400 mt-0.5 truncate transition-opacity duration-300">
-                                {isLoadingProfile ? (
-                                    <span className="inline-block w-24 h-3 bg-zinc-800 rounded animate-pulse" />
-                                ) : (
-                                    `Personal · ${profileName || 'No profile'}`
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex justify-center">🌿</div>
-                    )}
-                    <button
-                        onClick={toggleLeftSidebar}
-                        className="text-zinc-400 hover:text-zinc-200 ml-1"
-                        aria-label={leftSidebarOpen ? "Close sidebar" : "Open sidebar"}
-                    >
-                        {leftSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                <div className="p-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
+                    <div className="flex items-center gap-2 font-bold italic text-xl tracking-tighter text-zinc-900 dark:text-zinc-100">
+                        <Network size={22} className="text-zinc-900 dark:text-zinc-100" />
+                        LEDGY
+                    </div>
+                </div>
+
+                <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-900 rounded-lg transition-colors group">
+                        <LayoutDashboard size={18} className="group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
+                        <span className="text-sm font-medium">Dashboard</span>
                     </button>
-                </div>
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-900 dark:text-zinc-100 bg-zinc-200 dark:bg-zinc-900 rounded-lg group">
+                        <Database size={18} />
+                        <span className="text-sm font-medium">Ledgers</span>
+                    </button>
+                </nav>
 
-                <div className="flex-grow overflow-y-auto overflow-x-hidden py-2 custom-scrollbar">
-                    {leftSidebarOpen && (
-                        <>
-                            <div className="px-2 mt-4 pb-1">
-                                <div className="text-[10px] font-semibold tracking-wider uppercase text-zinc-600 px-2 mb-0.5">Ledgers</div>
-                                <button
-                                    onClick={() => useUIStore.getState().setSchemaBuilderOpen(true)}
-                                    className="w-full text-left text-[12px] text-zinc-600 px-4 py-1.5 cursor-pointer hover:text-zinc-400 transition-colors bg-transparent border-none"
-                                    aria-label="Create new ledger"
-                                >
-                                    + New Ledger
-                                </button>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {leftSidebarOpen && (
-                    <div className="mt-auto px-4 py-3 border-t border-zinc-800 flex items-center justify-between shrink-0">
-                        <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
-                            Local Only
+                {/* Sidebar Footer */}
+                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+                    <div className="flex items-center justify-between px-2 mb-2">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Active Profile</span>
+                            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[120px]">
+                                {profileName}
+                            </span>
                         </div>
                         <SyncStatusButton
                             profileId={profileId || ''}
                             onClick={() => setIsSyncSheetOpen(true)}
                         />
                     </div>
-                )}
-            </aside>
-
-            {/* Main Canvas */}
-            <main className="flex-1 flex flex-col min-w-0 bg-zinc-950 overflow-hidden relative">
-                <Outlet context={{ profileId }} />
-            </main>
-
-            {/* Right Inspector */}
-            <aside
-                className={`flex flex-col bg-zinc-900 border-l border-zinc-800 transition-[width] duration-300 ease-in-out shrink-0 overflow-hidden ${rightInspectorOpen ? 'w-[260px]' : 'w-0'}`}
-            >
-                <div className="h-12 flex items-center px-3.5 border-b border-zinc-800 shrink-0 text-[12px] font-semibold text-zinc-400 uppercase tracking-wider">
-                    <button
-                        onClick={toggleRightInspector}
-                        className="mr-2 text-zinc-400 hover:text-zinc-200"
-                        aria-label="Close inspector panel"
-                    >
-                        <PanelRightClose size={16} />
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-900 rounded-lg transition-colors group">
+                        <Settings size={18} />
+                        <span className="text-sm font-medium">Settings</span>
                     </button>
-                    {rightInspectorOpen && "Entry Details"}
+                    <button className="w-full flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors group">
+                        <LogOut size={18} />
+                        <span className="text-sm font-medium">Lock Vault</span>
+                    </button>
                 </div>
-                {rightInspectorOpen && (
-                    <div className="flex-grow overflow-y-auto custom-scrollbar flex flex-col items-center justify-center p-8 text-zinc-500 gap-4">
-                        <p className="text-xs text-center">Select an entry to view details</p>
-                    </div>
-                )}
             </aside>
+
+            {/* Main Content Area */}
+            <main className="flex-1 h-full flex flex-col min-w-0 bg-white dark:bg-black relative">
+                {/* Header / Toolbar */}
+                <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-4 bg-white/50 dark:bg-black/50 backdrop-blur-md z-10 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={toggleLeftSidebar}
+                            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-zinc-600 dark:text-zinc-400 transition-colors"
+                        >
+                            {leftSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+                        </button>
+                        <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+                        <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                            {activeProfile ? `Ledger: ${profileName}` : 'Select Profile'}
+                        </h1>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleRightInspector}
+                            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-lg text-zinc-600 dark:text-zinc-400 transition-colors"
+                        >
+                            <PanelRightClose size={18} className={rightInspectorOpen ? '' : 'rotate-180'} />
+                        </button>
+                    </div>
+                </header>
+
+                {/* Viewport Content */}
+                <div className="flex-1 overflow-auto bg-zinc-50 dark:bg-black p-6">
+                    <Outlet />
+                </div>
+            </main>
 
             {/* Sync Configuration Dialog */}
             <SyncConfigDialog
@@ -212,7 +170,39 @@ export const AppShell: React.FC = () => {
                     setIsSyncSheetOpen(false);
                     setIsSyncDialogOpen(true);
                 }}
+                onResolveAll={() => {
+                    setIsSyncSheetOpen(false);
+                    setIsConflictListOpen(true);
+                }}
             />
+
+            {/* Conflict List Sheet */}
+            {isConflictListOpen && (
+                <div className="fixed inset-0 z-[60] flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="flex-1" onClick={() => setIsConflictListOpen(false)} />
+                    <div className="w-full max-w-md bg-zinc-900 border-l border-zinc-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+                        <ConflictListSheet
+                            conflicts={conflicts}
+                            onSelectConflict={(c) => {
+                                setSelectedConflict(c);
+                                setIsConflictListOpen(false);
+                            }}
+                            onClose={() => setIsConflictListOpen(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Diff Guard Modal */}
+            {selectedConflict && (
+                <DiffGuardModal
+                    conflict={selectedConflict}
+                    onAcceptLocal={() => setSelectedConflict(null)}
+                    onAcceptRemote={() => setSelectedConflict(null)}
+                    onSkip={() => setSelectedConflict(null)}
+                    onClose={() => setSelectedConflict(null)}
+                />
+            )}
 
             {/* ARIA Live Region for Sync Announcements */}
             <div

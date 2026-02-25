@@ -7,10 +7,11 @@ interface SyncStatusSheetProps {
     isOpen: boolean;
     onClose: () => void;
     onOpenSettings: () => void;
+    onResolveAll: () => void;
     profileId: string;
 }
 
-export const SyncStatusSheet: React.FC<SyncStatusSheetProps> = ({ isOpen, onClose, onOpenSettings, profileId }) => {
+export const SyncStatusSheet: React.FC<SyncStatusSheetProps> = ({ isOpen, onClose, onOpenSettings, onResolveAll, profileId }) => {
     const { syncStatus, syncConfig, conflicts, isLoading, triggerSync } = useSyncStore();
     const { isUnlocked } = useAuthStore();
 
@@ -175,7 +176,10 @@ export const SyncStatusSheet: React.FC<SyncStatusSheetProps> = ({ isOpen, onClos
                         <div className="space-y-4 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-500">Conflicts Detected</h3>
-                                <button className="text-[10px] font-bold text-amber-600 dark:text-amber-500 hover:underline flex items-center gap-1">
+                                <button
+                                    onClick={onResolveAll}
+                                    className="text-[10px] font-bold text-amber-600 dark:text-amber-500 hover:underline flex items-center gap-1"
+                                >
                                     Resolve All <ExternalLink size={10} />
                                 </button>
                             </div>
