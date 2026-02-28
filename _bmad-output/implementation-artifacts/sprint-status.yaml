@@ -56,18 +56,24 @@ development_status:
   epic-2-retrospective: optional
 
   epic-3: in-progress
-  3-1-schema-builder-ui: review
-  3-2-ledger-data-table-inline-entry-routing: review
-  3-3-bidirectional-relational-links: review
-  3-4-ghost-reference-handling-soft-delete: review
+  3-1-core-pouchdb-ledger-abstraction-crud: ready-for-dev
+  3-2-schema-builder-base-ui-type-selection: ready-for-dev
+  3-3-schema-builder-validation-store-integration: ready-for-dev
+  3-4-data-lab-tanstack-table-shell-rendering: ready-for-dev
+  3-5-data-lab-keyboard-first-inline-editing: ready-for-dev
+  3-6-relational-links-combobox-selection-ui: ready-for-dev
+  3-7-relational-links-bidirectional-sync-ghost-reference-logic: ready-for-dev
   epic-3-retrospective: optional
 
   epic-4: in-progress
-  4-1-node-canvas-engine-foundation: review
-  4-2-ledger-source-nodes-basic-wiring: review
-  4-3-correlation-compute-nodes: review
-  4-4-autonomous-triggers-on-create-on-edit: review
-  4-5-dashboard-widgets: review
+  4-1-node-forge-canvas-shell-react-flow-setup: ready-for-dev
+  4-2-node-forge-custom-node-types: ready-for-dev
+  4-3-node-forge-edge-rules-type-validation: ready-for-dev
+  4-4-node-forge-ledger-data-hydration-logic: ready-for-dev
+  4-5-node-forge-computation-engine-hook-worker: ready-for-dev
+  4-6-node-forge-autonomous-triggers-on-create-on-edit: ready-for-dev
+  4-7-dashboard-grid-layout-shell: ready-for-dev
+  4-8-dashboard-data-visualization-widgets: ready-for-dev
   epic-4-retrospective: optional
 
   epic-5: in-progress
@@ -90,3 +96,7 @@ development_status:
   7-2-json-file-export-ui: ready-for-dev
   7-3-json-file-import-ui: ready-for-dev
   epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-system-stability-zustand-react-flow-bridge-hook: backlog
+  epic-8-retrospective: optional

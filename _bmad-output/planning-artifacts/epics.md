@@ -292,65 +292,102 @@ So that I understand how to begin without being overwhelmed by choice.
 
 Users can define custom schemas with typed fields (Text, Number, Date, Relation), perform full CRUD on ledger entries, and create bidirectional relational links between entries across ledgers. The ledger table view (Data Lab) with inline editing, keyboard navigation, and the Schema Builder UI are fully operational.
 
-### Story 3.1: Schema Builder UI
+### Story 3.1: Core PouchDB Ledger Abstraction (CRUD)
+
+As a developer,
+I want the foundational CRUD operations for ledgers and their entries to be robustly implemented against PouchDB,
+So that the UI layers can rely on atomic, schema-validated writes without side effects.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated session
+**When** `create_ledger`, `create_entry`, `update_entry`, or `delete_entry` is invoked
+**Then** the underlying JSON is strictly verified against its schema definition
+**And** updates increment the PouchDB revision counter cleanly
+**And** failing validations push clear error states to `useErrorStore`
+
+### Story 3.2: Schema Builder: Base UI & Type Selection
 
 As a user,
-I want to define and edit custom schemas with distinct field types (Text, Number, Date, Relation),
+I want to visually configure typed fields (Text, Number, Date, Relation) for a schema,
 So that my ledger structure perfectly matches the real-world data I am tracking.
 
 **Acceptance Criteria:**
 
-**Given** the user is viewing a project
-**When** they open the Schema Builder for a new or existing ledger
-**Then** they can add/remove fields and select types (Text, Number, Date, Relation)
+**Given** the user is viewing the Schema Builder modal
+**When** they click "Add Field" and edit properties
+**Then** they can specify the field's name, type, and required/optional status
 **And** relations can target other existing ledgers in the same project
-**And** saving the schema creates or updates the schema document in PouchDB
-**And** updating an existing schema increments its `schema_version` to support JIT migrations (NFR9)
 
-### Story 3.2: Ledger Data Table & Inline Entry Routing
+### Story 3.3: Schema Builder: Validation & Store Integration
 
 As a user,
-I want to view my ledger in a dense data table and add/edit entries inline (via keyboard),
-So that tracking data feels as fast as thought.
+I want my schema to save reliably and update my workspace safely,
+So that changing a field name doesn't corrupt my tracking history.
+
+**Acceptance Criteria:**
+
+**Given** the user has configured the fields for a ledger
+**When** they click "Save Schema"
+**Then** the system updates the schema document in PouchDB
+**And** increments the `schema_version` to support JIT migrations (NFR9)
+**And** `useLedgerStore` refreshes to reflect the newly persisted schema definitions
+
+### Story 3.4: Data Lab: Tanstack Table Shell & Rendering
+
+As a user,
+I want to view my ledger in a dense data table,
+So that I can see the macroscopic trends of my logged entries.
 
 **Acceptance Criteria:**
 
 **Given** the user is viewing a configured ledger
+**When** the Data Lab view loads
+**Then** Tanstack Table renders all entries correlating to the active schema definition
+**And** the table columns accurately reflect the schema's field definitions
+
+### Story 3.5: Data Lab: Keyboard-First Inline Editing
+
+As a user,
+I want to add/edit entries inline (via keyboard),
+So that tracking data feels as fast as thought.
+
+**Acceptance Criteria:**
+
+**Given** the user is viewing the Data Lab table
 **When** they press `N` or click "Add Entry"
 **Then** an inline entry row appears at the top of the table (no modal dialog)
 **And** the user can `Tab` between fields and press `Enter` to commit the entry to PouchDB
-**And** input latency remains <50ms natively (NFR1)
-**And** the table is fully keyboard navigable (`↑/↓` arrow keys) and meets WCAG 2.1 AA contrast constraints
+**And** input latency natively remains <50ms (NFR1)
+**And** the table is fully keyboard navigable (`↑/↓` arrow keys) and meets WCAG 2.1 AA contrasts
 
-### Story 3.3: Bidirectional Relational Links
+### Story 3.6: Relational Links: Combobox Selection UI
 
 As a user,
 I want to link an entry in one ledger to an entry in another ledger,
-So that I can capture cross-domain relationships (e.g., linking a "Coffee" entry to a "Sleep Score" entry).
+So that I can capture cross-domain relationships cleanly.
 
 **Acceptance Criteria:**
 
 **Given** a ledger schema contains a Relation field pointing to a target ledger
 **When** the user clicks the field on a row in the table
 **Then** a combobox (Select) appears, allowing them to search and select an entry from the target ledger
-**And** selecting the entry saves the link reference to PouchDB
 **And** the relation displays as a visually distinct "Tag Chip" in both the source entry and as a back-link in the target entry
 **And** navigating the link loads the target entry's ledger view
 
-### Story 3.4: Ghost Reference Handling (Soft-Delete)
+### Story 3.7: Relational Links: Bidirectional Sync & Ghost Reference Logic
 
 As a user,
-I want links to gracefully handle deleted entries,
-So that my system doesn't crash or break when a related entry is removed or hasn't synced yet.
+I want links to forcefully handle deleted entries gracefully,
+So that my system doesn't crash tracking missing connections.
 
 **Acceptance Criteria:**
 
 **Given** Entry A has a relational link to Entry B
 **When** the user deletes Entry B
 **Then** Entry B is soft-deleted (`isDeleted: true`, `deletedAt: [timestamp]`) in PouchDB rather than hard-purged
-**And** Entry A's relational Tag Chip updates to show a "Ghost Reference" state (e.g., struck-through or greyed out text) instead of causing a UI crash
+**And** Entry A's relational Tag Chip updates to show a "Ghost Reference" state (e.g., greyed out text) instead of causing a UI crash
 **And** restoring Entry B restores the link automatically across all devices
-**And** hard-purging a profile correctly removes both the ghost reference and the link intact without data loss on other entries
 
 ---
 
@@ -358,50 +395,74 @@ So that my system doesn't crash or break when a related entry is removed or hasn
 
 Users can open the Node Editor canvas (Node Forge), drag and wire Correlation Nodes, Arithmetic Nodes, and Trigger Nodes between ledger data sources, and view computed insights on a configurable Dashboard. The node editor runs at 60fps with 100+ active nodes.
 
-### Story 4.1: Node Canvas & Engine Foundation
+### Story 4.1: Node Forge: Canvas Shell & React Flow Setup
 
 As a builder,
 I want an infinite canvas to visually script my ledger logic,
-So that I can see how data flows between different domains of my life.
+So that I can drag and pan across my node automations at 60fps.
 
 **Acceptance Criteria:**
 
 **Given** the user navigates to the "Node Forge" view
 **When** the React Flow canvas renders
 **Then** the user can pan (`Space` + drag) and zoom infinitely at a smooth 60fps (NFR2)
-**And** the canvas state (node positions, zoom level) persists to `useNodeStore` and saves correctly to PouchDB
-**And** a first-time user opening an empty canvas sees an interactive overlay guiding them to drag their first node onto the canvas
+**And** an empty canvas displays an interactive overlay guiding the first drag action
+**And** node positions are decoupled strictly from Zustand to prevent re-render loops (see Epic 8)
 
-### Story 4.2: Ledger Source Nodes & Basic Wiring
+### Story 4.2: Node Forge: Custom Node Types
 
 As a builder,
-I want to drop ledger nodes onto the canvas and wire them together,
-So that I can define data inputs for automations.
+I want specific visual node blocks for my ledgers and logic,
+So that I can cleanly outline Inputs, Computations, and Outputs.
 
 **Acceptance Criteria:**
 
-**Given** the user is in the Node Editor
-**When** they drag a "Ledger Source" from the palette onto the canvas
-**Then** a node appears representing a specific ledger schema (e.g., "Coffee Entries")
-**And** the user can drag a functional wire from the Source Node's output port to another node's input port
-**And** hovering over a connected wire displays a tooltip with a live data preview of what is flowing through it
-**And** incompatible data types cannot be wired together (the connection is rejected visually)
+**Given** the Node Editor is active
+**When** the user drags a node from the palette onto the canvas
+**Then** a custom React component represents "Ledger Source", "Correlation", "Arithmetic", or "Dashboard Output"
+**And** the node safely initializes its metadata in `useNodeStore` properly
 
-### Story 4.3: Correlation & Compute Nodes
+### Story 4.3: Node Forge: Edge Rules & Type Validation
 
 As a builder,
-I want to use logic nodes to calculate insights across different ledgers,
-So that I can discover hidden relationships (like caffeine's effect on sleep).
+I want the wiring to prevent logical mistakes,
+So that I don't accidentally pipe text into a math node.
 
 **Acceptance Criteria:**
 
-**Given** two Ledger Source nodes are on the canvas
-**When** the user wires them into a "Correlation Node" or "Arithmetic Node"
-**Then** the node computes the result (e.g., Pearson correlation coefficient or simple sum) based on the input arrays
-**And** the result is visually displayed on the node itself in real time
-**And** computation happens gracefully via web workers to prevent main-thread locking
+**Given** the user attempts to wire output A to input B
+**When** the user drags a wire
+**Then** valid connections snap visually
+**And** incompatible data types cannot be wired together (the connection is rejected visually and the edge drops cleanly)
 
-### Story 4.4: Autonomous Triggers (On-Create / On-Edit)
+### Story 4.4: Node Forge: Ledger Data Hydration Logic
+
+As a builder,
+I want my Source nodes to dynamically output real ledger values,
+So that downstream computation nodes receive accurate arrays of numbers or text.
+
+**Acceptance Criteria:**
+
+**Given** a Ledger Source node is active on the canvas
+**When** the user points it to a specific ledger schema (e.g., "Coffee Entries")
+**Then** the outgoing wire receives the latest persisted values queried from PouchDB
+**And** hovering over a connected wire displays a tooltip with a live data preview
+
+### Story 4.5: Node Forge: Computation Engine Hook & Worker
+
+As a builder,
+I want complex math computations to run smoothly,
+So that my canvas remains responsive.
+
+**Acceptance Criteria:**
+
+**Given** two Ledger Source nodes are wired into a "Correlation Node" or "Arithmetic Node"
+**When** computation is requested by data hydration
+**Then** the node computes the result (e.g., Pearson correlation coefficient or simple sum)
+**And** computation happens gracefully preventing main-thread locking
+**And** the localized output visually updates on the node body in real time
+
+### Story 4.6: Node Forge: Autonomous Triggers (On-Create / On-Edit)
 
 As a builder,
 I want nodes that react to events,
@@ -415,11 +476,24 @@ So that my automations run in the background without manual clicks.
 **And** the trigger executes any downstream wired logic
 **And** infinite loops (e.g., a trigger that creates an entry that fires the same trigger) are caught and halted by a maximum execution depth limiter in the node engine, showing an error in the `<ErrorToast />`
 
-### Story 4.5: Dashboard Widgets
+### Story 4.7: Dashboard: Grid Layout Shell
 
 As a user,
-I want to pipe my node computations into visual widgets,
-So that I have a glanceable dashboard of my most important metrics.
+I want a customizable dashboard grid,
+So that I can arrange my metrics perfectly.
+
+**Acceptance Criteria:**
+
+**Given** the user is on the Dashboard
+**When** they drag and resize widget containers
+**Then** the widgets layout responds fluidly using a CSS grid
+**And** the layout configuration persists safely across sessions
+
+### Story 4.8: Dashboard: Data Visualization Widgets
+
+As a user,
+I want to pipe output nodes into beautiful charts and indicators,
+So that I have an at-a-glance health read of my tracked life.
 
 **Acceptance Criteria:**
 
@@ -427,7 +501,27 @@ So that I have a glanceable dashboard of my most important metrics.
 **When** the Dashboard view is rendered
 **Then** a widget (Chart, Trend Indicator, or Text Value) is displayed showing the live output
 **And** widgets dynamically update instantly when the underlying ledger data changes
-**And** the user can rearrange widgets on a flexible CSS grid layout that persists across sessions
+
+---
+
+## Epic 8: Technical Debt & System Stability
+
+This epic tracks necessary technical refactoring to resolve architecture friction before those areas cause critical bugs, performance degradation, or delayed feature deliveries.
+
+### Story 8.1: System Stability: Zustand & React Flow Bridge Hook
+
+As a developer,
+I want to resolve the re-render loop crashing the Node Forge by architecting a stabilized bridge,
+So that we can store our node state safely in our global Zustand instance without breaking 60fps dragging and causing infinite updates.
+
+**Acceptance Criteria:**
+
+**Given** React Flow nodes are dragged continuously by the user
+**When** they are in mid-movement
+**Then** local `@xyflow/react` state handles the position natively, bypassing the global store completely during drag operations
+**And** when `onNodeDragStop` fires, it explicitly dispatches the final exact coordinates to `useNodeStore` selectively
+**And** all Zustand React Flow store fetches inside components are strictly wrapped in `useShallow` to prevent React from re-rendering the whole component tree unconditionally on sub-property mutations
+
 
 ---
 
