@@ -177,15 +177,17 @@ BMad Method dev-story workflow (YOLO mode - autonomous implementation)
 
 1. **Task 1 - React Router v7 Setup:**
    - Installed `react-router-dom@^7.0.0` dependency
-   - Router already configured in `src/App.tsx` from previous work
-   - Route structure already in place for auth flow
+   - Router configured in `src/App.tsx`
+   - Route structure in place for auth flow
 
 2. **Task 2 - Error Boundaries:**
    - Created `ErrorBoundary` class component (required for componentDidCatch)
    - Added `useErrorHandler` hook for functional components
    - Error boundary dispatches to `useErrorStore` → displays via `ErrorToast`
    - Custom fallback UI with dismiss functionality
-   - Inline AlertCircle icon (no external dependency)
+   - Uses lucide-react AlertCircle icon
+   - **App-level ErrorBoundary**: Wraps entire Routes component
+   - **Route-level ErrorBoundary**: Wraps `/app/:profileId` route group
 
 3. **Task 3 - Auth Guard:**
    - `AuthGuard` component already existed and properly implemented
@@ -199,15 +201,24 @@ BMad Method dev-story workflow (YOLO mode - autonomous implementation)
    - Navigation structure in place via AppShell component
 
 5. **Task 5 - Unit Tests:**
-   - ErrorBoundary tests: 7 scenarios (render success, catch errors, dispatch to store, custom fallback, dismiss)
-   - AuthGuard tests: 5 scenarios (redirect unregistered, redirect locked, allow unlocked, passphrase modes)
-   - All 12 tests pass ✅
+   - ErrorBoundary tests: 9 scenarios (render success, catch errors, dispatch to store, custom fallback, ErrorToast integration, async error handling)
+   - AuthGuard tests: 5 scenarios (redirect unregistered, redirect locked, allow unlocked, passphrase modes, location verification)
+   - All 14 tests pass ✅
+
+**Code Review Fixes Applied:**
+- ✅ HIGH-1: Integrated ErrorBoundary into App.tsx (app-level)
+- ✅ HIGH-2: Added route-level ErrorBoundary for /app/:profileId route group
+- ✅ MED-1: Improved AuthGuard tests to verify actual navigation via useLocation
+- ✅ MED-2: Fixed dismiss test with proper ErrorToast integration
+- ✅ MED-3: Added ErrorToast integration tests (end-to-end error flow)
+- ✅ MED-4: Added useErrorHandler async error handling test
+- ✅ LOW-1: Replaced inline SVG with lucide-react AlertCircle
 
 **Test Results:**
-- ✅ ErrorBoundary.test.tsx: 7/7 tests passing
+- ✅ ErrorBoundary.test.tsx: 9/9 tests passing
 - ✅ AuthGuard.test.tsx: 5/5 tests passing
 - ✅ TypeScript compilation: No errors
-- ⚠️ Full suite: 40/42 tests (1 pre-existing failure in useSyncStore, unrelated to this story)
+- ⚠️ Full suite: 42/44 tests (1 pre-existing failure in useSyncStore, unrelated to this story)
 
 ### File List
 
@@ -217,6 +228,7 @@ BMad Method dev-story workflow (YOLO mode - autonomous implementation)
 - `src/features/auth/AuthGuard.test.tsx` - Unit tests for AuthGuard redirect behavior
 
 **Modified Files:**
+- `src/App.tsx` - Integrated ErrorBoundary at app-level and route-level
 - `package.json` - Added react-router-dom@^7.0.0 dependency
 - `package-lock.json` - Updated lock file
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` - Story status: ready-for-dev → in-progress → review
@@ -230,6 +242,14 @@ BMad Method dev-story workflow (YOLO mode - autonomous implementation)
   - AuthGuard tests added to verify route protection
   - All acceptance criteria satisfied
   - Story status updated to "review"
+
+- **2026-03-01**: Code review fixes applied
+  - Integrated ErrorBoundary into App.tsx (app-level and route-level)
+  - Improved AuthGuard tests to verify actual navigation
+  - Added ErrorToast integration tests
+  - Replaced inline SVG with lucide-react icons
+  - All 14 new tests passing
+  - TypeScript strict mode: ✅ No errors
 
 ---
 

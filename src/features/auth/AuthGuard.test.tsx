@@ -2,12 +2,21 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AuthGuard } from './AuthGuard';
 import { useAuthStore } from './useAuthStore';
-import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
+// Helper component to capture location
+let capturedLocation: ReturnType<typeof useLocation> | null = null;
+
+const NavigationCapture: React.FC = () => {
+    capturedLocation = useLocation();
+    return null;
+};
 
 describe('AuthGuard', () => {
     beforeEach(() => {
         // Reset auth store state
         useAuthStore.getState().reset();
+        capturedLocation = null;
     });
 
     it('redirects to /setup when user is not registered', () => {
@@ -23,12 +32,14 @@ describe('AuthGuard', () => {
                     <Route path="*" element={<Navigate to="/setup" replace />} />
                     <Route path="/setup" element={<div data-testid="setup-page">Setup Page</div>} />
                 </Routes>
+                <NavigationCapture />
             </MemoryRouter>
         );
 
         // AuthGuard should redirect, so protected content should not be visible
-        // and we should end up at setup
         expect(container.querySelector('[data-testid="protected-content"]')).not.toBeInTheDocument();
+        // Verify we ended up at /setup
+        expect(capturedLocation?.pathname).toBe('/setup');
     });
 
     it('redirects to /unlock when user is registered but not unlocked', () => {
@@ -48,11 +59,14 @@ describe('AuthGuard', () => {
                     <Route path="*" element={<Navigate to="/unlock" replace />} />
                     <Route path="/unlock" element={<div data-testid="unlock-page">Unlock Page</div>} />
                 </Routes>
+                <NavigationCapture />
             </MemoryRouter>
         );
 
         // AuthGuard should redirect, so protected content should not be visible
         expect(container.querySelector('[data-testid="protected-content"]')).not.toBeInTheDocument();
+        // Verify we ended up at /unlock
+        expect(capturedLocation?.pathname).toBe('/unlock');
     });
 
     it('renders children when user is authenticated and unlocked', () => {
@@ -68,11 +82,14 @@ describe('AuthGuard', () => {
                 <AuthGuard>
                     <div data-testid="protected-content">Protected Content</div>
                 </AuthGuard>
+                <NavigationCapture />
             </MemoryRouter>
         );
 
         expect(screen.getByTestId('protected-content')).toBeInTheDocument();
         expect(screen.getByText('Protected Content')).toBeInTheDocument();
+        // Verify we stayed on the requested route
+        expect(capturedLocation?.pathname).toBe('/dashboard');
     });
 
     it('allows access when user has encryptedTotpSecret (passphrase mode) and is unlocked', () => {
@@ -92,10 +109,12 @@ describe('AuthGuard', () => {
                 <AuthGuard>
                     <div data-testid="protected-content">Protected Content</div>
                 </AuthGuard>
+                <NavigationCapture />
             </MemoryRouter>
         );
 
         expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+        expect(capturedLocation?.pathname).toBe('/dashboard');
     });
 
     it('redirects to /unlock when passphrase-protected user is not unlocked', () => {
@@ -119,10 +138,13 @@ describe('AuthGuard', () => {
                     <Route path="*" element={<Navigate to="/unlock" replace />} />
                     <Route path="/unlock" element={<div data-testid="unlock-page">Unlock Page</div>} />
                 </Routes>
+                <NavigationCapture />
             </MemoryRouter>
         );
 
         // AuthGuard should redirect, so protected content should not be visible
         expect(container.querySelector('[data-testid="protected-content"]')).not.toBeInTheDocument();
+        // Verify we ended up at /unlock
+        expect(capturedLocation?.pathname).toBe('/unlock');
     });
 });

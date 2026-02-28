@@ -1,5 +1,6 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { useErrorStore } from '../../stores/useErrorStore';
+import { AlertCircle } from 'lucide-react';
 
 interface ErrorBoundaryProps {
     children: ReactNode;
@@ -92,26 +93,3 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return children;
     }
 }
-
-// Simple alert icon component (avoiding external dependency)
-const AlertCircle: React.FC<{ size?: number; className?: string }> = ({
-    size = 24,
-    className = '',
-}) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" x2="12" y1="8" y2="12" />
-        <line x1="12" x2="12.01" y1="16" y2="16" />
-    </svg>
-);

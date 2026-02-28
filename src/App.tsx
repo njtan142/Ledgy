@@ -17,6 +17,7 @@ import { ProjectDashboard } from "./features/projects/ProjectDashboard";
 import { NodeCanvas } from "./features/nodeEditor/NodeCanvas";
 import { ReactFlowProvider } from "@xyflow/react";
 import { SettingsPage } from "./features/settings/SettingsPage";
+import { ErrorBoundary } from "./features/shell/ErrorBoundary";
 
 function App() {
   const theme = useUIStore((state) => state.theme);
@@ -42,60 +43,66 @@ function App() {
     <>
       <ErrorToast />
       <NotificationToast />
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/setup"
-          element={
-            <GuestGuard>
-              <SetupPage />
-            </GuestGuard>
-          }
-        />
+      {/* App-level error boundary wraps all routes */}
+      <ErrorBoundary>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/setup"
+            element={
+              <GuestGuard>
+                <SetupPage />
+              </GuestGuard>
+            }
+          />
 
-        <Route
-          path="/unlock"
-          element={
-            <UnlockGuard>
-              <UnlockPage />
-            </UnlockGuard>
-          }
-        />
+          <Route
+            path="/unlock"
+            element={
+              <UnlockGuard>
+                <UnlockPage />
+              </UnlockGuard>
+            }
+          />
 
-        {/* Protected Routes */}
-        <Route
-          path="/profiles"
-          element={
-            <AuthGuard>
-              <ProfileSelector />
-            </AuthGuard>
-          }
-        />
+          {/* Protected Routes */}
+          <Route
+            path="/profiles"
+            element={
+              <AuthGuard>
+                <ProfileSelector />
+              </AuthGuard>
+            }
+          />
 
-        <Route
-          path="/app/:profileId"
-          element={
-            <AuthGuard>
-              <ReactFlowProvider>
-                <AppShell />
-              </ReactFlowProvider>
-            </AuthGuard>
-          }
-        >
-          <Route index element={<Navigate to="projects" replace />} />
-          <Route path="projects" element={<ProjectDashboard />} />
-          <Route path="project/:projectId" element={<Dashboard />} />
-          <Route path="project/:projectId/node-forge" element={<NodeCanvas />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="project/:projectId/ledger/:ledgerId" element={<LedgerView />} />
-          <Route path="trash" element={<TrashView />} />
-          {/* Add more profile-scoped routes here */}
-        </Route>
+          {/* Route-level error boundary for main app shell */}
+          <Route
+            path="/app/:profileId"
+            element={
+              <ErrorBoundary>
+                <AuthGuard>
+                  <ReactFlowProvider>
+                    <AppShell />
+                  </ReactFlowProvider>
+                </AuthGuard>
+              </ErrorBoundary>
+            }
+          >
+            <Route index element={<Navigate to="projects" replace />} />
+            <Route path="projects" element={<ProjectDashboard />} />
+            <Route path="project/:projectId" element={<Dashboard />} />
+            <Route path="project/:projectId/node-forge" element={<NodeCanvas />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="project/:projectId/ledger/:ledgerId" element={<LedgerView />} />
+            <Route path="trash" element={<TrashView />} />
+            {/* Add more profile-scoped routes here */}
+          </Route>
 
-        {/* Root Redirects */}
-        <Route path="/" element={<Navigate to="/profiles" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Root Redirects */}
+          <Route path="/" element={<Navigate to="/profiles" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
     </>
   );
 }

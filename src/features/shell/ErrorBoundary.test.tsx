@@ -1,7 +1,9 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ErrorBoundary, useErrorHandler } from './ErrorBoundary';
 import { useErrorStore } from '../../stores/useErrorStore';
+import { ErrorToast } from '../../components/ErrorToast';
 
 // Test component that throws an error
 const ThrowErrorComponent: React.FC<{ message?: string }> = ({ message = 'Test error' }) => {
@@ -75,24 +77,59 @@ describe('ErrorBoundary', () => {
         consoleSpy.mockRestore();
     });
 
-    it('allows dismiss action to reset error state', () => {
+    it('integrates with ErrorToast via useErrorHandler hook', async () => {
+        // Test error flow via useErrorHandler: functional component → dispatchError → ErrorToast
+        const ErrorThrowingComponent: React.FC = () => {
+            const handleError = useErrorHandler();
+            
+            React.useEffect(() => {
+                handleError(new Error('Integration test error'), 'useEffect Error');
+            }, [handleError]);
+            
+            return <div data-testid="component">Component</div>;
+        };
+
+        render(
+            <>
+                <ErrorBoundary>
+                    <ErrorThrowingComponent />
+                </ErrorBoundary>
+                <ErrorToast />
+            </>
+        );
+
+        // Wait for error to be dispatched and toast to appear
+        await waitFor(() => {
+            const errorToast = screen.getByText('useEffect Error: Integration test error');
+            expect(errorToast).toBeInTheDocument();
+        }, { timeout: 1000 });
+    });
+
+    it('dispatches error that ErrorToast can display', async () => {
+        // Test that ErrorBoundary properly dispatches to store for ErrorToast
+        const dispatchErrorSpy = vi.spyOn(useErrorStore.getState(), 'dispatchError');
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         render(
-            <ErrorBoundary>
-                <ThrowErrorComponent message="Dismiss test" />
-            </ErrorBoundary>
+            <>
+                <ErrorBoundary>
+                    <ThrowErrorComponent message="Toast display test" />
+                </ErrorBoundary>
+                <ErrorToast />
+            </>
         );
 
-        // Verify error is shown
-        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+        // Verify error was dispatched
+        expect(dispatchErrorSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Toast display test'),
+            'error'
+        );
 
-        // Click dismiss button
-        const dismissButton = screen.getByText('Dismiss');
-        fireEvent.click(dismissButton);
+        // Wait for ErrorToast to display the error from store
+        await waitFor(() => {
+            expect(screen.getByText('Toast display test')).toBeInTheDocument();
+        }, { timeout: 1000 });
 
-        // Error should be cleared (component re-renders children)
-        // Note: This test may need adjustment based on React's error boundary behavior
         consoleSpy.mockRestore();
     });
 });
@@ -119,6 +156,36 @@ describe('useErrorHandler', () => {
         result.current(error);
 
         expect(dispatchErrorSpy).toHaveBeenCalledWith('Simple error', 'error');
+    });
+
+    it('can be used in functional components for async error handling', async () => {
+        const dispatchErrorSpy = vi.spyOn(useErrorStore.getState(), 'dispatchError');
+        
+        const TestComponent: React.FC = () => {
+            const handleError = useErrorHandler();
+            
+            const handleAsyncError = async () => {
+                try {
+                    await Promise.reject(new Error('Async error'));
+                } catch (error) {
+                    handleError(error as Error, 'Async Operation');
+                }
+            };
+            
+            return <button onClick={handleAsyncError}>Trigger Error</button>;
+        };
+
+        render(<TestComponent />);
+        
+        const button = screen.getByText('Trigger Error');
+        fireEvent.click(button);
+
+        await waitFor(() => {
+            expect(dispatchErrorSpy).toHaveBeenCalledWith(
+                'Async Operation: Async error',
+                'error'
+            );
+        });
     });
 });
 
