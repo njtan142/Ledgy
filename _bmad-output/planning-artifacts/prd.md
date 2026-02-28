@@ -121,30 +121,44 @@ Ledgy is a local-first personal data platform designed to break the cycle of "Tr
 
 ## Functional Requirements (Capability Contract)
 
-### 1. Relational Ledger Engine
-- **FR1:** Users can define schemas with custom field types (Text, Number, Date, Relation).
-- **FR2:** Users can perform CRUD operations on any ledger.
-- **FR3:** Users can establish bidirectional relational links between disparate ledger entries.
-- **FR4:** Users can export/import project data as standardized JSON.
+The system requires deep implementation logic extending far past basic wireframes. The following FRs capture the full "Toolkit-First" engine mechanics.
 
-### 2. Visual Scripting & Dashboard
-- **FR5:** Users can create automation logic via a drag-and-drop node editor.
-- **FR6:** Users can connect data points using specialized Correlation Nodes.
-- **FR7:** Users can define triggers (On-Create, On-Edit) for autonomous node execution.
-- **FR8:** Users can configure custom dashboard layouts with visualization widgets (Charts, Trends).
+### 1. Relational Ledger Engine (Core Data Architecture)
+- **FR1:** Users can define schemas with custom field types (Text, Number, Date, Relation) with configurable validation constraints (e.g., Min/Max values, RegEx matching, Required flags).
+- **FR2:** Users can perform CRUD operations on any ledger with optimistic UI updates resolving synchronously to the frontend, backed by debounced writes to PouchDB.
+- **FR3:** System supports **Bulk Operations** (Bulk Edit, Bulk Delete) across filtered ranges of ledger entries via table selections.
+- **FR4:** Users can establish bidirectional relational links between disparate ledger entries safely via Combobox searching.
+- **FR5:** System strictly enforces an internal **Undo/Redo Stack** for local session ledger modifications.
+- **FR6:** Users can export/import project data (schemas and graphs) as standardized JSON without locking personal tracking entries inside proprietary blobs.
+- **FR7:** The DB layer must automatically hydrate multi-level nested Relation fields, flattening them cleanly for UI presentation.
+- **FR8:** Deleted related entries invoke a "Ghost Reference" soft-deletion fallback (`isDeleted: true`) rather than cascading deletes, preserving historic integrity.
 
-### 3. AI Capture Plugin (Default Plugin)
-> **Note:** FR9–FR11 are delivered by the bundled AI Capture plugin, not the core engine. The core engine exposes no AI logic; these requirements apply to the first-party plugin only.
-- **FR9:** Users can upload/capture images for high-accuracy field extraction via Google AI Studio.
-- **FR10:** Users can review and edit AI-extracted data before ledger commitment.
-- **FR11:** System must treat images as ephemeral unless the user explicitly saves them as attachments.
+### 2. Node Forge (Visual Scripting & Graph Engine)
+- **FR9:** Users can create custom logic flows via an infinite 2D drag-and-drop node canvas rendering smoothly at 60fps at 100+ nodes.
+- **FR10:** The canvas requires advanced UI tooling: a live **Minimap**, edge custom routing algorithms (e.g., smoothstep), and zoom-to-fit commands.
+- **FR11:** System enforces strictly typed edges—users are visually rejected from wiring incompatible outputs (e.g., wiring Text inputs directly into Math summation operations) via edge-snap rules.
+- **FR12:** Users can group designated node blocks together into collapsible **Sub-Graph Containers** to manage workspace complexity securely.
+- **FR13:** All heavy computations (Correlations, Math, Parsing) MUST be offloaded to an asynchronous **Web Worker** architecture to avoid Main Thread UI locking.
+- **FR14:** System actively checks for and prevents **Cyclic Dependencies** when wiring computation triggers, instantly breaking loops causing infinite rendering.
+- **FR15:** Canvas positions and dimensions (`@xyflow/react` state) must detach from global immutable stores (Zustand) during active drags to preserve performance.
 
-### 4. Sync, Security & Admin
-- **FR12:** System replicates data to user-configured CouchDB/Firebase endpoints.
-- **FR13:** Users can resolve sync conflicts via a side-by-side Diff UI.
-- **FR14:** Users can protect sensitive data via client-side encryption and TOTP authentication.
-- **FR15:** Users can manage multiple isolated project profiles within a single installation.
-- **FR16:** Users can package project structures (Schema + Nodes) as shareable template files.
+### 3. Dashboard Widgets & Live Rendering
+- **FR16:** Users can define triggers (On-Create, On-Edit) for autonomous data processing execution in the background whenever a ledger entry mounts.
+- **FR17:** Users can configure custom dashboard layouts with complex visualization widgets (Bar Charts, Line Trends) powered directly by Node Forge computation endpoints.
+- **FR18:** Widget layouts persist across sessions via a fluid JSON grid serialization logic supporting user dragging and grid-snapping.
+
+### 4. Sync Engine, Security & Admin
+- **FR19:** System replicates delta-chunks of data to user-configured CouchDB/Firebase endpoints safely via background polling mechanics upon network re-establishment.
+- **FR20:** Users can resolve sync conflicts manually via an explicit side-by-side **Diff Guard UI**, displaying remote vs. local objects directly.
+- **FR21:** Users can protect sensitive data via AES-256-GCM encryption client-side, with keys dynamically derived from TOTP secrets using HKDF WebCrypto primitives.
+- **FR22:** Authentication layers must defend against brute-force attacks via exponential backoff local delays.
+- **FR23:** Profile management must support **Total Data Annihilation (Right to be Forgotten)**, physically unlinking and purging PouchDB clusters and explicitly destroying remote replicas on demand.
+
+### 5. Plugin Runtime & AI Capture (External I/O)
+- **FR24:** Plugins execute in restricted Sandboxes without direct access to internal PouchDB instances, connecting solely via abstraction hooks.
+- **FR25:** Users can upload/capture camera images for high-accuracy field extraction.
+- **FR26:** Ephemerality Rule: Images are analyzed via Google AI Studio RAM buffers and explicitly discarded after Draft formulation, never saved to disk.
+- **FR27:** The AI drafts a strict structured JSON payload against current schemas requiring mandatory explicit user confirmation ("Show Before Save").
 
 ## Non-Functional Requirements (Quality Attributes)
 
