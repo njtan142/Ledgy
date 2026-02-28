@@ -37,22 +37,27 @@ so that **I can efficiently navigate the application, work in the main content a
   - [ ] Add navigation menu items (Projects, Ledger, Node Forge, Dashboard, Settings)
   - [ ] Implement collapsible state with animation
   - [ ] Add responsive behavior (hide on mobile by default)
+  - [ ] Add hamburger menu trigger for mobile access
   - [ ] Integrate profile switcher trigger
 - [ ] Task 3: Implement main canvas area (AC: #3, #6)
   - [ ] Create `src/features/shell/MainCanvas.tsx` component
   - [ ] Set up Outlet for route-based content rendering
   - [ ] Implement responsive padding and sizing
   - [ ] Add loading state placeholder
+  - [ ] Add "collapse all panels" button for maximum canvas space (optional)
 - [ ] Task 4: Implement inspector rail (AC: #4, #5, #6)
   - [ ] Create `src/features/shell/InspectorRail.tsx` component
   - [ ] Implement contextual tools placeholder
   - [ ] Add collapsible state with animation
   - [ ] Set up responsive behavior (hidden on mobile/tablet)
+  - [ ] Add min/max width constraints (min: 200px, max: 480px)
 - [ ] Task 5: Create layout state management (AC: #7, #12)
-  - [ ] Extend useUIStore with layout state: sidebarOpen, inspectorOpen, panelWidths
+  - [ ] Check if useUIStore exists - extend if exists, create if needed
+  - [ ] Add layout state: sidebarOpen, inspectorOpen, panelWidths
   - [ ] Implement actions: toggleSidebar, toggleInspector, setPanelWidth
   - [ ] Add localStorage persistence for layout preferences
-  - [ ] Implement keyboard shortcuts (Cmd+B, Cmd+I)
+  - [ ] Implement keyboard shortcuts (Cmd+B, Cmd+I) with proper cleanup on unmount
+  - [ ] Add panel width constraints validation (min/max bounds)
 - [ ] Task 6: Add responsive breakpoints (AC: #6)
   - [ ] Define Tailwind breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
   - [ ] Mobile: sidebar and inspector hidden by default
@@ -162,6 +167,9 @@ src/
 4. ✅ Layout responds to screen size changes
 5. ✅ Keyboard shortcuts trigger panel toggles
 6. ✅ Layout preferences persist across reloads
+7. ✅ Panel width constraints enforced (min/max)
+8. ✅ Keyboard event listeners cleaned up on unmount
+9. ✅ Mobile hamburger menu triggers sidebar
 
 ### Git Branch Strategy
 
