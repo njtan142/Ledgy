@@ -101,17 +101,14 @@ export const useAuthStore = create<AuthState>()(
 
                 // Step 1: Check session expiry
                 if (rememberMeExpiry !== null && Date.now() > rememberMeExpiry) {
-                    // Session expired — fully forget the user to force re-authentication via TOTP
+                    // Session expired — force re-authentication but retain the secrets so the user is not orphaned
                     set({
-                        totpSecret: null,
-                        encryptedTotpSecret: null,
                         isUnlocked: false,
                         encryptionKey: null,
-                        rememberMe: false,
                         rememberMeExpiry: null,
-                        rememberMeExpiryMs: null,
-                        needsPassphrase: false,
                     });
+                    // Note: We don't change `needsPassphrase` or clear secrets. The user either needs to enter
+                    // TOTP again (if plain session) or passphrase (if passphrase session) on the next unlock attempt.
                     return;
                 }
 
@@ -125,7 +122,7 @@ export const useAuthStore = create<AuthState>()(
                 if (rememberMe && totpSecret && !encryptionKey) {
                     try {
                         const salt = new TextEncoder().encode(HKDF_SALT);
-                        const key = await deriveKeyFromTotp(totpSecret, salt);
+                        const key = await deriveKeyFromTotp(decodeSecret(totpSecret), salt);
                         set({ isUnlocked: true, encryptionKey: key });
                     } catch (err) {
                         console.error('Auto-unlock failed:', err);
@@ -151,7 +148,7 @@ export const useAuthStore = create<AuthState>()(
 
                     if (isValid) {
                         const hkdfSalt = new TextEncoder().encode(HKDF_SALT);
-                        const key = await deriveKeyFromTotp(totpSecret, hkdfSalt);
+                        const key = await deriveKeyFromTotp(rawSecret, hkdfSalt);
 
                         const expiryTimestamp =
                             remember && expiryMs != null ? Date.now() + expiryMs : null;
@@ -211,7 +208,7 @@ export const useAuthStore = create<AuthState>()(
                     const totpSecret = await decryptPayload(passphraseKey, iv, ciphertext);
 
                     const hkdfSalt = new TextEncoder().encode(HKDF_SALT);
-                    const key = await deriveKeyFromTotp(totpSecret, hkdfSalt);
+                    const key = await deriveKeyFromTotp(decodeSecret(totpSecret), hkdfSalt);
 
                     // Compute a fresh expiry using the stored duration so the session
                     // doesn't become eternal after the previous one expired.
@@ -246,7 +243,7 @@ export const useAuthStore = create<AuthState>()(
 
                     if (isValid) {
                         const salt = new TextEncoder().encode(HKDF_SALT);
-                        const key = await deriveKeyFromTotp(secret, salt);
+                        const key = await deriveKeyFromTotp(rawSecret, salt);
 
                         const expiryTimestamp =
                             remember && expiryMs != null ? Date.now() + expiryMs : null;

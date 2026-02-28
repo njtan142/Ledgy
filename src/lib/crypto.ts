@@ -13,12 +13,11 @@ export interface EncryptedSecret {
     pbkdf2Salt: number[];
 }
 
-export async function deriveKeyFromTotp(totpSecret: string, salt: Uint8Array): Promise<CryptoKey> {
+export async function deriveKeyFromTotp(totpSecretBytes: Uint8Array, salt: Uint8Array): Promise<CryptoKey> {
     // 1. Convert secret to key material
-    const encoder = new TextEncoder();
     const secretKeyMaterial = await crypto.subtle.importKey(
         "raw",
-        encoder.encode(totpSecret),
+        totpSecretBytes,
         { name: "HKDF" },
         false,
         ["deriveKey"]

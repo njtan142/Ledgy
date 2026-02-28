@@ -63,7 +63,7 @@ async function generateHotp(secret: Uint8Array, counter: bigint): Promise<string
     // 2. HMAC-SHA1
     const key = await crypto.subtle.importKey(
         'raw',
-        secret as any,
+        secret,
         { name: 'HMAC', hash: 'SHA-1' },
         false,
         ['sign']

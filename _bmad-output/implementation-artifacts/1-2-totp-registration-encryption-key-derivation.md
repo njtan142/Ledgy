@@ -80,3 +80,15 @@ Antigravity (Gemini 2.0 Flash)
 - `src/App.tsx` (MODIFIED)
 - `src/main.tsx` (MODIFIED)
 - `package.json` (MODIFIED)
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-03-01
+**Reviewer:** James
+
+**Code Review Findings:**
+- 🔴 CRITICAL: Data Loss Risk on Session Expiry. `initSession` mistakenly reset and wiped the `totpSecret` entirely when a session expired, irreparably erasing the user's master vault registration and locking them out of their data forever.
+- 🟡 MEDIUM: Key Derivation Entropy. `deriveKeyFromTotp` hashed the literal Base32 text encoding of the string instead of decoding the raw cryptographically random bytes first.
+- 🟡 MEDIUM: TypeScript Cast. Used `as any` to bypass `importKey` type validation instead of using native buffers correctly.
+
+**Action Taken:** Automatically fixed 3 issues (1 HIGH, 2 MEDIUM). Prevented secret deletion on session expiry, updated `deriveKeyFromTotp` to securely use raw byte arrays via `decodeSecret`, and removed the `any` bypass. Review complete.
