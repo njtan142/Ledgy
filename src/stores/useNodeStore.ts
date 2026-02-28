@@ -7,8 +7,6 @@ import {
     OnNodesChange,
     OnEdgesChange,
     OnConnect,
-    Edge,
-    Node,
 } from '@xyflow/react';
 import { getProfileDb } from '../lib/db';
 import { useErrorStore } from './useErrorStore';
@@ -26,8 +24,8 @@ interface NodeState {
     activeProjectId: string | null;
 
     // React Flow handlers (per official docs pattern)
-    onNodesChange: OnNodesChange;
-    onEdgesChange: OnEdgesChange;
+    onNodesChange: OnNodesChange<CanvasNode>;
+    onEdgesChange: OnEdgesChange<CanvasEdge>;
     onConnect: OnConnect;
 
     // Actions
@@ -56,19 +54,19 @@ export const useNodeStore = create<NodeState>()(
         // These do NOT trigger computation - they're just position bookkeeping
         onNodesChange: (changes) => {
             set({
-                nodes: applyNodeChanges(changes, get().nodes as Node[]) as CanvasNode[],
+                nodes: applyNodeChanges(changes, get().nodes),
             });
         },
 
         onEdgesChange: (changes) => {
             set({
-                edges: applyEdgeChanges(changes, get().edges as Edge[]) as CanvasEdge[],
+                edges: applyEdgeChanges(changes, get().edges),
             });
         },
 
         onConnect: (connection) => {
             set({
-                edges: addEdge(connection, get().edges as Edge[]) as CanvasEdge[],
+                edges: addEdge(connection, get().edges),
             });
         },
 

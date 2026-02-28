@@ -1,3 +1,4 @@
+import { Node, Edge } from '@xyflow/react';
 import { LedgyDocument } from './profile';
 
 /**
@@ -7,7 +8,30 @@ export interface NodeData {
     label: string;
     ledgerId?: string;
     type?: 'source' | 'compute' | 'trigger' | 'output';
+    result?: number;
+    error?: string;
+    chartData?: any[];
+    trend?: string;
+    changePercent?: number;
+    isComputing?: boolean;
+    widgetId?: string;
+    widgetType?: string;
+    title?: string;
+    operation?: string;
+    ports?: any[];
+    // Index signature to satisfy React Flow's Node<T> constraint
+    [key: string]: any;
 }
+
+/**
+ * Canvas node type - extends React Flow Node with custom data
+ */
+export type CanvasNode = Node<NodeData, string>;
+
+/**
+ * Canvas edge type - extends React Flow Edge
+ */
+export type CanvasEdge = Edge<any>;
 
 /**
  * Node canvas document
@@ -27,27 +51,6 @@ export interface NodeCanvas extends LedgyDocument {
         ciphertext: number[];
     };
     viewport: Viewport;
-}
-
-/**
- * Canvas node extending React Flow node
- */
-export interface CanvasNode {
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    data: NodeData;
-}
-
-/**
- * Canvas edge extending React Flow edge
- */
-export interface CanvasEdge {
-    id: string;
-    source: string;
-    target: string;
-    sourceHandle?: string;
-    targetHandle?: string;
 }
 
 /**

@@ -29,7 +29,7 @@ export async function executeTrigger(
 
     // In our simplified model, any trigger simply re-executes the global state for that project
     // to ensure dashboard and nodes are consistent with the new entry
-    await nodeEngine.executeProjectGraph(context.profileId, context.projectId);
+    await nodeEngine.executeProjectGraph();
 }
 
 /**
