@@ -50,6 +50,9 @@ interface AuthState {
     encryptionKey: CryptoKey | null;
     /** True when app starts with a passphrase-protected secret — UnlockPage shows passphrase prompt. */
     needsPassphrase: boolean;
+    // Zustand store topology (Story 1-3)
+    isLoading: boolean;
+    error: string | null;
 
     // ----- Actions -----
     setRememberMe: (val: boolean) => void;
@@ -87,6 +90,9 @@ export const useAuthStore = create<AuthState>()(
             rememberMeExpiry: null,
             rememberMeExpiryMs: null,
             needsPassphrase: false,
+            // Zustand store topology (Story 1-3)
+            isLoading: false,
+            error: null,
 
             setRememberMe: (val: boolean) => set({ rememberMe: val }),
 
@@ -136,9 +142,14 @@ export const useAuthStore = create<AuthState>()(
                 passphrase?: string,
                 expiryMs?: number | null,
             ) => {
+                set({ isLoading: true, error: null });
                 const { totpSecret } = get();
                 if (!totpSecret) {
                     console.warn('unlock() called but totpSecret is null — a passphrase session may be active');
+                    set({ isLoading: false, error: 'No TOTP secret found. Please complete setup first.' });
+                    import('../../stores/useErrorStore').then(({ useErrorStore }) => {
+                        useErrorStore.getState().dispatchError('No TOTP secret found', 'error');
+                    });
                     return false;
                 }
 
@@ -174,6 +185,8 @@ export const useAuthStore = create<AuthState>()(
                                 rememberMeExpiry: expiryTimestamp,
                                 rememberMeExpiryMs: storedExpiryMs,
                                 needsPassphrase: false,
+                                isLoading: false,
+                                error: null,
                             });
                         } else {
                             set({
@@ -184,12 +197,20 @@ export const useAuthStore = create<AuthState>()(
                                 rememberMeExpiry: expiryTimestamp,
                                 rememberMeExpiryMs: storedExpiryMs,
                                 needsPassphrase: false,
+                                isLoading: false,
+                                error: null,
                             });
                         }
                         return true;
                     }
                 } catch (error) {
                     console.error('Unlock failed:', error);
+                    const errorMessage = error instanceof Error ? error.message : 'Invalid TOTP code';
+                    set({ isLoading: false, error: errorMessage });
+                    import('../../stores/useErrorStore').then(({ useErrorStore }) => {
+                        useErrorStore.getState().dispatchError(errorMessage, 'error');
+                    });
+                    return false;
                 }
 
                 return false;
