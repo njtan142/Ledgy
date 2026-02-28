@@ -72,14 +72,14 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         }
     },
 
-    resolveConflict: async (entryId: string, resolution: 'local' | 'remote' | 'merge', fieldValues?: Record<string, unknown>) => {
+    resolveConflict: async (entryId: string, _resolution: 'local' | 'remote' | 'merge', _fieldValues?: Record<string, unknown>) => {
         set({ isLoading: true, error: null });
         try {
             // TODO: Implement conflict resolution in Story 1.5
             // For now, mock implementation
             const updatedConflicts = get().conflicts.filter(c => c.entryId !== entryId);
             set({ conflicts: updatedConflicts, isLoading: false });
-            
+
             // Trigger sync to apply resolution
             await get().triggerSync();
         } catch (error) {

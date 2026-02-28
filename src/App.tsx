@@ -5,7 +5,6 @@ import { UnlockPage } from "./features/auth/UnlockPage";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { GuestGuard } from "./features/auth/GuestGuard";
 import { UnlockGuard } from "./features/auth/UnlockGuard";
-import { AppShell } from "./components/Layout/AppShell";
 import { ErrorToast } from "./components/ErrorToast";
 import { NotificationToast } from "./components/NotificationToast";
 import { ProfileSelector } from "./features/profiles/ProfileSelector";
@@ -18,6 +17,7 @@ import { NodeCanvas } from "./features/nodeEditor/NodeCanvas";
 import { ReactFlowProvider } from "@xyflow/react";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { ErrorBoundary } from "./features/shell/ErrorBoundary";
+import { AppShell } from "./features/shell/AppShell";
 
 function App() {
   const theme = useUIStore((state) => state.theme);

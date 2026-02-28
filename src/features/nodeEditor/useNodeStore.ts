@@ -6,6 +6,7 @@ export interface NodeData {
     type: 'source' | 'correlation' | 'arithmetic' | 'trigger';
     schemaType?: string;
     config?: Record<string, unknown>;
+    [key: string]: unknown;
 }
 
 export type FlowNode = Node<NodeData>;
