@@ -1,6 +1,6 @@
 # Story 2.1: Profile DB Segregation Logic
 
-Status: review
+Status: done
 
 <!-- Note: Validation is recommended. Run validate-create-story for quality check before dev-story. -->
 
@@ -237,11 +237,22 @@ BMad Method dev-story workflow (code review follow-ups)
 - sanitizeProfileName() documented as external utility (not needed internally with UUIDs)
 - Tests accessing private members accepted for unit testing caching behavior
 
+**Second Code Review Follow-ups (2026-03-01):**
+
+✅ MEDIUM Priority (2/2 fixed):
+- Fixed JSDoc comment: updated `ledgy_profile_` to `ledgy-profile-` to match code
+- Fixed singleton documentation: removed misleading "thread-safe" claim
+
+✅ LOW Priority (3/3 fixed):
+- Added JSDoc @returns documentation for deleteProfile()
+- Silenced console.log in tests with vi.spyOn mock
+- Extracted event name to constant: PROFILE_SWITCH_EVENT
+
 **Implementation Summary:**
 - Created ProfileDbManager class for multi-DB management
 - Implemented profile CRUD with proper database lifecycle
 - Profile switching with event emission
-- 25/25 unit tests passing
+- 25/25 unit tests passing (no console output noise)
 - TypeScript strict mode: no errors
 
 ### File List

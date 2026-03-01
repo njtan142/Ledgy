@@ -8,6 +8,15 @@ import {
 } from './profileDbManager';
 
 describe('Profile DB Manager', () => {
+    // Silence console.log during tests to reduce noise
+    beforeEach(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     describe('sanitizeProfileName', () => {
         it('converts to lowercase', () => {
             expect(sanitizeProfileName('My Profile')).toBe('my_profile');

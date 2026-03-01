@@ -1,9 +1,9 @@
 /**
  * Profile Database Manager
- * 
+ *
  * Manages multiple profile databases with proper isolation.
- * Each profile has its own dedicated database: `ledgy_profile_{profileId}`
- * 
+ * Each profile has its own dedicated database: `ledgy-profile-{profileId}`
+ *
  * Features:
  * - Profile CRUD operations
  * - Database lifecycle management
@@ -18,6 +18,9 @@ import { useErrorStore } from '../stores/useErrorStore';
 
 // Database naming convention (kebab-case as per story spec)
 const DB_NAME_PREFIX = 'ledgy-profile-';
+
+// Event name constant for profile switch
+const PROFILE_SWITCH_EVENT = 'ledgy:profile:switch';
 
 // Type alias for Web Crypto API key
 type EncryptionKey = CryptoKey;
@@ -58,7 +61,8 @@ export class ProfileDbManager {
     private constructor() {}
 
     /**
-     * Get singleton instance (thread-safe lazy initialization)
+     * Get singleton instance (lazy initialization)
+     * Note: JavaScript is single-threaded, so no locking is needed
      */
     static getInstance(): ProfileDbManager {
         if (!ProfileDbManager.instance) {
@@ -225,6 +229,11 @@ export class ProfileDbManager {
 
     /**
      * Delete a profile and its database
+     * @param masterDb - The master database instance
+     * @param profileId - The ID of the profile to delete
+     * @returns Object with success status and optional error message
+     * @returns success: true if deletion succeeded, false otherwise
+     * @returns error: Error message if deletion failed (only present when success is false)
      */
     async deleteProfile(
         masterDb: any,
@@ -312,16 +321,16 @@ export class ProfileDbManager {
 
     /**
      * Emit profile switch event for other stores to react
+     * @param profileId - The ID of the profile being switched to
      */
     private emitProfileSwitchEvent(profileId: string): void {
-        // Dispatch to error store for logging (can be extended for event system)
-        // In future, use a proper event emitter or custom events
+        // Log profile switch for debugging
         console.log(`Profile switched to: ${profileId}`);
 
         // Emit custom event for other components to listen
         if (typeof window !== 'undefined') {
             window.dispatchEvent(
-                new CustomEvent('ledgy:profile:switch', { detail: { profileId } })
+                new CustomEvent(PROFILE_SWITCH_EVENT, { detail: { profileId } })
             );
         }
     }
