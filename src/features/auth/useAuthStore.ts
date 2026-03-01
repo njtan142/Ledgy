@@ -9,6 +9,13 @@ import {
     EncryptedSecret,
 } from '../../lib/crypto';
 import { decodeSecret, verifyTOTP } from '../../lib/totp';
+import {
+    canAttempt,
+    recordFailedAttempt,
+    resetRateLimit,
+    getRemainingLockoutTime,
+    cleanupExpiredEntries,
+} from '../../lib/rateLimiter';
 
 // ---------------------------------------------------------------------------
 // Session expiry options (shown as a dropdown in the unlock UI)
@@ -97,6 +104,9 @@ export const useAuthStore = create<AuthState>()(
             setRememberMe: (val: boolean) => set({ rememberMe: val }),
 
             initSession: async () => {
+                // Clean up expired rate limit entries
+                cleanupExpiredEntries();
+
                 const {
                     rememberMe,
                     totpSecret,
@@ -153,11 +163,25 @@ export const useAuthStore = create<AuthState>()(
                     return false;
                 }
 
+                // Check rate limit before attempting unlock
+                const rateLimit = canAttempt('default-account');
+                if (!rateLimit.allowed && rateLimit.waitTime) {
+                    const minutes = Math.ceil(rateLimit.waitTime / 60);
+                    const errorMessage = `Too many failed attempts. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.`;
+                    set({ isLoading: false, error: errorMessage });
+                    import('../../stores/useErrorStore').then(({ useErrorStore }) => {
+                        useErrorStore.getState().dispatchError(errorMessage, 'error');
+                    });
+                    return false;
+                }
+
                 try {
                     const rawSecret = decodeSecret(totpSecret);
                     const isValid = await verifyTOTP(rawSecret, code);
 
                     if (isValid) {
+                        // Reset rate limit on success
+                        resetRateLimit('default-account');
                         const hkdfSalt = new TextEncoder().encode(HKDF_SALT);
                         const key = await deriveKeyFromTotp(rawSecret, hkdfSalt);
 
@@ -203,6 +227,22 @@ export const useAuthStore = create<AuthState>()(
                         }
                         return true;
                     }
+                    
+                    // Failed attempt - record for rate limiting
+                    await recordFailedAttempt('default-account');
+                    const remaining = getRemainingLockoutTime('default-account');
+                    
+                    let errorMessage = 'Invalid TOTP code. Please try again.';
+                    if (remaining > 0) {
+                        const minutes = Math.ceil(remaining / 60);
+                        errorMessage = `Too many failed attempts. Account locked for ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+                    }
+                    
+                    set({ isLoading: false, error: errorMessage });
+                    import('../../stores/useErrorStore').then(({ useErrorStore }) => {
+                        useErrorStore.getState().dispatchError(errorMessage, 'error');
+                    });
+                    return false;
                 } catch (error) {
                     console.error('Unlock failed:', error);
                     const errorMessage = error instanceof Error ? error.message : 'Invalid TOTP code';
