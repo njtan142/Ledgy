@@ -26,35 +26,37 @@ so that **my UI preferences (theme, density, etc.) are automatically applied eve
 ## Tasks / Subtasks
 
 - [ ] Task 1: Create settings store (AC: #1, #2, #8, #9)
-  - [ ] Decide: Extend useUIStore (Story 1-3) or create useSettingsStore
-  - [ ] Add theme setting: 'light' | 'dark'
-  - [ ] Add density setting: 'comfortable' | 'compact'
-  - [ ] Add sidebar width preference (optional)
-  - [ ] Configure Zustand persist middleware
+  - [ ] Check existing useUIStore (Story 1-3) - already has theme field (HIGH - Amelia/Winston)
+  - [ ] Extend useUIStore with density setting: 'comfortable' | 'compact'
+  - [ ] Add resetToDefaults action
+  - [ ] Configure Zustand persist middleware (already configured)
   - [ ] Add error dispatch for settings failures
 - [ ] Task 2: Implement theme toggle (AC: #3, #10)
-  - [ ] Create theme toggle action in store
-  - [ ] Apply theme to document.documentElement
-  - [ ] Apply theme to document.body
-  - [ ] Set color-scheme CSS property
-  - [ ] Real-time theme switching
+  - [ ] Verify theme toggle action exists in useUIStore
+  - [ ] Verify theme application in App.tsx (already implemented)
+  - [ ] Ensure real-time theme switching (no reload)
 - [ ] Task 3: Implement density toggle (AC: #4, #10)
-  - [ ] Create density toggle action in store
+  - [ ] Create density toggle action in useUIStore
   - [ ] Apply density class to app container
-  - [ ] Define Tailwind styles for compact density
+  - [ ] Define CSS variables or Tailwind config for compact density
+  - [ ] Batch DOM updates for performance (Flash)
   - [ ] Real-time density switching
 - [ ] Task 4: Create Settings page UI (AC: #5)
   - [ ] Create SettingsPage component
-  - [ ] Add theme toggle section
-  - [ ] Add density toggle section
-  - [ ] Add settings sections layout
-  - [ ] Integrate with AppShell inspector or standalone page
+  - [ ] Add Appearance section (theme, density)
+  - [ ] Add theme toggle with switch component
+  - [ ] Add density toggle with switch component
+  - [ ] Add 'Reset to Defaults' button (MEDIUM - UXora)
+  - [ ] Group settings logically with sections (MEDIUM - UXora)
+  - [ ] Add placeholder for future settings (language, etc.)
 - [ ] Task 5: Write unit tests (AC: #6, #7)
-  - [ ] Test settings store initialization
-  - [ ] Test theme toggle
-  - [ ] Test density toggle
-  - [ ] Test persistence across reloads
-  - [ ] Test real-time application of changes
+  - [ ] Test settings store initialization with defaults
+  - [ ] Test theme toggle action
+  - [ ] Test density toggle action
+  - [ ] Test resetToDefaults action
+  - [ ] Test persistence across reloads (mock localStorage)
+  - [ ] Test real-time DOM updates (mock documentElement)
+  - [ ] Test concurrent updates (multiple tabs)
 - [ ] Task 6: Verify TypeScript and integration (AC: #6, #8)
   - [ ] TypeScript strict mode: no errors
   - [ ] Error dispatch to useErrorStore
