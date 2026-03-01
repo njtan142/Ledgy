@@ -30,32 +30,37 @@ so that **I can set up two-factor authentication using Google Authenticator or s
   - [ ] Implement HMAC-SHA1 based TOTP algorithm (RFC 6238)
   - [ ] Generate secure random secrets (20 bytes, base32 encoded)
   - [ ] Implement TOTP code generation from secret
-  - [ ] Implement TOTP code verification with time window tolerance
+  - [ ] Implement TOTP code verification with time window tolerance (±1 step)
+  - [ ] Use constant-time comparison to prevent timing attacks (HIGH - Sage)
 - [ ] Task 2: Create QR code generation component (AC: #2, #4)
-  - [ ] Install `qrcode.react` or similar library
-  - [ ] Create `QRCodeDisplay` component
+  - [ ] Install `qrcode.react` library
+  - [ ] Create `QRCodeDisplay` component with memoized QR generation
   - [ ] Generate TOTP URI format: `otpauth://totp/...`
   - [ ] Display manual entry key below QR code
   - [ ] Add copy-to-clipboard functionality for manual key
+  - [ ] Add accessible alt text for screen readers
 - [ ] Task 3: Build registration wizard UI (AC: #3, #6, #9)
   - [ ] Create `TOTPRegistrationWizard` component with 3 steps
-  - [ ] Step 1: Generate secret and show QR code
-  - [ ] Step 2: User enters TOTP code from authenticator app
-  - [ ] Step 3: Success confirmation or error retry
-  - [ ] Integrate with useAuthStore for state management
+  - [ ] Step 1: Generate secret and show QR code (with "What is TOTP?" help)
+  - [ ] Step 2: User enters TOTP code + countdown timer + rescan button
+  - [ ] Step 3: Success confirmation + generate backup codes
+  - [ ] Integrate with useAuthStore for state management (store encrypted secret)
   - [ ] Dispatch errors to useErrorStore
 - [ ] Task 4: Add TOTP verification logic (AC: #5, #6)
-  - [ ] Implement real-time TOTP code validation
+  - [ ] Implement real-time TOTP code validation (debounced input)
   - [ ] Add 30-second time window tolerance (±1 step)
-  - [ ] Show countdown timer until next code
+  - [ ] Show countdown timer until next code (using requestAnimationFrame)
   - [ ] Handle verification errors gracefully
 - [ ] Task 5: Write unit tests (AC: #7, #8)
-  - [ ] Test TOTP secret generation
-  - [ ] Test TOTP code generation algorithm
+  - [ ] Test TOTP secret generation (20 bytes, base32)
+  - [ ] Test TOTP code generation with RFC 6238 test vectors
   - [ ] Test TOTP verification with valid codes
   - [ ] Test TOTP verification with expired codes
+  - [ ] Test constant-time comparison (timing attack prevention)
   - [ ] Test wizard step navigation
   - [ ] Test error handling flows
+  - [ ] Test QR code URI format compliance
+  - [ ] Test accessibility (ARIA labels)
 - [ ] Task 6: Verify TypeScript and responsive design (AC: #7, #10)
   - [ ] TypeScript strict mode: no errors
   - [ ] Mobile responsive layout
