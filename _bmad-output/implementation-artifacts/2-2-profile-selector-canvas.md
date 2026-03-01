@@ -13,8 +13,8 @@ so that **I can easily see and select which profile to work with**.
 ## Acceptance Criteria
 
 1. Profile selector canvas displays all profiles as cards
-2. Each card shows profile name, color/avatar, and last opened date
-3. Clicking a card switches to that profile
+2. Each card shows profile name, color/avatar, and last opened date (relative time)
+3. Clicking a card switches to that profile and navigates to home dashboard
 4. Empty state shown when no profiles exist (links to create profile)
 5. Active profile is visually highlighted
 6. Loading state during profile fetch
@@ -22,6 +22,8 @@ so that **I can easily see and select which profile to work with**.
 8. TypeScript strict mode compiles without errors
 9. Unit tests cover component rendering and interactions
 10. Integration with useProfileStore for state management
+11. Accessibility: Keyboard navigation (Tab, Enter/Space), focus states, ARIA labels, WCAG 2.1 AA contrast
+12. Density responsive: Grid gap and card spacing adjust based on density setting (Story 1-9)
 
 ## Tasks / Subtasks
 
@@ -29,31 +31,46 @@ so that **I can easily see and select which profile to work with**.
   - [ ] Create `src/features/profile/ProfileCard.tsx`
   - [ ] Display profile name from metadata
   - [ ] Show color/avatar visual indicator
-  - [ ] Display last opened date (relative time)
-  - [ ] Add hover and active states
+  - [ ] Display last opened date (relative time using date-fns or Intl.RelativeTimeFormat)
+  - [ ] Add hover and focus states (WCAG 2.1 AA)
+  - [ ] Add active state styling
+  - [ ] Implement keyboard interaction (Enter/Space to select)
 - [ ] Task 2: Create ProfileSelectorCanvas component (AC: #1, #3, #4, #5)
   - [ ] Create `src/features/profile/ProfileSelectorCanvas.tsx`
-  - [ ] Grid layout for profile cards
-  - [ ] Fetch profiles on mount
-  - [ ] Handle empty state (no profiles)
+  - [ ] Grid layout for profile cards (responsive: auto-fill, minmax(280px, 1fr))
+  - [ ] Fetch profiles on mount using useProfileStore
+  - [ ] Handle empty state (no profiles) - link to create profile
   - [ ] Highlight active profile card
-  - [ ] Navigate on card click
+  - [ ] Navigate to home dashboard on card click after setActiveProfile()
+  - [ ] Subscribe to `ledgy:profile:switch` event and refresh profile list
+  - [ ] Apply density-based spacing (Story 1-9)
 - [ ] Task 3: Implement loading and error states (AC: #6, #7)
-  - [ ] Add loading skeleton during fetch
+  - [ ] Add loading skeleton during fetch (create reusable LoadingSkeleton if needed)
   - [ ] Display error message on failure
   - [ ] Add retry button for failed fetches
+  - [ ] Wrap with ErrorBoundary (Story 1-2 pattern)
   - [ ] Integrate with useErrorStore
-- [ ] Task 4: Write unit tests (AC: #8, #9)
-  - [ ] Test ProfileCard rendering
+- [ ] Task 4: Create reusable UI components (if not existing)
+  - [ ] Check `src/components/ui/` for EmptyState component
+  - [ ] Check `src/components/ui/` for LoadingSkeleton component
+  - [ ] Create EmptyState.tsx if missing (reusable across features)
+  - [ ] Create LoadingSkeleton.tsx if missing (reusable across features)
+- [ ] Task 5: Write unit tests (AC: #8, #9, #11)
+  - [ ] Test ProfileCard rendering with props
+  - [ ] Test ProfileCard keyboard interaction (Tab, Enter, Space)
   - [ ] Test empty state display
   - [ ] Test loading state
   - [ ] Test error state with retry
-  - [ ] Test card click navigation
+  - [ ] Test card click navigation and setActiveProfile call
   - [ ] Test active profile highlighting
-- [ ] Task 5: Verify TypeScript and integration (AC: #8, #10)
+  - [ ] Test accessibility (focus states, ARIA labels)
+  - [ ] Test profile switch event subscription
+- [ ] Task 6: Verify TypeScript and integration (AC: #8, #10, #12)
   - [ ] TypeScript strict mode: no errors
   - [ ] Integration with useProfileStore
-  - [ ] Responsive design (mobile/desktop)
+  - [ ] Density setting integration (Story 1-9)
+  - [ ] Error boundary integration (Story 1-2)
+  - [ ] Responsive design verification (mobile/desktop)
 
 ## Dev Notes
 
@@ -80,8 +97,33 @@ interface ProfileSelectorCanvasProps {
 .profile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    gap: var(--density-gap, 1.5rem); /* Responsive to density setting */
 }
+```
+
+**Profile Switch Navigation**:
+```typescript
+// On card click:
+const handleProfileSelect = async (profileId: string) => {
+    // 1. Set active profile
+    useProfileStore.getState().setActiveProfile(profileId);
+    
+    // 2. Navigate to home dashboard
+    navigate('/dashboard'); // or '/' depending on route config
+};
+```
+
+**Profile Switch Event Subscription**:
+```typescript
+// In ProfileSelectorCanvas useEffect:
+useEffect(() => {
+    const handleProfileSwitch = () => {
+        fetchProfiles(); // Refresh list on profile switch
+    };
+    
+    window.addEventListener('ledgy:profile:switch', handleProfileSwitch);
+    return () => window.removeEventListener('ledgy:profile:switch', handleProfileSwitch);
+}, []);
 ```
 
 **Empty State**:
@@ -93,6 +135,25 @@ interface ProfileSelectorCanvasProps {
     actionLabel="Create Profile"
     onAction={() => navigate('/profiles/create')}
 />
+```
+
+**Date Formatting**:
+```typescript
+// Use date-fns if available, otherwise Intl.RelativeTimeFormat
+import { formatDistanceToNow } from 'date-fns'; // if installed
+
+// Fallback if date-fns not installed:
+const formatRelativeTime = (timestamp: number) => {
+    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (days > 0) return rtf.format(-days, 'day');
+    if (hours > 0) return rtf.format(-hours, 'hour');
+    return rtf.format(-minutes, 'minute');
+};
 ```
 
 ### Project Structure Notes
