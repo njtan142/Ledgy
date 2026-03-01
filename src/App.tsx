@@ -5,6 +5,7 @@ import { UnlockPage } from "./features/auth/UnlockPage";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { GuestGuard } from "./features/auth/GuestGuard";
 import { UnlockGuard } from "./features/auth/UnlockGuard";
+import { AutoLock } from "./features/auth/AutoLock";
 import { ErrorToast } from "./components/ErrorToast";
 import { NotificationToast } from "./components/NotificationToast";
 import { ProfileSelector } from "./features/profiles/ProfileSelector";
@@ -43,6 +44,8 @@ function App() {
     <>
       <ErrorToast />
       <NotificationToast />
+      {/* Auto-lock on tab close/visibility change */}
+      <AutoLock />
       {/* App-level error boundary wraps all routes */}
       <ErrorBoundary>
         <Routes>

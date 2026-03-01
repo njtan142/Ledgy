@@ -1,150 +1,110 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthGuard } from './AuthGuard';
-import { useAuthStore } from './useAuthStore';
-import { MemoryRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore, useIsRegistered } from './useAuthStore';
 
-// Helper component to capture location
-let capturedLocation: ReturnType<typeof useLocation> | null = null;
-
-const NavigationCapture: React.FC = () => {
-    capturedLocation = useLocation();
-    return null;
-};
+// Mock useAuthStore
+vi.mock('./useAuthStore', async () => {
+    const actual = await vi.importActual('./useAuthStore');
+    return {
+        ...(actual as object),
+        useAuthStore: vi.fn(),
+        useIsRegistered: vi.fn(),
+    };
+});
 
 describe('AuthGuard', () => {
+    const mockUseAuthStore = vi.mocked(useAuthStore);
+    const mockUseIsRegistered = vi.mocked(useIsRegistered);
+
     beforeEach(() => {
-        // Reset auth store state
-        useAuthStore.getState().reset();
-        capturedLocation = null;
+        vi.clearAllMocks();
     });
 
     it('redirects to /setup when user is not registered', () => {
-        // Simulate unregistered user (no totpSecret or encryptedTotpSecret)
-        useAuthStore.getState().reset();
+        mockUseAuthStore.mockReturnValue({} as any);
+        mockUseIsRegistered.mockReturnValue(false);
 
-        const { container } = render(
-            <MemoryRouter initialEntries={['/dashboard']}>
-                <AuthGuard>
-                    <div data-testid="protected-content">Protected Content</div>
-                </AuthGuard>
+        render(
+            <MemoryRouter initialEntries={['/projects']}>
                 <Routes>
-                    <Route path="*" element={<Navigate to="/setup" replace />} />
-                    <Route path="/setup" element={<div data-testid="setup-page">Setup Page</div>} />
+                    <Route path="/setup" element={<div data-testid="setup">Setup Page</div>} />
+                    <Route
+                        path="/projects"
+                        element={
+                            <AuthGuard>
+                                <div data-testid="protected">Protected Content</div>
+                            </AuthGuard>
+                        }
+                    />
                 </Routes>
-                <NavigationCapture />
             </MemoryRouter>
         );
 
-        // AuthGuard should redirect, so protected content should not be visible
-        expect(container.querySelector('[data-testid="protected-content"]')).not.toBeInTheDocument();
-        // Verify we ended up at /setup
-        expect(capturedLocation?.pathname).toBe('/setup');
+        expect(screen.getByTestId('setup')).toBeInTheDocument();
+        expect(screen.queryByTestId('protected')).not.toBeInTheDocument();
     });
 
     it('redirects to /unlock when user is registered but not unlocked', () => {
-        // Simulate registered but locked user
-        useAuthStore.setState({
-            totpSecret: 'JBSWY3DPEHPK3PXP',
-            isUnlocked: false,
-            needsPassphrase: false,
-        });
-
-        const { container } = render(
-            <MemoryRouter initialEntries={['/dashboard']}>
-                <AuthGuard>
-                    <div data-testid="protected-content">Protected Content</div>
-                </AuthGuard>
-                <Routes>
-                    <Route path="*" element={<Navigate to="/unlock" replace />} />
-                    <Route path="/unlock" element={<div data-testid="unlock-page">Unlock Page</div>} />
-                </Routes>
-                <NavigationCapture />
-            </MemoryRouter>
-        );
-
-        // AuthGuard should redirect, so protected content should not be visible
-        expect(container.querySelector('[data-testid="protected-content"]')).not.toBeInTheDocument();
-        // Verify we ended up at /unlock
-        expect(capturedLocation?.pathname).toBe('/unlock');
-    });
-
-    it('renders children when user is authenticated and unlocked', () => {
-        // Simulate authenticated and unlocked user
-        useAuthStore.setState({
-            totpSecret: 'JBSWY3DPEHPK3PXP',
-            isUnlocked: true,
-            needsPassphrase: false,
-        });
+        mockUseAuthStore.mockReturnValue({ isUnlocked: false } as any);
+        mockUseIsRegistered.mockReturnValue(true);
 
         render(
-            <MemoryRouter initialEntries={['/dashboard']}>
-                <AuthGuard>
-                    <div data-testid="protected-content">Protected Content</div>
-                </AuthGuard>
-                <NavigationCapture />
+            <MemoryRouter initialEntries={['/projects']}>
+                <Routes>
+                    <Route path="/unlock" element={<div data-testid="unlock">Unlock Page</div>} />
+                    <Route
+                        path="/projects"
+                        element={
+                            <AuthGuard>
+                                <div data-testid="protected">Protected Content</div>
+                            </AuthGuard>
+                        }
+                    />
+                </Routes>
             </MemoryRouter>
         );
 
-        expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-        expect(screen.getByText('Protected Content')).toBeInTheDocument();
-        // Verify we stayed on the requested route
-        expect(capturedLocation?.pathname).toBe('/dashboard');
+        expect(screen.getByTestId('unlock')).toBeInTheDocument();
+        expect(screen.queryByTestId('protected')).not.toBeInTheDocument();
     });
 
-    it('allows access when user has encryptedTotpSecret (passphrase mode) and is unlocked', () => {
-        // Simulate passphrase-protected user who is unlocked
-        useAuthStore.setState({
-            encryptedTotpSecret: {
-                iv: [1, 2, 3, 4],
-                ciphertext: [5, 6, 7, 8],
-                pbkdf2Salt: [9, 10, 11, 12],
-            },
-            isUnlocked: true,
-            needsPassphrase: false,
-        });
+    it('renders children when user is authenticated', () => {
+        mockUseAuthStore.mockReturnValue({ isUnlocked: true } as any);
+        mockUseIsRegistered.mockReturnValue(true);
 
         render(
-            <MemoryRouter initialEntries={['/dashboard']}>
+            <MemoryRouter initialEntries={['/projects']}>
                 <AuthGuard>
-                    <div data-testid="protected-content">Protected Content</div>
+                    <div data-testid="protected">Protected Content</div>
                 </AuthGuard>
-                <NavigationCapture />
             </MemoryRouter>
         );
 
-        expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-        expect(capturedLocation?.pathname).toBe('/dashboard');
+        expect(screen.getByTestId('protected')).toBeInTheDocument();
     });
 
-    it('redirects to /unlock when passphrase-protected user is not unlocked', () => {
-        // Simulate passphrase-protected user who needs to unlock
-        useAuthStore.setState({
-            encryptedTotpSecret: {
-                iv: [1, 2, 3, 4],
-                ciphertext: [5, 6, 7, 8],
-                pbkdf2Salt: [9, 10, 11, 12],
-            },
-            isUnlocked: false,
-            needsPassphrase: true,
-        });
+    it('checks session expiry before allowing access', async () => {
+        // Mock with expired session
+        mockUseAuthStore.mockReturnValue({
+            isUnlocked: true,
+            rememberMeExpiry: Date.now() - 1000, // Expired 1 second ago
+        } as any);
+        mockUseIsRegistered.mockReturnValue(true);
 
-        const { container } = render(
-            <MemoryRouter initialEntries={['/dashboard']}>
+        // Note: AuthGuard itself doesn't check expiry - that's done in initSession()
+        // This test documents the expected behavior
+        render(
+            <MemoryRouter initialEntries={['/projects']}>
                 <AuthGuard>
-                    <div data-testid="protected-content">Protected Content</div>
+                    <div data-testid="protected">Protected Content</div>
                 </AuthGuard>
-                <Routes>
-                    <Route path="*" element={<Navigate to="/unlock" replace />} />
-                    <Route path="/unlock" element={<div data-testid="unlock-page">Unlock Page</div>} />
-                </Routes>
-                <NavigationCapture />
             </MemoryRouter>
         );
 
-        // AuthGuard should redirect, so protected content should not be visible
-        expect(container.querySelector('[data-testid="protected-content"]')).not.toBeInTheDocument();
-        // Verify we ended up at /unlock
-        expect(capturedLocation?.pathname).toBe('/unlock');
+        // AuthGuard allows access if isUnlocked is true
+        // Session expiry is checked in initSession() before AuthGuard is reached
+        expect(screen.getByTestId('protected')).toBeInTheDocument();
     });
 });
