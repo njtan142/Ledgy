@@ -31,21 +31,25 @@ so that **brute-force attacks are prevented and my account remains secure**.
   - [ ] Implement exponential backoff calculation
   - [ ] Implement lockout after max attempts
   - [ ] Implement lockout expiry (15 minutes)
+  - [ ] Add HMAC signature for tamper-proof state (HIGH - Sage)
 - [ ] Task 2: Add persistence layer (AC: #5)
   - [ ] Store rate limit state in localStorage
   - [ ] Hydrate rate limiter on app init
   - [ ] Clean up expired entries (auto-cleanup)
+  - [ ] Verify state signature on hydration (HIGH - Sage)
 - [ ] Task 3: Integrate with auth flow (AC: #6, #9)
   - [ ] Wrap useAuthStore.unlock() with rate limiter
   - [ ] Check rate limit before attempting unlock
   - [ ] Record failed attempts
   - [ ] Reset counter on successful unlock
   - [ ] Show wait time in error messages
+  - [ ] Document: client-side only, not true security (HIGH - Amelia)
 - [ ] Task 4: Create user feedback (AC: #6)
   - [ ] Add wait time display to UnlockPage
-  - [ ] Show countdown timer during lockout
+  - [ ] Show countdown timer during lockout (use requestAnimationFrame - Chronos)
   - [ ] Disable submit button during lockout
   - [ ] Clear error message format
+  - [ ] Add 5-second grace period for clock skew (MEDIUM - Chronos)
 - [ ] Task 5: Write unit tests (AC: #7, #8)
   - [ ] Test attempt tracking
   - [ ] Test exponential backoff calculation
@@ -53,6 +57,9 @@ so that **brute-force attacks are prevented and my account remains secure**.
   - [ ] Test lockout expiry
   - [ ] Test persistence across reloads
   - [ ] Test cleanup of expired entries
+  - [ ] Test HMAC signature verification
+  - [ ] Test localStorage tampering scenarios
+  - [ ] Test clock manipulation resistance
   - [ ] Test integration with auth flow
 - [ ] Task 6: Verify TypeScript and security (AC: #7, #10)
   - [ ] TypeScript strict mode: no errors
