@@ -1,152 +1,153 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Moon, Sun, Lock, RefreshCw, Shield, Database, Info } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
-import { useAuthStore } from '../auth/useAuthStore';
-import { SyncConfigDialog } from '../sync/SyncConfigDialog';
-import { useProfileStore } from '../../stores/useProfileStore';
+import { Sun, Moon, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 
-export const SettingsPage: React.FC = () => {
-    const { theme, toggleTheme } = useUIStore();
-    const { lock } = useAuthStore();
-    const { activeProfileId } = useProfileStore();
-    const navigate = useNavigate();
-    const [isSyncConfigOpen, setIsSyncConfigOpen] = useState(false);
-
-    const handleLockVault = () => {
-        lock();
-        navigate('/unlock');
-    };
-
-    const handleResetTotp = () => {
-        if (window.confirm('This will clear your TOTP secret and require you to set up a new authenticator. Are you sure?')) {
-            useAuthStore.getState().reset();
-            navigate('/setup');
-        }
-    };
+export const SettingsPage = () => {
+    const { theme, density, setTheme, setDensity, resetToDefaults } = useUIStore();
 
     return (
-        <div className="max-w-2xl mx-auto p-6 space-y-8">
-            <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h1>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                    Manage your application preferences and security settings.
-                </p>
-            </div>
+        <div className="max-w-4xl mx-auto p-6">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+                Settings
+            </h1>
 
-            {/* Appearance */}
-            <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Appearance</h2>
-                </div>
-                <div className="px-6 py-4 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Theme</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            Switch between dark and light mode.
-                        </p>
-                    </div>
-                    <button
-                        onClick={toggleTheme}
-                        className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium text-zinc-900 dark:text-zinc-100 transition-colors"
-                    >
-                        {theme === 'dark' ? (
-                            <><Sun size={16} /> Light Mode</>
-                        ) : (
-                            <><Moon size={16} /> Dark Mode</>
-                        )}
-                    </button>
-                </div>
-            </section>
+            {/* Appearance Section */}
+            <section className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Maximize2 className="w-5 h-5" />
+                    Appearance
+                </h2>
 
-            {/* Security */}
-            <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Security</h2>
-                </div>
-
-                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                    <div className="px-6 py-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Lock Vault</p>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                Immediately lock the app and require TOTP to re-enter.
-                            </p>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                    {/* Theme Setting */}
+                    <div className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                {theme === 'dark' ? (
+                                    <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                ) : (
+                                    <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-gray-900 dark:text-white">Theme</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Choose between light and dark mode
+                                </p>
+                            </div>
                         </div>
-                        <button
-                            onClick={handleLockVault}
-                            className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium text-zinc-900 dark:text-zinc-100 transition-colors"
-                        >
-                            <Lock size={16} />
-                            Lock Now
-                        </button>
-                    </div>
-
-                    <div className="px-6 py-4 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Re-enroll Authenticator</p>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                Generate a new TOTP secret. You'll need to re-scan the QR code.
-                            </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setTheme('light')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    theme === 'light'
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Light
+                            </button>
+                            <button
+                                onClick={() => setTheme('dark')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    theme === 'dark'
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Dark
+                            </button>
                         </div>
-                        <button
-                            onClick={handleResetTotp}
-                            className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 rounded-lg text-sm font-medium text-amber-700 dark:text-amber-400 transition-colors"
-                        >
-                            <Shield size={16} />
-                            Re-enroll
-                        </button>
+                    </div>
+
+                    {/* Density Setting */}
+                    <div className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                {density === 'compact' ? (
+                                    <Minimize2 className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                ) : (
+                                    <Maximize2 className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                )}
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-gray-900 dark:text-white">Density</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Control the spacing and size of UI elements
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setDensity('comfortable')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    density === 'comfortable'
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Comfortable
+                            </button>
+                            <button
+                                onClick={() => setDensity('compact')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    density === 'compact'
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                Compact
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Sync */}
-            <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">Sync</h2>
-                </div>
-                <div className="px-6 py-4 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Remote Sync Configuration</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            Connect to a CouchDB or PouchDB-compatible endpoint for sync.
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setIsSyncConfigOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium text-zinc-900 dark:text-zinc-100 transition-colors"
-                    >
-                        <RefreshCw size={16} />
-                        Configure Sync
-                    </button>
-                </div>
-            </section>
+            {/* Reset Section */}
+            <section>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                    Reset Settings
+                </h2>
 
-            {/* About */}
-            <section className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-500">About</h2>
-                </div>
-                <div className="px-6 py-4 space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500 dark:text-zinc-400 flex items-center gap-2"><Info size={14} /> Version</span>
-                        <span className="text-zinc-900 dark:text-zinc-100 font-mono text-xs">0.1.1</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500 dark:text-zinc-400 flex items-center gap-2"><Database size={14} /> Storage</span>
-                        <span className="text-zinc-900 dark:text-zinc-100 text-xs">PouchDB (Local)</span>
-                    </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 pt-2 italic">
-                        Ledgy is 100% offline &amp; private. Your data never leaves your device unless you configure a sync endpoint.
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-4">
+                        Reset all settings to their default values. This action cannot be undone.
                     </p>
+                    <button
+                        onClick={resetToDefaults}
+                        className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
+                    >
+                        <RotateCcw className="w-4 h-4" />
+                        Reset to Defaults
+                    </button>
                 </div>
             </section>
 
-            <SyncConfigDialog
-                profileId={activeProfileId || ''}
-                isOpen={isSyncConfigOpen}
-                onClose={() => setIsSyncConfigOpen(false)}
-            />
+            {/* Future Settings Placeholder */}
+            <section className="mt-8 opacity-50">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                    Coming Soon
+                </h2>
+
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Additional settings will be available in future updates:
+                    </p>
+                    <ul className="mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                        <li className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                            Language & Locale
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                            Notification Preferences
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                            Keyboard Shortcuts
+                        </li>
+                    </ul>
+                </div>
+            </section>
         </div>
     );
 };
