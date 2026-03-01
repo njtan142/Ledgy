@@ -3,8 +3,8 @@ import { useErrorStore } from '../stores/useErrorStore';
 
 /**
  * Shared HKDF salt used for deriving the vault encryption key from a TOTP secret.
- * A single named constant prevents the salt value from being hardcoded in multiple places.
- * This is a protocol constant, not a secret (RFC 5869).
+ * This is a protocol constant, not a secret (RFC 5869 Section 3.1).
+ * @see https://tools.ietf.org/html/rfc5869
  */
 export const HKDF_SALT = 'ledgy-salt-v1';
 
@@ -69,6 +69,14 @@ export async function deriveKeyFromTotp(totpSecretBytes: Uint8Array, salt: Uint8
 
 /**
  * Derives an AES-256-GCM key from a user-supplied passphrase using PBKDF2 (100 000 iterations).
+ * 
+ * Performance Note: PBKDF2 with 100k iterations takes ~200-500ms on modern hardware.
+ * Show a loading indicator during derivation for better UX.
+ * 
+ * Security Note: JavaScript cannot manually clear keys from memory.
+ * Keys are marked non-extractable and rely on garbage collection.
+ * For sensitive applications, consider using a Web Worker to isolate key material.
+ * 
  * @param passphrase  Plain-text passphrase entered by the user.
  * @param salt        Random 16-byte salt that must be persisted alongside the ciphertext.
  */
