@@ -49,13 +49,13 @@ describe('Profile DB Manager', () => {
     describe('getProfileName', () => {
         it('returns database name with prefix', () => {
             const profileId = 'test-123';
-            expect(getProfileName(profileId)).toBe('ledgy_profile_test-123');
+            expect(getProfileName(profileId)).toBe('ledgy-profile-test-123');
         });
 
         it('uses correct prefix constant', () => {
             const profileId = 'abc';
             const name = getProfileName(profileId);
-            expect(name).toMatch(/^ledgy_profile_/);
+            expect(name).toMatch(/^ledgy-profile-/);
         });
     });
 

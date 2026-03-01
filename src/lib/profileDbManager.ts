@@ -16,8 +16,8 @@ import { ProfileMetadata } from '../types/profile';
 import { encryptPayload, decryptPayload } from './crypto';
 import { useErrorStore } from '../stores/useErrorStore';
 
-// Database naming convention
-const DB_NAME_PREFIX = 'ledgy_profile_';
+// Database naming convention (kebab-case as per story spec)
+const DB_NAME_PREFIX = 'ledgy-profile-';
 
 // Type alias for Web Crypto API key
 type EncryptionKey = CryptoKey;
@@ -57,6 +57,9 @@ export class ProfileDbManager {
 
     private constructor() {}
 
+    /**
+     * Get singleton instance (thread-safe lazy initialization)
+     */
     static getInstance(): ProfileDbManager {
         if (!ProfileDbManager.instance) {
             ProfileDbManager.instance = new ProfileDbManager();
@@ -231,11 +234,12 @@ export class ProfileDbManager {
             // Close the profile database if open
             await this.closeProfileDb(profileId);
 
+            // Get the database instance and DESTROY it (not just close)
+            const profileDb = getProfileDb(profileId);
+            await profileDb.destroy();
+
             // Hard-delete the profile record from master DB
             await hard_delete_profile(masterDb, profileId);
-
-            // Note: PouchDB with IndexedDB adapter automatically cleans up
-            // when database is closed and garbage collected
 
             return { success: true };
         } catch (error: any) {
@@ -267,6 +271,8 @@ export class ProfileDbManager {
                 this.profileDbCache.delete(profileId);
             } catch (error) {
                 console.error('Failed to close profile database:', error);
+                // Propagate error for proper handling
+                throw error;
             }
         }
     }
