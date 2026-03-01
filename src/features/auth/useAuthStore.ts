@@ -8,7 +8,7 @@ import {
     HKDF_SALT,
     EncryptedSecret,
 } from '../../lib/crypto';
-import { decodeSecret, verifyTotp } from '../../lib/totp';
+import { decodeSecret, verifyTOTP } from '../../lib/totp';
 
 // ---------------------------------------------------------------------------
 // Session expiry options (shown as a dropdown in the unlock UI)
@@ -155,7 +155,7 @@ export const useAuthStore = create<AuthState>()(
 
                 try {
                     const rawSecret = decodeSecret(totpSecret);
-                    const isValid = await verifyTotp(rawSecret, code);
+                    const isValid = await verifyTOTP(rawSecret, code);
 
                     if (isValid) {
                         const hkdfSalt = new TextEncoder().encode(HKDF_SALT);
@@ -260,7 +260,7 @@ export const useAuthStore = create<AuthState>()(
             ) => {
                 try {
                     const rawSecret = decodeSecret(secret);
-                    const isValid = await verifyTotp(rawSecret, code);
+                    const isValid = await verifyTOTP(rawSecret, code);
 
                     if (isValid) {
                         const salt = new TextEncoder().encode(HKDF_SALT);
