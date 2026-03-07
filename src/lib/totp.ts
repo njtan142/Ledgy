@@ -39,8 +39,17 @@ export async function verifyTotp(secret: Uint8Array, code: string, windowSteps: 
     const now = Math.floor(Date.now() / 1000);
     const counter = Math.floor(now / 30);
 
+    // Import key once outside the loop for performance
+    const key = await crypto.subtle.importKey(
+        'raw',
+        secret,
+        { name: 'HMAC', hash: 'SHA-1' },
+        false,
+        ['sign']
+    );
+
     for (let i = -windowSteps; i <= windowSteps; i++) {
-        const expectedCode = await generateHotp(secret, BigInt(counter + i));
+        const expectedCode = await generateHotp(key, BigInt(counter + i));
         if (expectedCode === code) {
             return true;
         }
@@ -52,7 +61,7 @@ export async function verifyTotp(secret: Uint8Array, code: string, windowSteps: 
 /**
  * Internal helper to generate HOTP (RFC 4226)
  */
-async function generateHotp(secret: Uint8Array, counter: bigint): Promise<string> {
+async function generateHotp(key: CryptoKey, counter: bigint): Promise<string> {
     // 1. Prepare counter as 8-byte big-endian buffer
     const counterBuf = new ArrayBuffer(8);
     const view = new DataView(counterBuf);
@@ -61,14 +70,6 @@ async function generateHotp(secret: Uint8Array, counter: bigint): Promise<string
     view.setBigUint64(0, counter, false);
 
     // 2. HMAC-SHA1
-    const key = await crypto.subtle.importKey(
-        'raw',
-        secret as any,
-        { name: 'HMAC', hash: 'SHA-1' },
-        false,
-        ['sign']
-    );
-
     const signature = await crypto.subtle.sign(
         'HMAC',
         key,
