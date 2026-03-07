@@ -102,9 +102,17 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         if: ${{ hashFiles('src-tauri/Cargo.toml') != '' }}
 
-      - name: Install cargo-audit
+      - name: Cache cargo-audit
+        uses: actions/cache@v4.0.2
+        id: cache-cargo-audit
         if: ${{ hashFiles('src-tauri/Cargo.toml') != '' }}
-        run: cargo install cargo-audit
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-audit-0.20.0
+
+      - name: Install cargo-audit
+        if: steps.cache-cargo-audit.outputs.cache-hit != 'true' && hashFiles('src-tauri/Cargo.toml') != ''
+        run: cargo install cargo-audit --version 0.20.0 --locked
 
       - name: Run cargo audit
         if: ${{ hashFiles('src-tauri/Cargo.toml') != '' }}
