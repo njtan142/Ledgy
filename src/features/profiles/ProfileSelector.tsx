@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { Plus, User, Trash2, X, AlertOctagon, Moon, Sun } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
+import { WelcomePage } from './WelcomePage';
 
 export const ProfileSelector: React.FC = () => {
     const { profiles, isLoading, fetchProfiles, setActiveProfile, deleteProfile } = useProfileStore();
@@ -77,6 +78,11 @@ export const ProfileSelector: React.FC = () => {
     };
 
     const profileToDelete = profiles.find(p => p.id === deleteProfileId);
+
+    // AC #1: Show WelcomePage when loading is done and 0 profiles exist
+    if (!isLoading && profiles.length === 0) {
+        return <WelcomePage />;
+    }
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col items-center justify-center p-8 relative transition-colors duration-300">
