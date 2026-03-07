@@ -1,6 +1,6 @@
 # Story 2.4: First-Launch Empty State Experience
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -71,6 +71,29 @@ Recent commits show that `ProfileSelectorCanvas` (Story 2.2) and Profile Creatio
 - [Source: architecture.md](planning-artifacts/architecture.md)
 - [Source: ux-design-specification.md](planning-artifacts/ux-design-specification.md)
 - [Source: product-brief-ledgy-2026-02-20.md](planning-artifacts/product-brief-ledgy-2026-02-20.md)
+
+---
+
+## Tasks and Subtasks
+
+- [ ] Task 1: Create `WelcomePage.tsx` component in `src/features/profiles/`
+  - [ ] 1.1: Build the full-page welcome layout with Emerald brand accents and dark/light mode support
+  - [ ] 1.2: Add Ledgy brand headline ("Welcome to Ledgy. Your personal data toolkit.") with gradient typography
+  - [ ] 1.3: Add prominent primary CTA button "Create Your First Profile" that navigates to `/profiles/new`
+  - [ ] 1.4: Include empty-state icon/graphic (using lucide-react icons, e.g. `DatabaseZap` or `Sparkles`)
+  - [ ] 1.5: Add theme toggle in top-right corner (consistent with `ProfileSelector.tsx` pattern)
+  - [ ] 1.6: Ensure semantic HTML with proper ARIA roles (`role="main"`, `aria-label`, etc.) and keyboard navigability
+
+- [ ] Task 2: Modify `ProfileSelector.tsx` to detect zero-profile state
+  - [ ] 2.1: After `fetchProfiles()` resolves, if `!isLoading && profiles.length === 0`, render `<WelcomePage />` instead
+  - [ ] 2.2: Ensure the loading state is handled before the check (do not flash welcome screen while loading)
+
+- [ ] Task 3: Write tests for `WelcomePage.tsx` in `src/features/profiles/WelcomePage.test.tsx`
+  - [ ] 3.1: Test that `WelcomePage` renders correctly with brand headline and CTA button
+  - [ ] 3.2: Test CTA button navigates to `/profiles/new` on click
+  - [ ] 3.3: Test that `ProfileSelector` renders `WelcomePage` when store returns 0 profiles
+  - [ ] 3.4: Test that `ProfileSelector` renders the profile grid when profiles exist (regression check)
+  - [ ] 3.5: Test keyboard accessibility (CTA is focusable and activatable via Enter/Space)
 
 ---
 
