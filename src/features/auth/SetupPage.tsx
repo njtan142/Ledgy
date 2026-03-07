@@ -9,6 +9,7 @@ export const SetupPage: React.FC = () => {
     const [qrUri, setQrUri] = useState<string>('');
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { verifyAndRegister } = useAuthStore();
     const navigate = useNavigate();
 
@@ -23,9 +24,12 @@ export const SetupPage: React.FC = () => {
     }, []);
 
     const handleVerify = async (val?: string) => {
+        if (isSubmitting) return;
+
         const verifyCode = val || code;
         if (!tempSecret || verifyCode.length !== 6) return;
 
+        setIsSubmitting(true);
         setError(null);
 
         const success = await verifyAndRegister(tempSecret, verifyCode);
@@ -33,10 +37,12 @@ export const SetupPage: React.FC = () => {
             navigate('/');
         } else {
             setError('Invalid code. Please try again.');
+            setIsSubmitting(false);
         }
     };
 
     const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isSubmitting) return;
         const value = e.target.value.replace(/\D/g, '').slice(0, 6);
         setCode(value);
         if (value.length === 6) {
@@ -84,8 +90,9 @@ export const SetupPage: React.FC = () => {
                                 maxLength={6}
                                 value={code}
                                 onChange={handleCodeChange}
+                                disabled={isSubmitting}
                                 placeholder="000000"
-                                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-4 text-center text-3xl tracking-widest text-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-mono"
+                                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-4 text-center text-3xl tracking-widest text-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-mono disabled:opacity-50"
                                 autoFocus
                             />
                         </div>
@@ -96,10 +103,14 @@ export const SetupPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={code.length !== 6}
-                            className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-[0.98]"
+                            disabled={code.length !== 6 || isSubmitting}
+                            className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
                         >
-                            Finish Setup
+                            {isSubmitting ? (
+                                <div className="w-6 h-6 border-2 border-zinc-950/20 border-t-zinc-950 rounded-full animate-spin" />
+                            ) : (
+                                'Finish Setup'
+                            )}
                         </button>
                     </form>
                 </div>
