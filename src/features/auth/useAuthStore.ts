@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { deriveKeyFromTotp } from '../../lib/crypto';
-import { decodeSecret, verifyTotp } from '../../lib/totp';
+import { encodeSecret, decodeSecret, verifyTotp } from '../../lib/totp';
 
 interface AuthState {
     totpSecret: string | null; // Base32 encoded secret, persisted
+    salt: string | null; // Base32 encoded salt, persisted
     isUnlocked: boolean;
     encryptionKey: CryptoKey | null; // Volatile, never persisted
     unlock: (code: string) => Promise<boolean>;
@@ -17,11 +18,12 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
             totpSecret: null,
+            salt: null,
             isUnlocked: false,
             encryptionKey: null,
 
             unlock: async (code: string) => {
-                const { totpSecret } = get();
+                const { totpSecret, salt: saltEncoded } = get();
                 if (!totpSecret) return false;
 
                 try {
@@ -29,8 +31,11 @@ export const useAuthStore = create<AuthState>()(
                     const isValid = await verifyTotp(rawSecret, code);
 
                     if (isValid) {
-                        const salt = new TextEncoder().encode('ledgy-salt-v1');
-                        const key = await deriveKeyFromTotp(totpSecret, salt);
+                        // For backward compatibility, fallback to legacy salt if not present
+                        const saltBytes = saltEncoded
+                            ? decodeSecret(saltEncoded)
+                            : new TextEncoder().encode('ledgy-salt-v1');
+                        const key = await deriveKeyFromTotp(totpSecret, saltBytes);
 
                         set({
                             isUnlocked: true,
@@ -51,11 +56,13 @@ export const useAuthStore = create<AuthState>()(
                     const isValid = await verifyTotp(rawSecret, code);
 
                     if (isValid) {
-                        const salt = new TextEncoder().encode('ledgy-salt-v1');
-                        const key = await deriveKeyFromTotp(secret, salt);
+                        const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+                        const saltEncoded = encodeSecret(saltBytes);
+                        const key = await deriveKeyFromTotp(secret, saltBytes);
 
                         set({
                             totpSecret: secret,
+                            salt: saltEncoded,
                             isUnlocked: true,
                             encryptionKey: key
                         });
@@ -78,9 +85,10 @@ export const useAuthStore = create<AuthState>()(
         {
             name: 'ledgy-auth-storage',
             storage: createJSONStorage(() => localStorage),
-            // ONLY persist the totpSecret
+            // Persist the totpSecret and the salt
             partialize: (state) => ({
-                totpSecret: state.totpSecret
+                totpSecret: state.totpSecret,
+                salt: state.salt
             }),
         }
     )
