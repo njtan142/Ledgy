@@ -11,6 +11,7 @@ import {
     saveTemplateTauri,
     isTauri,
 } from '../lib/templateExport';
+import { import_template } from '../lib/templateImport';
 
 interface TemplateState {
     isExporting: boolean;
@@ -19,7 +20,7 @@ interface TemplateState {
 
     // Actions
     exportTemplate: (includeNodeGraph?: boolean) => Promise<void>;
-    importTemplate: (template: TemplateExport, profileId: string) => Promise<TemplateImportResult>;
+    importTemplate: (template: TemplateExport, profileId: string, projectId: string) => Promise<TemplateImportResult>;
     reset: () => void;
 }
 
@@ -73,19 +74,12 @@ export const useTemplateStore = create<TemplateState>((set) => ({
         }
     },
 
-    importTemplate: async (_template: TemplateExport, _profileId: string) => {
+    importTemplate: async (template: TemplateExport, profileId: string, projectId: string) => {
         set({ isImporting: true, error: null });
         try {
-            // TODO: Implement import_schema_graph in db.ts
-            // TODO: Validate template structure
-            // TODO: Handle conflicts (skip/overwrite/merge)
-            const result: TemplateImportResult = {
-                success: true,
-                importedSchemas: 0,
-                importedNodes: 0,
-                conflicts: [],
-                errors: [],
-            };
+            const db = getProfileDb(profileId);
+            const result = await import_template(db, template, profileId, projectId);
+            useNotificationStore.getState().addNotification('Template imported successfully', 'success');
             set({ isImporting: false });
             return result;
         } catch (err: any) {

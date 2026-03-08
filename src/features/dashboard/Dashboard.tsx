@@ -7,6 +7,7 @@ import { SchemaBuilder } from '../ledger/SchemaBuilder';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { LedgerTable } from '../ledger/LedgerTable';
 import { ExportTemplateButton } from '../templates/ExportTemplateButton';
+import { ImportTemplateButton } from '../templates/ImportTemplateButton';
 import { DashboardView } from './DashboardView';
 import { Table, LayoutGrid } from 'lucide-react';
 
@@ -75,6 +76,7 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <ImportTemplateButton profileId={profileId!} projectId={projectId!} />
                     {hasLedgers && <ExportTemplateButton />}
 
                     {!rightInspectorOpen && (

@@ -1,6 +1,6 @@
 # Story 2.8: Template Engine (JSON Import)
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,39 +28,39 @@ so that **I can scaffold a fresh profile with pre-built schema structures and no
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `src/lib/templateImport.ts` — the core import pipeline (AC: #5, #6, #7, #8, #10)
-  - [ ] 1.1: Implement `validate_template(data: unknown): data is TemplateExport` — check `exportVersion === '1.0'`, `schemas` is a non-empty array, each schema has a non-empty `name` string and `fields` array.
-  - [ ] 1.2: Implement `import_template(db, template, profileId, projectId): Promise<TemplateImportResult>` — iterate `template.schemas`, call `create_schema` for each non-conflicting schema, call `save_canvas` if `template.nodeGraph` exists, collect results.
-  - [ ] 1.3: Implement conflict detection inside `import_template` — call `list_schemas(db)` once before the loop, build a name-set, skip any schema whose name matches; push an `ImportConflict` of type `'schema_exists'`.
-  - [ ] 1.4: Implement `readTemplateBrowser(): Promise<TemplateExport | null>` — create hidden `<input type="file" accept=".json,.ledgy.json">`, click it programmatically, await `FileReader` result, `JSON.parse`, return parsed data or `null` if cancelled.
-  - [ ] 1.5: Implement `readTemplateTauri(): Promise<TemplateExport | null>` — use `Function()` constructor pattern (mirror of `saveTemplateTauri`) to dynamically import `@tauri-apps/api/dialog` open() and `@tauri-apps/api/fs` readTextFile(), return parsed JSON or `null` if cancelled.
+- [x] Task 1: Create `src/lib/templateImport.ts` — the core import pipeline (AC: #5, #6, #7, #8, #10)
+  - [x] 1.1: Implement `validate_template(data: unknown): data is TemplateExport` — check `exportVersion === '1.0'`, `schemas` is a non-empty array, each schema has a non-empty `name` string and `fields` array.
+  - [x] 1.2: Implement `import_template(db, template, profileId, projectId): Promise<TemplateImportResult>` — iterate `template.schemas`, call `create_schema` for each non-conflicting schema, call `save_canvas` if `template.nodeGraph` exists, collect results.
+  - [x] 1.3: Implement conflict detection inside `import_template` — call `list_schemas(db)` once before the loop, build a name-set, skip any schema whose name matches; push an `ImportConflict` of type `'schema_exists'`.
+  - [x] 1.4: Implement `readTemplateBrowser(): Promise<TemplateExport | null>` — create hidden `<input type="file" accept=".json,.ledgy.json">`, click it programmatically, await `FileReader` result, `JSON.parse`, return parsed data or `null` if cancelled.
+  - [x] 1.5: Implement `readTemplateTauri(): Promise<TemplateExport | null>` — use `Function()` constructor pattern (mirror of `saveTemplateTauri`) to dynamically import `@tauri-apps/api/dialog` open() and `@tauri-apps/api/fs` readTextFile(), return parsed JSON or `null` if cancelled.
 
-- [ ] Task 2: Update `useTemplateStore.importTemplate()` — wire real implementation (AC: #9, #10, #11, #12)
-  - [ ] 2.1: Update the `TemplateState` interface: change signature from `importTemplate(template, profileId)` to `importTemplate(template: TemplateExport, profileId: string, projectId: string): Promise<TemplateImportResult>`.
-  - [ ] 2.2: In the store implementation, replace the stub body with: get `db` via `getProfileDb(profileId)`, call `import_template(db, template, profileId, projectId)` from `../lib/templateImport`, call `useNotificationStore.getState().addNotification('Template imported successfully', 'success')` on success.
-  - [ ] 2.3: On any thrown error, call `useErrorStore.getState().dispatchError(errorMsg)` and rethrow (same pattern as `exportTemplate`).
+- [x] Task 2: Update `useTemplateStore.importTemplate()` — wire real implementation (AC: #9, #10, #11, #12)
+  - [x] 2.1: Update the `TemplateState` interface: change signature from `importTemplate(template, profileId)` to `importTemplate(template: TemplateExport, profileId: string, projectId: string): Promise<TemplateImportResult>`.
+  - [x] 2.2: In the store implementation, replace the stub body with: get `db` via `getProfileDb(profileId)`, call `import_template(db, template, profileId, projectId)` from `../lib/templateImport`, call `useNotificationStore.getState().addNotification('Template imported successfully', 'success')` on success.
+  - [x] 2.3: On any thrown error, call `useErrorStore.getState().dispatchError(errorMsg)` and rethrow (same pattern as `exportTemplate`).
 
-- [ ] Task 3: Create `src/features/templates/ImportTemplateButton.tsx` (AC: #1, #2, #3, #4, #12)
-  - [ ] 3.1: Component accepts `profileId: string` and `projectId: string` as props.
-  - [ ] 3.2: On click, call `readTemplateTauri()` if `isTauri()`, else call `readTemplateBrowser()`. If result is `null` (cancel), return silently.
-  - [ ] 3.3: Validate the parsed data with `validate_template()`. If invalid, call `useErrorStore.getState().dispatchError('Invalid template file: …')` and return.
-  - [ ] 3.4: Call `importTemplate(parsedTemplate, profileId, projectId)` from `useTemplateStore`. Button is `disabled={isImporting}` during operation.
-  - [ ] 3.5: Mirror `ExportTemplateButton.tsx` styling exactly (zinc-800 bg, zinc-300 text, disabled state, `aria-label="Import template"`). Use `Upload` icon from `lucide-react`.
+- [x] Task 3: Create `src/features/templates/ImportTemplateButton.tsx` (AC: #1, #2, #3, #4, #12)
+  - [x] 3.1: Component accepts `profileId: string` and `projectId: string` as props.
+  - [x] 3.2: On click, call `readTemplateTauri()` if `isTauri()`, else call `readTemplateBrowser()`. If result is `null` (cancel), return silently.
+  - [x] 3.3: Validate the parsed data with `validate_template()`. If invalid, call `useErrorStore.getState().dispatchError('Invalid template file: …')` and return.
+  - [x] 3.4: Call `importTemplate(parsedTemplate, profileId, projectId)` from `useTemplateStore`. Button is `disabled={isImporting}` during operation.
+  - [x] 3.5: Mirror `ExportTemplateButton.tsx` styling exactly (zinc-800 bg, zinc-300 text, disabled state, `aria-label="Import template"`). Use `Upload` icon from `lucide-react`.
 
-- [ ] Task 4: Wire `ImportTemplateButton` into `Dashboard.tsx` (AC: #1)
-  - [ ] 4.1: Import `ImportTemplateButton` from `'../templates/ImportTemplateButton'`.
-  - [ ] 4.2: In the toolbar `<div className="flex items-center gap-2">`, render `<ImportTemplateButton profileId={profileId!} projectId={projectId!} />` beside `<ExportTemplateButton />`. `ImportTemplateButton` is shown unconditionally (not inside the `{hasLedgers && ...}` guard).
+- [x] Task 4: Wire `ImportTemplateButton` into `Dashboard.tsx` (AC: #1)
+  - [x] 4.1: Import `ImportTemplateButton` from `'../templates/ImportTemplateButton'`.
+  - [x] 4.2: In the toolbar `<div className="flex items-center gap-2">`, render `<ImportTemplateButton profileId={profileId!} projectId={projectId!} />` beside `<ExportTemplateButton />`. `ImportTemplateButton` is shown unconditionally (not inside the `{hasLedgers && ...}` guard).
 
-- [ ] Task 5: Write `src/lib/templateImport.test.ts` — unit tests (AC: #5, #6, #7, #8, #10)
-  - [ ] 5.1: Test `validate_template` — valid `TemplateExport` passes; missing `schemas` field fails; `exportVersion !== '1.0'` fails; `schemas` with missing `name` fails.
-  - [ ] 5.2: Test `import_template` success (schemas only) — mock `list_schemas` returning `[]`, mock `create_schema` returning `'schema:abc'`, assert `importedSchemas === 1`, `conflicts === []`, `errors === []`.
-  - [ ] 5.3: Test `import_template` success (schemas + nodeGraph) — mock `save_canvas`, assert `importedNodes > 0`.
-  - [ ] 5.4: Test `import_template` conflict detection — mock `list_schemas` returning a schema with same name as template schema, assert `importedSchemas === 0`, `conflicts` has one entry with `type: 'schema_exists'`.
-  - [ ] 5.5: Test `import_template` error path — mock `create_schema` throwing, assert `errors` has one entry and function still returns (no rethrow from `import_template` itself).
+- [x] Task 5: Write `src/lib/templateImport.test.ts` — unit tests (AC: #5, #6, #7, #8, #10)
+  - [x] 5.1: Test `validate_template` — valid `TemplateExport` passes; missing `schemas` field fails; `exportVersion !== '1.0'` fails; `schemas` with missing `name` fails.
+  - [x] 5.2: Test `import_template` success (schemas only) — mock `list_schemas` returning `[]`, mock `create_schema` returning `'schema:abc'`, assert `importedSchemas === 1`, `conflicts === []`, `errors === []`.
+  - [x] 5.3: Test `import_template` success (schemas + nodeGraph) — mock `save_canvas`, assert `importedNodes > 0`.
+  - [x] 5.4: Test `import_template` conflict detection — mock `list_schemas` returning a schema with same name as template schema, assert `importedSchemas === 0`, `conflicts` has one entry with `type: 'schema_exists'`.
+  - [x] 5.5: Test `import_template` error path — mock `create_schema` throwing, assert `errors` has one entry and function still returns (no rethrow from `import_template` itself).
 
-- [ ] Task 6: Extend `src/stores/useTemplateStore.test.ts` — add import-path tests (AC: #9, #11, #12)
-  - [ ] 6.1: Test `importTemplate` success: mock `import_template` resolving with `{ success: true, importedSchemas: 2, importedNodes: 0, conflicts: [], errors: [] }`, assert `addNotification` called with `'success'`, `isImporting` resets to `false`.
-  - [ ] 6.2: Test `importTemplate` error: mock `import_template` throwing, assert `dispatchError` called, `isImporting` resets to `false`.
+- [x] Task 6: Extend `src/stores/useTemplateStore.test.ts` — add import-path tests (AC: #9, #11, #12)
+  - [x] 6.1: Test `importTemplate` success: mock `import_template` resolving with `{ success: true, importedSchemas: 2, importedNodes: 0, conflicts: [], errors: [] }`, assert `addNotification` called with `'success'`, `isImporting` resets to `false`.
+  - [x] 6.2: Test `importTemplate` error: mock `import_template` throwing, assert `dispatchError` called, `isImporting` resets to `false`.
 
 ## Dev Notes
 
@@ -427,6 +427,7 @@ claude-sonnet-4.6 — 2026-03-08
 - Tauri file read pattern derived from `saveTemplateTauri` in `templateExport.ts` — Function() constructor pattern confirmed
 - No new directories required; `src/lib/` for utility, `src/features/templates/` for component
 - Conflict detection strategy: skip-and-continue (best-effort import, no hard failure on name clashes)
+- ✅ All 6 tasks implemented; 17/17 tests pass; 35/35 test files green; TypeScript strict mode passes with 0 errors
 
 ### File List
 

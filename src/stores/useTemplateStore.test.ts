@@ -17,6 +17,12 @@ vi.mock('../lib/templateExport', () => ({
     isTauri: () => mockIsTauri(),
 }));
 
+const mockImportTemplate = vi.fn();
+
+vi.mock('../lib/templateImport', () => ({
+    import_template: (...args: any[]) => mockImportTemplate(...args),
+}));
+
 vi.mock('./useProfileStore', () => ({
     useProfileStore: {
         getState: () => ({
@@ -127,6 +133,46 @@ describe('useTemplateStore', () => {
             expect(state.isExporting).toBe(false);
             expect(state.isImporting).toBe(false);
             expect(state.error).toBeNull();
+        });
+    });
+
+    describe('importTemplate - success path', () => {
+        it('calls import_template, fires addNotification with success, and resets isImporting', async () => {
+            mockImportTemplate.mockResolvedValue({
+                success: true,
+                importedSchemas: 2,
+                importedNodes: 0,
+                conflicts: [],
+                errors: [],
+            });
+
+            const importingStates: boolean[] = [];
+            const unsubscribe = useTemplateStore.subscribe((state) => {
+                importingStates.push(state.isImporting);
+            });
+
+            const result = await useTemplateStore.getState().importTemplate(mockTemplate, 'profile-1', 'project-1');
+
+            unsubscribe();
+
+            expect(importingStates).toContain(true);
+            expect(useTemplateStore.getState().isImporting).toBe(false);
+            expect(mockAddNotification).toHaveBeenCalledWith('Template imported successfully', 'success');
+            expect(result.importedSchemas).toBe(2);
+        });
+    });
+
+    describe('importTemplate - error path', () => {
+        it('dispatches error via useErrorStore, resets isImporting, and rethrows on failure', async () => {
+            mockImportTemplate.mockRejectedValue(new Error('DB import failed'));
+
+            await expect(
+                useTemplateStore.getState().importTemplate(mockTemplate, 'profile-1', 'project-1')
+            ).rejects.toThrow('DB import failed');
+
+            expect(mockDispatchError).toHaveBeenCalledWith('DB import failed');
+            expect(mockAddNotification).not.toHaveBeenCalled();
+            expect(useTemplateStore.getState().isImporting).toBe(false);
         });
     });
 });
