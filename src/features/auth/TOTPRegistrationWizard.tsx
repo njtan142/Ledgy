@@ -74,10 +74,11 @@ export const TOTPRegistrationWizard = () => {
         setIsVerifying(true);
         try {
             // Use verifyAndRegister to verify and store the secret
-            const success = await verifyAndRegister(secret, totpCode, true);
+            // Use false for rememberMe since unencrypted secrets should no longer be persisted.
+            const success = await verifyAndRegister(secret, totpCode, false);
             
             if (success) {
-                // Initialize session to persist state
+                // Initialize session to setup state
                 await initSession();
                 
                 // Generate backup codes

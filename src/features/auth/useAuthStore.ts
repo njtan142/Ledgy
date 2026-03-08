@@ -138,17 +138,10 @@ export const useAuthStore = create<AuthState>()(
                     return;
                 }
 
-                // Step 3: Plain remember-me — auto-derive encryption key and unlock
-                if (rememberMe && totpSecret && !encryptionKey) {
-                    try {
-                        const hkdfSalt = salt ? decodeSecret(salt) : HKDF_SALT_BYTES;
-                        const key = await deriveKeyFromTotp(decodeSecret(totpSecret), hkdfSalt);
-                        set({ isUnlocked: true, encryptionKey: key });
-                    } catch (err) {
-                        if (import.meta.env.DEV) {
-                            console.error('Auto-unlock failed:', err);
-                        }
-                    }
+                // Step 3: Legacy Plain remember-me — no longer auto-unlock.
+                // Force user to UnlockPage to set a passphrase for encryption.
+                if (rememberMe && totpSecret && !encryptionKey && !encryptedTotpSecret) {
+                    return;
                 }
             },
 
@@ -224,7 +217,7 @@ export const useAuthStore = create<AuthState>()(
                             set({
                                 isUnlocked: true,
                                 encryptionKey: key,
-                                rememberMe: remember,
+                                rememberMe: remember && !!passphrase,
                                 encryptedTotpSecret: null,
                                 rememberMeExpiry: expiryTimestamp,
                                 rememberMeExpiryMs: storedExpiryMs,
@@ -349,8 +342,7 @@ export const useAuthStore = create<AuthState>()(
                                 encryptedTotpSecret: null,
                                 isUnlocked: true,
                                 encryptionKey: key,
-                                rememberMe: remember,
-                                salt: saltBase32,
+                                rememberMe: remember && !!passphrase,
                                 rememberMeExpiry: expiryTimestamp,
                                 rememberMeExpiryMs: storedExpiryMs,
                                 needsPassphrase: false,
@@ -404,12 +396,10 @@ export const useAuthStore = create<AuthState>()(
             name: 'ledgy-auth-storage',
             storage: createJSONStorage(() => localStorage),
             /**
-             * Only persist non-sensitive session state.
-             * When passphrase-based remember-me is active, totpSecret is explicitly excluded
-             * (encryptedTotpSecret holds the protected form instead).
+             * Only persist non-sensitive or encrypted session state.
+             * Plaintext totpSecret is never persisted to mitigate local storage exposure.
              */
             partialize: (state) => ({
-                totpSecret: state.encryptedTotpSecret ? null : state.totpSecret,
                 encryptedTotpSecret: state.encryptedTotpSecret,
                 rememberMe: state.rememberMe,
                 rememberMeExpiry: state.rememberMeExpiry,

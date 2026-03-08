@@ -235,9 +235,9 @@ export const UnlockPage: React.FC = () => {
                             <div className="w-full bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
                                 <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                                 <div className="space-y-1">
-                                    <p className="text-xs font-semibold text-amber-500 uppercase tracking-wide">Vault Unsecured</p>
+                                    <p className="text-xs font-semibold text-amber-500 uppercase tracking-wide">Action Required</p>
                                     <p className="text-xs text-zinc-400 leading-relaxed">
-                                        Your secret is stored on this device. Set a passphrase below to encrypt it at rest.
+                                        For your security, unencrypted vaults are no longer saved. Please check "Remember me" and set a passphrase to keep your vault, or it will be removed when you close the app.
                                     </p>
                                 </div>
                             </div>
@@ -281,17 +281,18 @@ export const UnlockPage: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    {/* Optional passphrase */}
+                                    {/* Required passphrase */}
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-500 font-medium">
-                                            Passphrase <span className="text-zinc-600">(optional — encrypts the stored secret)</span>
+                                            Passphrase <span className="text-emerald-500">(required to encrypt the stored secret)</span>
                                         </label>
                                         <div className="relative">
                                             <input
                                                 type={showPassphrase ? 'text' : 'password'}
                                                 value={passphrase}
                                                 onChange={(e) => setPassphrase(e.target.value)}
-                                                placeholder="Leave blank for plain storage"
+                                                placeholder="Enter a secure passphrase"
+                                                required={rememberMe}
                                                 disabled={isSubmitting}
                                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 pr-9 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                                             />
@@ -311,7 +312,7 @@ export const UnlockPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={code.length !== 6 || isSubmitting}
+                            disabled={code.length !== 6 || isSubmitting || (rememberMe && passphrase.length === 0)}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-emerald-500/10"
                         >
                             {isSubmitting ? (
