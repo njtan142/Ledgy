@@ -171,17 +171,18 @@ export const SetupPage: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    {/* Optional passphrase */}
+                                    {/* Required passphrase */}
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-500 font-medium">
-                                            Passphrase <span className="text-zinc-600">(optional — encrypts the stored secret)</span>
+                                            Passphrase <span className="text-emerald-500">(required to encrypt the stored secret)</span>
                                         </label>
                                         <div className="relative">
                                             <input
                                                 type={showPassphrase ? 'text' : 'password'}
                                                 value={passphrase}
                                                 onChange={(e) => setPassphrase(e.target.value)}
-                                                placeholder="Leave blank for plain storage"
+                                                placeholder="Enter a secure passphrase"
+                                                required={rememberMe}
                                                 disabled={isSubmitting}
                                                 className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 pr-9 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
                                             />
@@ -205,7 +206,7 @@ export const SetupPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={code.length !== 6 || isSubmitting}
+                            disabled={code.length !== 6 || isSubmitting || (rememberMe && passphrase.length === 0)}
                             className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-950 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-[0.98]"
                         >
                             {isSubmitting ? 'Verifying...' : 'Finish Setup'}
