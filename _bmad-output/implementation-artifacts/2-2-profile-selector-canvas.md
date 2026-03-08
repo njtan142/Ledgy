@@ -1,6 +1,6 @@
 # Story 2.2: Profile Selector Canvas
 
-Status: review
+Status: done
 
 <!-- Note: Validation is recommended. Run validate-create-story for quality check before dev-story. -->
 
