@@ -35,6 +35,11 @@ export class Database {
             // Validate no reserved fields
             validateDocumentFields(data as Partial<LedgyDocument>);
 
+            // Reject manually-crafted IDs — all IDs are auto-generated as {type}:{uuid}
+            if ('_id' in (data as object)) {
+                throw new Error(`Invalid field "_id": Document IDs are auto-generated as {type}:{uuid} — do not supply a custom _id`);
+            }
+
             const now = new Date().toISOString();
             const doc: Record<string, unknown> = {
                 _id: `${type}:${uuidv4()}`,
@@ -112,8 +117,9 @@ export class Database {
 
         const existing = await this.db.get<LedgyDocument>(id);
 
-        // Prevent overwriting immutable envelope fields
-        const { _id, _rev, createdAt, schema_version, type, ...restData } = data as any;
+        // Prevent overwriting truly immutable envelope fields (_id, _rev, createdAt, type).
+        // schema_version is intentionally mutable — update_schema bumps it for JIT migration (NFR9).
+        const { _id, _rev, createdAt, type, ...restData } = data as any;
 
         const updatedDoc = {
             ...existing,
@@ -470,7 +476,7 @@ export async function update_schema(
     fields: SchemaField[],
     encryptionKey?: CryptoKey
 ): Promise<void> {
-    const schema = await db.getDocument<LedgerSchema>(schemaId);
+    const schema = await get_schema(db, schemaId);
     const updateData: any = {
         fields,
         schema_version: schema.schema_version + 1,
@@ -535,11 +541,16 @@ export async function delete_schema(db: Database, schemaId: string): Promise<voi
 
 /**
  * Gets a single schema by ID.
+ * Throws a descriptive error (not a raw PouchDB 404) when not found.
  * @param db - Profile database instance
  * @param schemaId - Schema document ID
  */
 export async function get_schema(db: Database, schemaId: string): Promise<LedgerSchema> {
-    return await db.getDocument<LedgerSchema>(schemaId);
+    const schema = await db.getDocument<LedgerSchema>(schemaId);
+    if (!schema) {
+        throw new Error(`Schema not found: ${schemaId}`);
+    }
+    return schema;
 }
 
 /**

@@ -8,30 +8,12 @@ import {
     delete_entry,
     create_schema,
 } from '../../lib/db';
-import { LedgerEntry } from '../../types/ledger';
-import { LedgerSchema, SchemaField as LedgerSchemaField } from '../../types/ledger';
+import { LedgerEntry, LedgerSchema, SchemaField } from '../../types/ledger';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { useErrorStore } from '../../stores/useErrorStore';
 
-export type { LedgerEntry };
+export type { LedgerEntry, SchemaField };
 export type Schema = LedgerSchema;
-
-export interface SchemaField {
-    name: string;
-    type: 'text' | 'number' | 'date' | 'relation' | 'boolean';
-    required?: boolean;
-    validation?: {
-        minLength?: number;
-        maxLength?: number;
-        pattern?: string;
-        min?: number;
-        max?: number;
-    };
-    relation?: {
-        targetSchema: string;
-        bidirectional?: boolean;
-    };
-}
 
 interface LedgerState {
     // State fields
@@ -138,12 +120,8 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
                 return;
             }
             await update_entry(db, id, updates.data || (updates as Record<string, unknown>));
-            const updatedEntries = get().entries.map(entry =>
-                entry._id === id
-                    ? { ...entry, ...updates, updatedAt: new Date().toISOString() }
-                    : entry
-            );
-            set({ entries: updatedEntries, isLoading: false });
+            // Reload from DB to ensure in-memory state matches persisted state
+            await get().loadEntries();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update entry';
             set({ error: errorMessage, isLoading: false });
@@ -186,7 +164,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
             await create_schema(
                 db,
                 schema.name || 'Unnamed Schema',
-                (schema.fields || []) as LedgerSchemaField[],
+                (schema.fields || []) as SchemaField[],
                 activeProfileId,
                 schema.projectId || '',
             );

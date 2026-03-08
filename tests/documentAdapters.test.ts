@@ -5,6 +5,7 @@ import {
     _clearProfileDatabases,
     create_schema,
     get_schema,
+    update_schema,
     create_entry,
     get_entry,
     list_entries,
@@ -173,5 +174,43 @@ describe('Soft-delete and restore', () => {
         await restore_entry(db, entryId);
         const afterRestore = await list_entries(db, schemaId);
         expect(afterRestore.find(e => e._id === entryId)).toBeDefined();
+    });
+});
+
+// H1 fix: schema_version must actually increment after update_schema
+describe('schema_version increment (NFR9)', () => {
+    it('update_schema increments schema_version from 1 to 2', async () => {
+        const db = await freshDb();
+        const schemaId = await create_schema(db, 'Versioned Schema', [], TEST_PROFILE_ID, 'project:v');
+
+        const before = await get_schema(db, schemaId);
+        expect(before.schema_version).toBe(1);
+
+        await update_schema(db, schemaId, 'Versioned Schema Updated', [{ name: 'Field1', type: 'text' }]);
+
+        const after = await get_schema(db, schemaId);
+        expect(after.schema_version).toBe(2);
+        expect(after.name).toBe('Versioned Schema Updated');
+        expect(after.fields).toHaveLength(1);
+    });
+});
+
+// H2 fix: manually supplying _id in data must be rejected at runtime
+describe('AC1 - _id override rejection', () => {
+    it('createDocument throws when data contains a custom _id override', async () => {
+        const db = await freshDb();
+        await expect(
+            db.createDocument('entry', { _id: 'entry:manual-id' } as any)
+        ).rejects.toThrow('Document IDs are auto-generated');
+    });
+});
+
+// M2 fix: get_schema throws descriptive error on 404
+describe('get_schema - 404 handling', () => {
+    it('throws descriptive error when schema does not exist', async () => {
+        const db = await freshDb();
+        await expect(get_schema(db, 'schema:nonexistent')).rejects.toThrow(
+            'Schema not found: schema:nonexistent'
+        );
     });
 });

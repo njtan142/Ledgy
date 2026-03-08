@@ -1,6 +1,6 @@
 # Story 3.1: PouchDB Document Adapters
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -261,3 +261,23 @@ Claude Sonnet 4.6 (claude-sonnet-4.6)
 | Date | Change |
 |------|--------|
 | 2025-01-01 | Story implemented by Claude Sonnet 4.6. All ACs satisfied. 12 new tests passing. 337 src/ tests unbroken. |
+| 2026-03-08 | Code review by Claude Sonnet 4.6. 2 HIGH + 3 MEDIUM + 3 LOW issues found and fixed. |
+
+### Code Review Findings & Fixes (2026-03-08)
+
+**HIGH — Fixed:**
+- **H1 `update_schema` silently discarding `schema_version` bump**: `updateDocument` was stripping `schema_version` from the incoming data as an "immutable" field, silently discarding the version increment from `update_schema`. Fixed by removing `schema_version` from the immutable exclusion list in `updateDocument` (it must remain mutable for NFR9 JIT migration). `update_schema` now also uses `get_schema()` (throws on 404) instead of raw `db.getDocument()`.
+- **H2 AC1 runtime enforcement missing**: `createDocument` generated a UUID `_id` but spread `...data` after it, allowing `_id: 'entry:manual-id'` in data to override the auto-generated UUID at runtime. Added an explicit check: if `data` contains `_id`, throw with "Document IDs are auto-generated".
+
+**MEDIUM — Fixed:**
+- **M1 Stale local `SchemaField` export (Task 3.8 incomplete)**: Local `SchemaField` interface (with non-canonical `boolean` type and extra `validation` object) was still exported from `useLedgerStore.ts`. Removed local definition; now re-exports canonical `SchemaField` from `src/types/ledger.ts`.
+- **M2 `get_schema` inconsistent 404 handling**: `get_schema` silently returned `null` on 404 while `get_entry` (added this story) throws. Fixed `get_schema` to throw `Error('Schema not found: ${schemaId}')` for consistency.
+- **M3 `updateEntry` optimistic state divergence**: After `update_entry`, the store did an optimistic in-memory update (inconsistent with `createEntry`/`createSchema` which reload from DB). Replaced with a `loadEntries()` reload for consistency.
+
+**LOW — Tests added:**
+- **L1**: Added `schema_version` increment test, `_id` override rejection test, and `get_schema` 404 test to `tests/documentAdapters.test.ts` (15 tests total, all passing).
+
+**Files modified in review:**
+- `src/lib/db.ts` — H1 (updateDocument), H2 (createDocument), M2 (get_schema), M2 (update_schema uses get_schema)
+- `src/features/ledger/useLedgerStore.ts` — M1 (SchemaField), M3 (updateEntry reload)
+- `tests/documentAdapters.test.ts` — L1 (3 new tests: schema_version increment, _id rejection, get_schema 404)
