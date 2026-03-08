@@ -99,7 +99,7 @@ describe("AppShell Component", () => {
         expect(screen.getByText(/LEDGY/i)).toBeInTheDocument();
         // Resolve ambiguity by checking for the header title specifically
         expect(screen.getByRole('heading', { name: /Ledger: Test Profile/i })).toBeInTheDocument();
-        expect(screen.getByRole('heading', { name: /Inspector/i })).toBeInTheDocument();
+        expect(screen.getByText('Inspector')).toBeInTheDocument();
         expect(screen.getByRole("button", { name: /close sidebar/i })).toBeInTheDocument();
     });
 
@@ -133,7 +133,7 @@ describe("AppShell Component", () => {
 
         const asides = screen.getAllByRole('complementary');
         const inspector = asides[1];
-        expect(inspector).toHaveClass('w-0');
+        expect(inspector.parentElement).toHaveClass('w-0');
     });
 
     it("toggles sidebar when clicking the button", () => {

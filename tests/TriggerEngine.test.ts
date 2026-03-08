@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executeTrigger, MAX_EXECUTION_DEPTH } from '../src/services/triggerEngine';
+import { executeTrigger } from '../src/services/triggerEngine';
 import { CanvasNode, CanvasEdge } from '../src/types/nodeEditor';
 
 describe('Trigger Engine', () => {
@@ -27,21 +27,20 @@ describe('Trigger Engine', () => {
         await expect(executeTrigger(context, mockNodes, mockEdges, 't1')).resolves.not.toThrow();
     });
 
-    it('prevents infinite loops by depth limit', async () => {
-        const loopingEdges: CanvasEdge[] = [
-            { id: 'e1', source: 't1', target: 't1' } // Direct loop
-        ];
-
+    it('does not throw at high depth (loop prevention handled upstream)', async () => {
+        // As of Story 4-4, executeTrigger no longer has explicit depth-limit checking.
+        // Loop prevention is now handled at the nodeEngine level.
         const context = {
             triggerId: 't1',
             entryId: 'e1',
             ledgerId: 'l1',
             eventType: 'on-create' as const,
-            depth: MAX_EXECUTION_DEPTH
+            depth: 100,
+            profileId: 'p1',
+            projectId: 'proj1',
         };
 
-        await expect(executeTrigger(context, mockNodes, loopingEdges, 't1'))
-            .rejects.toThrow(/Maximum execution depth exceeded/);
+        await expect(executeTrigger(context)).resolves.not.toThrow();
     });
 
     it('handles branching paths', async () => {

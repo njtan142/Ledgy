@@ -188,7 +188,7 @@ describe("App Routing Integration", () => {
                     <App />
                 </MemoryRouter>
             );
-            expect(screen.getByText(/Settings Placeholder/i)).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: /^Settings$/i })).toBeInTheDocument();
         });
     });
 

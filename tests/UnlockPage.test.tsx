@@ -152,7 +152,7 @@ describe('UnlockPage', () => {
         resolveUnlock!(true);
     });
 
-    it('calls reset() and navigates to /setup when "Not you?" is clicked', () => {
+    it('calls reset() and navigates to /setup when "Not you?" is clicked', async () => {
         render(
             <MemoryRouter>
                 <UnlockPage />
@@ -163,7 +163,7 @@ describe('UnlockPage', () => {
         fireEvent.click(resetButton);
 
         expect(mockReset).toHaveBeenCalledTimes(1);
-        expect(mockNavigate).toHaveBeenCalledWith('/setup');
+        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/setup'));
     });
 
     it('passes rememberMe to unlock when checkbox is checked', async () => {

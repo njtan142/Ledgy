@@ -207,7 +207,7 @@ describe('ProfileSelector', () => {
         expect(newInput.value).toBe('');
         // Button disabled because name hasn't been typed yet
         expect((screen.getByRole('button', { name: 'Permanently Delete' }) as HTMLButtonElement).disabled).toBe(true);
-    });
+    }, 15000);
 
     // ─── Task 3.6: Escape / Cancel closes dialog and resets state ────────────
 

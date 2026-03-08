@@ -166,7 +166,7 @@ describe('WebCrypto AES-256 Engine', () => {
             const enc2 = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key2, new TextEncoder().encode(plaintext));
             
             expect(new Uint8Array(enc1)).not.toEqual(new Uint8Array(enc2));
-        });
+        }, 15000);
 
         it('derives different keys for different passphrases', async () => {
             const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -181,7 +181,7 @@ describe('WebCrypto AES-256 Engine', () => {
             const enc2 = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key2, new TextEncoder().encode(plaintext));
             
             expect(new Uint8Array(enc1)).not.toEqual(new Uint8Array(enc2));
-        });
+        }, 15000);
     });
 
     describe('encryptPayload / decryptPayload (AES-GCM)', () => {

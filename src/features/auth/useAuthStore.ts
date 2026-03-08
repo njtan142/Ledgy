@@ -342,6 +342,7 @@ export const useAuthStore = create<AuthState>()(
                                 isUnlocked: true,
                                 encryptionKey: key,
                                 rememberMe: remember && !!passphrase,
+                                salt: saltBase32,
                                 rememberMeExpiry: expiryTimestamp,
                                 rememberMeExpiryMs: storedExpiryMs,
                                 needsPassphrase: false,

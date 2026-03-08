@@ -127,6 +127,13 @@ describe('Dashboard Component', () => {
     });
 
     it('switches to grid view when toggle is clicked', () => {
+        // DashboardView uses useContainerWidth which creates a ResizeObserver
+        global.ResizeObserver = class ResizeObserver {
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+        } as any;
+
         render(
             <MemoryRouter initialEntries={['/app/profile1/project/proj1']}>
                 <Routes>

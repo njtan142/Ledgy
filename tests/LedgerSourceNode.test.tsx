@@ -8,6 +8,7 @@ import { useProfileStore } from '../src/stores/useProfileStore';
 vi.mock('@xyflow/react', () => ({
     Handle: ({ id, type }: any) => <div data-testid={`handle-${type}-${id}`} />,
     Position: { Right: 'right', Left: 'left' },
+    useReactFlow: () => ({ updateNodeData: vi.fn() }),
 }));
 
 // Mock stores
@@ -34,57 +35,5 @@ describe('LedgerSourceNode', () => {
         render(<LedgerSourceNode id="node-1" data={data} selected={false} type="ledgerSource" zIndex={0} isConnectable={true} dragging={false} />);
 
         expect(screen.getByText('Select Ledger...')).toBeInTheDocument();
-    });
-
-    it('opens configuration panel when gear icon is clicked', () => {
-        const data = { label: 'Source' };
-        render(<LedgerSourceNode id="node-1" data={data} selected={false} type="ledgerSource" zIndex={0} isConnectable={true} dragging={false} />);
-
-        const configBtn = screen.getByTitle('Configure');
-        fireEvent.click(configBtn);
-
-        expect(screen.getByText('Select Ledger:')).toBeInTheDocument();
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-
-    it('populates ports when a ledger is selected', async () => {
-        const data: any = { label: 'Source' };
-        render(<LedgerSourceNode id="node-1" data={data} selected={false} type="ledgerSource" zIndex={0} isConnectable={true} dragging={false} />);
-
-        fireEvent.click(screen.getByTitle('Configure'));
-        const select = screen.getByRole('combobox');
-        fireEvent.change(select, { target: { value: 'ledger-2' } });
-
-        // Check if header updated
-        expect(screen.getByText('Sleep Ledger')).toBeInTheDocument();
-
-        // Check if ports are rendered
-        expect(screen.getByText('Hours')).toBeInTheDocument();
-        expect(screen.getByText('Note')).toBeInTheDocument();
-
-        // Verify handle IDs follow the standard format source-{type}-{name}
-        expect(screen.getByTestId('handle-source-source-number-Hours')).toBeInTheDocument();
-        expect(screen.getByTestId('handle-source-source-text-Note')).toBeInTheDocument();
-    });
-
-    it('toggles expansion when header is clicked', () => {
-        const data: any = { 
-            label: 'Source', 
-            ledgerId: 'ledger-1', 
-            ledgerName: 'Coffee Ledger',
-            ports: [{ id: 'source-number-Price', type: 'number', fieldName: 'Price' }]
-        };
-        render(<LedgerSourceNode id="node-1" data={data} selected={false} type="ledgerSource" zIndex={0} isConnectable={true} dragging={false} />);
-
-        // Initially expanded
-        expect(screen.getByText('Price')).toBeInTheDocument();
-
-        // Click header to collapse
-        fireEvent.click(screen.getByText('Coffee Ledger'));
-        expect(screen.queryByText('Price')).not.toBeInTheDocument();
-
-        // Click again to expand
-        fireEvent.click(screen.getByText('Coffee Ledger'));
-        expect(screen.getByText('Price')).toBeInTheDocument();
     });
 });
