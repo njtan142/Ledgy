@@ -1,6 +1,6 @@
 # Story 3.4: Schema Builder - Text & Number UI
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -318,7 +318,7 @@ As noted in Story 3-3: there are two `useLedgerStore` files. `SchemaBuilder.tsx`
 
 ### Existing Tests Baseline
 
-Per Story 3-3 completion notes: baseline is **13 failed | 50 passed (63 files)**. The 13 pre-existing failures are known timeouts in `SchemaBuilder.test.tsx` (Radix Select portal/animation issues in jsdom) — they are NOT regressions from this story. After this story, the count of passing tests should increase by the number of new tests added.
+Per Story 3-3 completion notes: baseline is **13 failed | 50 passed (63 files)** for the subset of tests that were measured at that time. The full `npx vitest run` suite actually shows **~50 failed | ~506 passed (63 files)** — the larger failure count reflects pre-existing issues across the codebase (crypto mock setup failures, jsdom/Radix portal timeouts, ReactFlow node tests). None of these are caused by this story. After this story, the count of passing tests should increase by 12 (8 schema-validation + 4 store tests).
 
 ### Project Structure Notes
 
@@ -355,6 +355,7 @@ Claude Sonnet 4.6 (claude-sonnet-4.6)
 ### Debug Log References
 
 - Fixed `Info` Lucide icon `title` prop incompatibility: wrapped in `<span title="...">` since Lucide SVG components don't accept `title` as a prop directly.
+- Code review (3-4): Fixed `patternError` state not clearing on field type change (M1), not reindexing on field remove/reorder (M2); introduced `handleRemoveField` and updated `handleMoveField` to keep `patternError` in sync. Suppressed `console.warn` in invalid-regex test and added assertion (L1). Corrected baseline test count documentation (M3).
 
 ### Completion Notes List
 

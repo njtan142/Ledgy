@@ -45,6 +45,24 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
     const handleMoveField = (index: number, direction: 'up' | 'down') => {
         const toIndex = direction === 'up' ? index - 1 : index + 1;
         reorderField(index, toIndex);
+        setPatternError(prev => {
+            const next = { ...prev };
+            [next[index], next[toIndex]] = [prev[toIndex] ?? null, prev[index] ?? null];
+            return next;
+        });
+    };
+
+    const handleRemoveField = (index: number) => {
+        removeField(index);
+        setPatternError(prev => {
+            const next: Record<number, string | null> = {};
+            Object.entries(prev).forEach(([k, v]) => {
+                const i = Number(k);
+                if (i < index) next[i] = v;
+                else if (i > index) next[i - 1] = v;
+            });
+            return next;
+        });
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -146,7 +164,10 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
 
                                             <Select
                                                 value={field.type}
-                                                onValueChange={(value) => updateField(index, { type: value as FieldType })}
+                                                onValueChange={(value) => {
+                                                    updateField(index, { type: value as FieldType });
+                                                    setPatternError(prev => ({ ...prev, [index]: null }));
+                                                }}
                                             >
                                                 <SelectTrigger className="w-[140px] bg-white dark:bg-zinc-900">
                                                     <SelectValue placeholder="Type" />
@@ -195,7 +216,7 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => removeField(index)}
+                                                onClick={() => handleRemoveField(index)}
                                                 className="text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
                                             >
                                                 <Trash2 size={14} />

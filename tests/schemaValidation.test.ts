@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll, vi } from 'vitest';
 import PouchDB from 'pouchdb';
 import {
     getProfileDb,
@@ -313,11 +313,14 @@ describe('Schema Strict Validation Engine', () => {
 
     // Story 3-4: invalid regex pattern — constraint skipped, both values pass
     it('invalid regex pattern: buildZodSchemaFromLedger does not throw, constraint skipped', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const db = await freshDb();
         const schema = await makeSchema(db, [
             { name: 'code', type: 'text', required: true, pattern: '[invalid' },
         ]);
         expect(() => validateEntryAgainstSchema({ code: 'hello' }, schema)).not.toThrow();
         expect(() => validateEntryAgainstSchema({ code: 'Hello' }, schema)).not.toThrow();
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid regex pattern'));
+        warnSpy.mockRestore();
     });
 });
