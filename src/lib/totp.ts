@@ -118,14 +118,19 @@ export const generateOtpauthUri = generateTOTPURI;
 /**
  * HMAC-SHA implementation using WebCrypto API
  */
-async function hmacSha(key: Uint8Array, data: Uint8Array, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<Uint8Array> {
-    const cryptoKey = await crypto.subtle.importKey(
-        'raw',
-        key,
-        { name: 'HMAC', hash: algorithm },
-        false,
-        ['sign']
-    );
+async function hmacSha(key: Uint8Array | CryptoKey, data: Uint8Array, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<Uint8Array> {
+    let cryptoKey: CryptoKey;
+    if (key instanceof CryptoKey) {
+        cryptoKey = key;
+    } else {
+        cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            key,
+            { name: 'HMAC', hash: algorithm },
+            false,
+            ['sign']
+        );
+    }
     
     const signature = await crypto.subtle.sign('HMAC', cryptoKey, data);
     return new Uint8Array(signature);
@@ -135,7 +140,7 @@ async function hmacSha(key: Uint8Array, data: Uint8Array, algorithm: 'SHA-1' | '
  * Generate HOTP code (HMAC-based One-Time Password)
  * RFC 4226 compliant
  */
-async function hotp(secret: Uint8Array, counter: number, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<string> {
+async function hotp(secret: Uint8Array | CryptoKey, counter: number, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<string> {
     // Convert counter to 8-byte big-endian array
     const counterBytes = new Uint8Array(8);
     for (let i = 7; i >= 0; i--) {
@@ -188,6 +193,10 @@ export async function verifyTOTP(
     
     const algorithms: ('SHA-1' | 'SHA-256')[] = ['SHA-1', 'SHA-256'];
 
+    // Cache imported CryptoKeys per algorithm to avoid redundant WebCrypto API calls
+    // during the loop, which significantly improves performance.
+    const keys: Partial<Record<'SHA-1' | 'SHA-256', CryptoKey>> = {};
+
     // Prioritize checking the current time step (0) first,
     // as it is the most likely to be correct. Then check offsets (-1, 1, -2, 2...)
     const stepsToCheck = [0];
@@ -197,7 +206,19 @@ export async function verifyTOTP(
 
     for (const stepOffset of stepsToCheck) {
         for (const alg of algorithms) {
-            const expectedCode = await generateTOTP(secretBytes, currentStep + stepOffset, alg);
+            // Lazy import and cache the key for this algorithm
+            if (!keys[alg]) {
+                 keys[alg] = await crypto.subtle.importKey(
+                    'raw',
+                    secretBytes,
+                    { name: 'HMAC', hash: alg },
+                    false,
+                    ['sign']
+                );
+            }
+
+            // Bypass generateTOTP to directly use the cached CryptoKey with hotp
+            const expectedCode = await hotp(keys[alg]!, currentStep + stepOffset, alg);
 
             // Constant-time comparison to prevent timing attacks
             if (constantTimeCompare(code, expectedCode)) {
