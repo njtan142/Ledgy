@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { useProfileStore } from '../../stores/useProfileStore';
@@ -7,14 +8,6 @@ import { InlineEntryRow } from './InlineEntryRow';
 import { RelationTagChip } from './RelationTagChip';
 import { BackLinksPanel } from './BackLinksPanel';
 import { Button } from '../../components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '../../components/ui/table';
 
 interface LedgerTableProps {
     schemaId: string;
@@ -29,6 +22,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
     const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
     const [selectedRow, setSelectedRow] = useState<number>(-1);
     const [recentlyCommittedId, setRecentlyCommittedId] = useState<string | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const schema = schemas.find(s => s._id === schemaId);
 
@@ -53,6 +47,13 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
 
     const ledgerEntries = entries[schemaId] || [];
     const selectedEntry = selectedRow >= 0 ? ledgerEntries[selectedRow] : null;
+
+    const rowVirtualizer = useVirtualizer({
+        count: ledgerEntries.length,
+        getScrollElement: () => scrollContainerRef.current,
+        estimateSize: () => 36,
+        overscan: 10,
+    });
 
     // Auto-select highlighted entry on mount (Story 3-3, AC 5)
     useEffect(() => {
@@ -115,24 +116,41 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                 </div>
             </div>
 
-            {/* Content area: Table + Split View */}
+            {/* Content area: virtualized grid + split view */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Table */}
-                <div className="flex-1 overflow-auto bg-white dark:bg-zinc-950">
-                    <Table>
-                        <TableHeader className="bg-zinc-50 dark:bg-zinc-900 sticky top-0 z-10">
-                            <TableRow>
-                                {schema.fields.map((field) => (
-                                    <TableHead key={field.name} className="whitespace-nowrap">
-                                        {field.name}
-                                        <span className="ml-1 text-zinc-400 dark:text-zinc-500 font-normal">({field.type})</span>
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {/* Inline Add Row */}
-                            {isAddingEntry && (
+                {/* Grid column: sticky column header + scrollable virtualizer body */}
+                <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-zinc-950">
+                    {/* Sticky column header — rendered outside the scroll container */}
+                    <div
+                        role="rowgroup"
+                        className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shrink-0"
+                    >
+                        <div role="row" className="flex">
+                            {schema.fields.map((field) => (
+                                <div
+                                    key={field.name}
+                                    role="columnheader"
+                                    className="flex-1 min-w-0 px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap overflow-hidden"
+                                >
+                                    {field.name}
+                                    <span className="ml-1 font-normal normal-case text-zinc-400 dark:text-zinc-500">
+                                        ({field.type})
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Scrollable virtualizer body — scroll element for useVirtualizer */}
+                    <div
+                        role="grid"
+                        ref={scrollContainerRef}
+                        style={{ overflowY: 'auto', flex: 1 }}
+                        aria-label={`${schema.name} data grid`}
+                    >
+                        {/* Inline add-entry row — rendered OUTSIDE the virtualizer loop */}
+                        {isAddingEntry && (
+                            <div>
                                 <InlineEntryRow
                                     schema={schema}
                                     onCancel={() => setIsAddingEntry(false)}
@@ -144,54 +162,60 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                                         }
                                     }}
                                 />
-                            )}
+                            </div>
+                        )}
 
-                            {/* Empty State */}
-                            {ledgerEntries.length === 0 && !isAddingEntry && (
-                                <TableRow>
-                                    <TableCell colSpan={schema.fields.length} className="text-center h-32">
-                                        <div className="flex flex-col items-center justify-center text-zinc-500 dark:text-zinc-400">
-                                            <p className="mb-2">No entries yet.</p>
-                                            <p className="text-sm">Press <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-zinc-900 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">N</kbd> or click "Add Entry" to create your first entry.</p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
+                        {/* Empty state */}
+                        {ledgerEntries.length === 0 && !isAddingEntry && (
+                            <div className="flex flex-col items-center justify-center h-32 text-zinc-500 dark:text-zinc-400">
+                                <p className="mb-2">No entries yet.</p>
+                                <p className="text-sm">
+                                    Press{' '}
+                                    <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-zinc-900 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                                        N
+                                    </kbd>{' '}
+                                    or click "Add Entry" to create your first entry.
+                                </p>
+                            </div>
+                        )}
 
-                            {/* Entry Rows */}
-                            {ledgerEntries.map((entry, index) => {
-                                const isHighlighted = highlightEntryId && entry._id === highlightEntryId;
+                        {/* Virtualizer total-height spacer with absolute-positioned virtual rows */}
+                        <div
+                            style={{
+                                height: `${rowVirtualizer.getTotalSize()}px`,
+                                position: 'relative',
+                            }}
+                        >
+                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const entry = ledgerEntries[virtualRow.index];
                                 const isEditing = editingEntryId === entry._id;
-                                const isSelected = selectedRow === index;
-
-                                if (isEditing) {
-                                    return (
-                                        <InlineEntryRow
-                                            key={entry._id}
-                                            schema={schema}
-                                            entry={entry}
-                                            onCancel={() => setEditingEntryId(null)}
-                                            onComplete={(id?: string) => {
-                                                setEditingEntryId(null);
-                                                if (id) {
-                                                    setRecentlyCommittedId(id);
-                                                    setTimeout(() => setRecentlyCommittedId(null), 2000);
-                                                }
-                                            }}
-                                        />
-                                    );
-                                }
+                                const isHighlighted = highlightEntryId && entry._id === highlightEntryId;
+                                const isSelected = selectedRow === virtualRow.index;
 
                                 return (
-                                    <TableRow
+                                    <div
                                         key={entry._id}
-                                        data-state={isSelected ? "selected" : undefined}
-                                        className={`cursor-pointer transition-all duration-300 ${isHighlighted ? 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30' :
-                                            recentlyCommittedId === entry._id ? 'bg-emerald-500/20 dark:bg-emerald-500/20 ring-1 ring-emerald-500/50 animate-slide-down-row' :
-                                                ''
-                                            }`}
+                                        role="row"
+                                        data-state={isSelected ? 'selected' : undefined}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: `${virtualRow.size}px`,
+                                            transform: `translateY(${virtualRow.start}px)`,
+                                        }}
+                                        className={`flex border-b border-zinc-100 dark:border-zinc-800 cursor-pointer transition-all duration-300 ${
+                                            isHighlighted
+                                                ? 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                                                : recentlyCommittedId === entry._id
+                                                ? 'bg-emerald-500/20 dark:bg-emerald-500/20 ring-1 ring-emerald-500/50 animate-slide-down-row'
+                                                : isSelected
+                                                ? 'bg-zinc-100 dark:bg-zinc-800'
+                                                : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                                        }`}
                                         onClick={() => {
-                                            setSelectedRow(index);
+                                            setSelectedRow(virtualRow.index);
                                             setSelectedEntryId(entry._id);
                                             setRightInspector(true);
                                         }}
@@ -203,16 +227,35 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                                             }
                                         }}
                                     >
-                                        {schema.fields.map(field => (
-                                            <TableCell key={`${entry._id}-${field.name}`}>
-                                                {renderFieldValue(entry.data[field.name], field.type, entry, field, deletedEntryIds)}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
+                                        {isEditing ? (
+                                            <InlineEntryRow
+                                                schema={schema}
+                                                entry={entry}
+                                                onCancel={() => setEditingEntryId(null)}
+                                                onComplete={(id?: string) => {
+                                                    setEditingEntryId(null);
+                                                    if (id) {
+                                                        setRecentlyCommittedId(id);
+                                                        setTimeout(() => setRecentlyCommittedId(null), 2000);
+                                                    }
+                                                }}
+                                            />
+                                        ) : (
+                                            schema.fields.map((field) => (
+                                                <div
+                                                    key={`${entry._id}-${field.name}`}
+                                                    role="gridcell"
+                                                    className="flex-1 min-w-0 px-4 py-2 text-sm text-zinc-900 dark:text-zinc-100 overflow-hidden text-ellipsis whitespace-nowrap"
+                                                >
+                                                    {renderFieldValue(entry.data[field.name], field.type, entry, field, deletedEntryIds)}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 );
                             })}
-                        </TableBody>
-                    </Table>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Split View for Back-links (Story 3-3, AC 4) */}

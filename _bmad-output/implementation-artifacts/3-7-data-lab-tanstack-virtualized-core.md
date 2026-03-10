@@ -1,6 +1,6 @@
 # Story 3.7: Data Lab - Tanstack Virtualized Core
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,42 +28,42 @@ so that browsing 10,000+ entries stays smooth and responsive without DOM bloat.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Install `@tanstack/react-virtual` (AC: #1)
-  - [ ] Run `npm install @tanstack/react-virtual` in project root
-  - [ ] Verify entry appears in `package.json` `"dependencies"` (not `"devDependencies"`)
+- [x] Task 1 — Install `@tanstack/react-virtual` (AC: #1)
+  - [x] Run `npm install @tanstack/react-virtual` in project root
+  - [x] Verify entry appears in `package.json` `"dependencies"` (not `"devDependencies"`)
 
-- [ ] Task 2 — Refactor `LedgerTable.tsx` to use `useVirtualizer` (AC: #2, #3, #4, #5, #6)
-  - [ ] Add `import { useVirtualizer } from '@tanstack/react-virtual';` at the top
-  - [ ] Add `scrollContainerRef = useRef<HTMLDivElement>(null)` for the scroll container
-  - [ ] Instantiate `rowVirtualizer = useVirtualizer({ count: ledgerEntries.length, getScrollElement: () => scrollContainerRef.current, estimateSize: () => 36, overscan: 10 })`
-  - [ ] Replace the `<Table>` / `<TableBody>` element tree with a div-based layout using `role="grid"` / `role="row"` / `role="gridcell"` ARIA roles
-  - [ ] Keep the sticky header as a separate non-scrolling `div` above the scroll container (same field names + type labels as before)
-  - [ ] Inside the scroll container, render `InlineEntryRow` first (when `isAddingEntry` is true), then a `<div style={{ height: rowVirtualizer.getTotalSize() + 'px', position: 'relative' }}>` containing `{rowVirtualizer.getVirtualItems().map(...)}` with `position: absolute; transform: translateY(...px)` on each virtual row div
-  - [ ] Remove the `Table`, `TableBody`, `TableHeader`, `TableRow`, `TableHead`, `TableCell` Shadcn table imports (no longer used in the main grid — `InlineEntryRow` still uses `TableRow`/`TableCell` internally)
+- [x] Task 2 — Refactor `LedgerTable.tsx` to use `useVirtualizer` (AC: #2, #3, #4, #5, #6)
+  - [x] Add `import { useVirtualizer } from '@tanstack/react-virtual';` at the top
+  - [x] Add `scrollContainerRef = useRef<HTMLDivElement>(null)` for the scroll container
+  - [x] Instantiate `rowVirtualizer = useVirtualizer({ count: ledgerEntries.length, getScrollElement: () => scrollContainerRef.current, estimateSize: () => 36, overscan: 10 })`
+  - [x] Replace the `<Table>` / `<TableBody>` element tree with a div-based layout using `role="grid"` / `role="row"` / `role="gridcell"` ARIA roles
+  - [x] Keep the sticky header as a separate non-scrolling `div` above the scroll container (same field names + type labels as before)
+  - [x] Inside the scroll container, render `InlineEntryRow` first (when `isAddingEntry` is true), then a `<div style={{ height: rowVirtualizer.getTotalSize() + 'px', position: 'relative' }}>` containing `{rowVirtualizer.getVirtualItems().map(...)}` with `position: absolute; transform: translateY(...px)` on each virtual row div
+  - [x] Remove the `Table`, `TableBody`, `TableHeader`, `TableRow`, `TableHead`, `TableCell` Shadcn table imports (no longer used in the main grid — `InlineEntryRow` still uses `TableRow`/`TableCell` internally)
 
-- [ ] Task 3 — Preserve all interactive behaviour (AC: #7, #8, #9, #10)
-  - [ ] Keyboard handler (`useEffect` on `window.addEventListener('keydown', ...)`) — keep identical logic: `ArrowUp`, `ArrowDown`, `N`/`n`, `Delete`/`Backspace`
-  - [ ] Row click handler — keep `setSelectedRow(index)`, `setSelectedEntryId(entry._id)`, `setRightInspector(true)` identical
-  - [ ] `highlightEntryId` emerald highlight class — apply per virtual row using `entry._id === highlightEntryId`
-  - [ ] `recentlyCommittedId` flash animation — apply per virtual row using `recentlyCommittedId === entry._id`
-  - [ ] `BackLinksPanel` split-pane render based on `selectedEntry` — keep identical (rendered alongside the scroll container in a flex sibling)
-  - [ ] Double-click to edit row — keep `setEditingEntryId(entry._id)`; when a row is in edit mode, render `InlineEntryRow` **in place of** the virtual row div for that index (replace the virtual item's content with `InlineEntryRow`)
+- [x] Task 3 — Preserve all interactive behaviour (AC: #7, #8, #9, #10)
+  - [x] Keyboard handler (`useEffect` on `window.addEventListener('keydown', ...)`) — keep identical logic: `ArrowUp`, `ArrowDown`, `N`/`n`, `Delete`/`Backspace`
+  - [x] Row click handler — keep `setSelectedRow(index)`, `setSelectedEntryId(entry._id)`, `setRightInspector(true)` identical
+  - [x] `highlightEntryId` emerald highlight class — apply per virtual row using `entry._id === highlightEntryId`
+  - [x] `recentlyCommittedId` flash animation — apply per virtual row using `recentlyCommittedId === entry._id`
+  - [x] `BackLinksPanel` split-pane render based on `selectedEntry` — keep identical (rendered alongside the scroll container in a flex sibling)
+  - [x] Double-click to edit row — keep `setEditingEntryId(entry._id)`; when a row is in edit mode, render `InlineEntryRow` **in place of** the virtual row div for that index (replace the virtual item's content with `InlineEntryRow`)
 
-- [ ] Task 4 — Update `tests/LedgerTable.test.tsx` to add `@tanstack/react-virtual` mock (AC: #12)
-  - [ ] Add `vi.mock('@tanstack/react-virtual', () => ({ useVirtualizer: vi.fn().mockImplementation(({ count, estimateSize }) => ({ getVirtualItems: () => Array.from({ length: count }, (_, i) => ({ index: i, key: i, start: i * estimateSize(), size: estimateSize() })), getTotalSize: () => count * estimateSize(), measureElement: vi.fn() })) }))` to the top of `tests/LedgerTable.test.tsx`
-  - [ ] Run existing tests to confirm all 6 pass
+- [x] Task 4 — Update `tests/LedgerTable.test.tsx` to add `@tanstack/react-virtual` mock (AC: #12)
+  - [x] Add `vi.mock('@tanstack/react-virtual', () => ({ useVirtualizer: vi.fn().mockImplementation(({ count, estimateSize }) => ({ getVirtualItems: () => Array.from({ length: count }, (_, i) => ({ index: i, key: i, start: i * estimateSize(), size: estimateSize() })), getTotalSize: () => count * estimateSize(), measureElement: vi.fn() })) }))` to the top of `tests/LedgerTable.test.tsx`
+  - [x] Run existing tests to confirm all 6 pass
 
-- [ ] Task 5 — Write new tests in `tests/dataLabVirtualizedCore.test.tsx` (AC: #13)
-  - [ ] Test: `useVirtualizer` called with `count = ledgerEntries.length` when entries are present
-  - [ ] Test: with 3 entries visible, the mock virtualizer produces exactly 3 rendered row elements (not 10,000)
-  - [ ] Test: `InlineEntryRow` renders when Add Entry button is clicked (outside virtualizer loop)
-  - [ ] Test: clicking a rendered row calls `setSelectedEntryId` with that entry's `_id`
-  - [ ] Test: pressing `N` key opens the inline entry row (`Save` button appears)
-  - [ ] File: `tests/dataLabVirtualizedCore.test.tsx`
+- [x] Task 5 — Write new tests in `tests/dataLabVirtualizedCore.test.tsx` (AC: #13)
+  - [x] Test: `useVirtualizer` called with `count = ledgerEntries.length` when entries are present
+  - [x] Test: with 3 entries visible, the mock virtualizer produces exactly 3 rendered row elements (not 10,000)
+  - [x] Test: `InlineEntryRow` renders when Add Entry button is clicked (outside virtualizer loop)
+  - [x] Test: clicking a rendered row calls `setSelectedEntryId` with that entry's `_id`
+  - [x] Test: pressing `N` key opens the inline entry row (`Save` button appears)
+  - [x] File: `tests/dataLabVirtualizedCore.test.tsx`
 
-- [ ] Task 6 — TypeScript and regression check (AC: #11)
-  - [ ] `npx tsc --noEmit` → 0 errors
-  - [ ] `npx vitest run` → all pre-existing tests passing + ≥ 5 new tests passing
+- [x] Task 6 — TypeScript and regression check (AC: #11)
+  - [x] `npx tsc --noEmit` → 0 errors
+  - [x] `npx vitest run` → all pre-existing tests passing + ≥ 5 new tests passing
 
 ## Dev Notes
 
@@ -297,10 +297,33 @@ This story modifies `tests/LedgerTable.test.tsx` (adds mock — no test removal)
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.6 (claude-sonnet-4.6)
 
 ### Debug Log References
 
+- BackLinksPanel required `backLinks: {}` + `fetchBackLinks: vi.fn()` in the new test's `useLedgerStore` mock — clicking a row triggers `selectedEntry` which renders `BackLinksPanel`, which accesses `backLinks[targetEntryId]`.
+
 ### Completion Notes List
 
+- ✅ Installed `@tanstack/react-virtual@^3.13.21` as a production dependency
+- ✅ Refactored `LedgerTable.tsx`: removed all Shadcn `Table/*` imports from main grid; replaced with div-based virtualizer using `role="grid"` / `role="row"` / `role="gridcell"` ARIA roles
+- ✅ Sticky column header rendered as a sibling `div[role="rowgroup"]` above the scroll container; field names + type labels identical to pre-virtualization
+- ✅ `InlineEntryRow` for add-entry mode rendered outside the virtualizer loop as first child of the scroll container
+- ✅ `InlineEntryRow` for edit-row mode rendered in-place inside the virtual row div (replacing read-only cells for that index)
+- ✅ All interactive behaviour preserved: keyboard nav (ArrowUp/Down, N, Delete/Backspace), row click selection, double-click edit, `highlightEntryId` emerald class, `recentlyCommittedId` flash animation, `BackLinksPanel` split pane
+- ✅ Added `vi.mock('@tanstack/react-virtual', ...)` to `tests/LedgerTable.test.tsx`; all 6 pre-existing tests pass
+- ✅ Created `tests/dataLabVirtualizedCore.test.tsx` with 5 new passing tests covering: virtualizer count, visible-row-count constraint, inline row outside loop, row selection on click, N hotkey
+- ✅ `npx tsc --noEmit` → 0 errors
+- ✅ `npx vitest run` → 64 test files, 566 passing, 1 skipped, 0 failures
+
 ### File List
+
+- `package.json` — added `@tanstack/react-virtual@^3.13.21` to `"dependencies"`
+- `package-lock.json` — updated by `npm install`
+- `src/features/ledger/LedgerTable.tsx` — **MODIFIED** — replaced `<Table>` tree with div-based virtualizer grid using `useVirtualizer`; removed unused Shadcn table imports
+- `tests/LedgerTable.test.tsx` — **MODIFIED** — added `vi.mock('@tanstack/react-virtual', ...)` mock block at top
+- `tests/dataLabVirtualizedCore.test.tsx` — **NEW** — 5 virtualization-specific tests
+
+### Change Log
+
+- 2026-03-10: Story 3.7 implemented — TanStack virtualizer integrated into LedgerTable; all 13 ACs satisfied; 5 new tests added; 0 regressions

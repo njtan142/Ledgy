@@ -4,6 +4,20 @@ import { LedgerTable } from '../src/features/ledger/LedgerTable';
 import { useLedgerStore } from '../src/stores/useLedgerStore';
 import { useProfileStore } from '../src/stores/useProfileStore';
 
+vi.mock('@tanstack/react-virtual', () => ({
+    useVirtualizer: vi.fn().mockImplementation(({ count, estimateSize }) => ({
+        getVirtualItems: () =>
+            Array.from({ length: count }, (_, i) => ({
+                index: i,
+                key: i,
+                start: i * estimateSize(),
+                size: estimateSize(),
+            })),
+        getTotalSize: () => count * estimateSize(),
+        measureElement: vi.fn(),
+    })),
+}));
+
 // Mock stores
 vi.mock('../src/stores/useLedgerStore', () => ({
     useLedgerStore: vi.fn(),
