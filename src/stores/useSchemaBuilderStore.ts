@@ -53,7 +53,14 @@ export const useSchemaBuilderStore = create<SchemaBuilderState>((set, get) => ({
     initEdit: (schema: LedgerSchema) => {
         set({
             draftName: schema.name,
-            draftFields: schema.fields.map(f => ({ ...f })),
+            draftFields: schema.fields.map(f => {
+                const field = { ...f };
+                // Clear any self-referencing relation targets (corruption guard)
+                if (field.type === 'relation' && field.relationTarget === schema._id) {
+                    delete field.relationTarget;
+                }
+                return field;
+            }),
             mode: 'edit',
             editingSchemaId: schema._id,
             projectId: schema.projectId,
@@ -97,6 +104,11 @@ export const useSchemaBuilderStore = create<SchemaBuilderState>((set, get) => ({
             delete updated.min;
             delete updated.max;
         }
+        if (updated.type !== 'date') {
+            delete updated.dateMin;
+            delete updated.dateMax;
+            delete updated.dateFormat;
+        }
         const newFields = [...draftFields];
         newFields[index] = updated;
         set({ draftFields: newFields, isDirty: true });
@@ -135,6 +147,11 @@ export const useSchemaBuilderStore = create<SchemaBuilderState>((set, get) => ({
             if (field.type === 'relation') {
                 if (!field.relationTarget) {
                     const msg = `Relation target required for field "${field.name || 'unnamed'}"`;
+                    useErrorStore.getState().dispatchError(msg);
+                    set({ error: msg });
+                    return;
+                } else if (mode === 'edit' && field.relationTarget === editingSchemaId) {
+                    const msg = `Relation field "${field.name || 'unnamed'}" cannot target its own schema`;
                     useErrorStore.getState().dispatchError(msg);
                     set({ error: msg });
                     return;

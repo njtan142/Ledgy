@@ -311,7 +311,75 @@ describe('Schema Strict Validation Engine', () => {
         expect(() => validateEntryAgainstSchema({ rating: 50 }, schema)).not.toThrow();
     });
 
-    // Story 3-4: invalid regex pattern — constraint skipped, both values pass
+    // Story 3-5: date field with dateMin constraint
+    it('date field with dateMin: value before min fails, value on/after min passes', async () => {
+        const db = await freshDb();
+        const schema = await makeSchema(db, [
+            { name: 'eventDate', type: 'date', required: true, dateMin: '2020-01-01' },
+        ]);
+        expect(() => validateEntryAgainstSchema({ eventDate: '2019-12-31' }, schema)).toThrow(ValidationError);
+        expect(() => validateEntryAgainstSchema({ eventDate: '2020-01-01' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ eventDate: '2020-06-15' }, schema)).not.toThrow();
+    });
+
+    // Story 3-5: date field with dateMax constraint
+    it('date field with dateMax: value after max fails, value on/before max passes', async () => {
+        const db = await freshDb();
+        const schema = await makeSchema(db, [
+            { name: 'eventDate', type: 'date', required: true, dateMax: '2030-12-31' },
+        ]);
+        expect(() => validateEntryAgainstSchema({ eventDate: '2031-01-01' }, schema)).toThrow(ValidationError);
+        expect(() => validateEntryAgainstSchema({ eventDate: '2030-12-31' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ eventDate: '2030-06-15' }, schema)).not.toThrow();
+    });
+
+    // Story 3-5: date field with both dateMin and dateMax
+    it('date field with dateMin and dateMax range: boundary values pass, outside range fails', async () => {
+        const db = await freshDb();
+        const schema = await makeSchema(db, [
+            { name: 'rangeDate', type: 'date', required: true, dateMin: '2020-01-01', dateMax: '2025-12-31' },
+        ]);
+        expect(() => validateEntryAgainstSchema({ rangeDate: '2020-01-01' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ rangeDate: '2025-12-31' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ rangeDate: '2022-06-15' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ rangeDate: '2019-12-31' }, schema)).toThrow(ValidationError);
+        expect(() => validateEntryAgainstSchema({ rangeDate: '2026-01-01' }, schema)).toThrow(ValidationError);
+    });
+
+    // Story 3-5: date field with no constraints accepts valid ISO string, rejects non-date
+    it('date field with no constraints: valid ISO string passes, non-date string fails', async () => {
+        const db = await freshDb();
+        const schema = await makeSchema(db, [
+            { name: 'anyDate', type: 'date', required: true },
+        ]);
+        expect(() => validateEntryAgainstSchema({ anyDate: '2024-03-15' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ anyDate: 'not-a-date' }, schema)).toThrow(ValidationError);
+    });
+
+    // Story 3-5: malformed dateMin does not crash buildZodSchemaFromLedger
+    it('date field with malformed dateMin: does not crash, no constraint applied', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const db = await freshDb();
+        const schema = await makeSchema(db, [
+            { name: 'eventDate', type: 'date', required: true, dateMin: 'not-a-date' },
+        ]);
+        // Malformed dateMin is skipped — valid dates pass, invalid dates still fail base check
+        expect(() => validateEntryAgainstSchema({ eventDate: '2024-01-01' }, schema)).not.toThrow();
+        expect(() => validateEntryAgainstSchema({ eventDate: 'invalid' }, schema)).toThrow(ValidationError);
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid dateMin'));
+        warnSpy.mockRestore();
+    });
+
+    // Story 3-5: dateMin > dateMax — both constraints applied (all values rejected by min or max)
+    it('date field with dateMin > dateMax: constraints both applied (edge case — all values rejected)', async () => {
+        const db = await freshDb();
+        const schema = await makeSchema(db, [
+            // dateMin after dateMax: no date can satisfy both, so all values fail
+            { name: 'impossibleDate', type: 'date', required: true, dateMin: '2030-01-01', dateMax: '2020-01-01' },
+        ]);
+        expect(() => validateEntryAgainstSchema({ impossibleDate: '2025-06-15' }, schema)).toThrow(ValidationError);
+    });
+
     it('invalid regex pattern: buildZodSchemaFromLedger does not throw, constraint skipped', async () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const db = await freshDb();

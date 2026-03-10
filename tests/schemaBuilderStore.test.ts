@@ -369,4 +369,66 @@ describe('useSchemaBuilderStore', () => {
         const field = useSchemaBuilderStore.getState().draftFields[0];
         expect(field.minLength).toBeUndefined();
     });
+
+    // Story 3-5: commit in edit mode with relation targeting self dispatches error
+    it('commit in edit mode with relation targeting self: dispatches self-target error, no save occurs', async () => {
+        const mockSchema: LedgerSchema = {
+            _id: 'schema-self',
+            type: 'schema',
+            name: 'Self-Ref Schema',
+            fields: [],
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            schema_version: 1,
+            createdAt: '2024-01-01',
+            updatedAt: '2024-01-01',
+        };
+
+        (useLedgerStore as any).getState = vi.fn().mockReturnValue({
+            createSchema: mockCreateSchema,
+            updateSchema: mockUpdateSchema,
+            schemas: [mockSchema],
+        });
+
+        useSchemaBuilderStore.getState().initEdit(mockSchema);
+        useSchemaBuilderStore.getState().addField();
+        useSchemaBuilderStore.getState().updateField(0, {
+            name: 'selfLink',
+            type: 'relation',
+            relationTarget: 'schema-self',
+        });
+
+        await useSchemaBuilderStore.getState().commit('profile-1');
+
+        expect(mockDispatchError).toHaveBeenCalledWith(
+            'Relation field "selfLink" cannot target its own schema'
+        );
+        expect(useSchemaBuilderStore.getState().error).toContain('cannot target its own schema');
+        expect(mockUpdateSchema).not.toHaveBeenCalled();
+    });
+
+    // Story 3-5: updateField type-change from date to text clears dateMin, dateMax, dateFormat
+    it('updateField type-change from date to text clears dateMin, dateMax, dateFormat', () => {
+        useSchemaBuilderStore.getState().initCreate('project-1');
+        useSchemaBuilderStore.getState().addField();
+        useSchemaBuilderStore.getState().updateField(0, {
+            type: 'date',
+            dateMin: '2020-01-01',
+            dateMax: '2030-12-31',
+            dateFormat: 'YYYY-MM-DD',
+        });
+
+        const before = useSchemaBuilderStore.getState().draftFields[0];
+        expect(before.dateMin).toBe('2020-01-01');
+        expect(before.dateMax).toBe('2030-12-31');
+        expect(before.dateFormat).toBe('YYYY-MM-DD');
+
+        useSchemaBuilderStore.getState().updateField(0, { type: 'text' });
+
+        const field = useSchemaBuilderStore.getState().draftFields[0];
+        expect(field.type).toBe('text');
+        expect(field.dateMin).toBeUndefined();
+        expect(field.dateMax).toBeUndefined();
+        expect(field.dateFormat).toBeUndefined();
+    });
 });

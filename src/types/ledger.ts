@@ -21,6 +21,10 @@ export interface SchemaField {
     // Number constraints
     min?: number;
     max?: number;
+    // Date constraints
+    dateMin?: string; // ISO 8601 date string, e.g. "2020-01-01"
+    dateMax?: string; // ISO 8601 date string
+    dateFormat?: 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ssZ';
 }
 
 /**

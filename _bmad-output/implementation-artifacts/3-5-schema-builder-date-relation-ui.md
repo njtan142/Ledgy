@@ -1,6 +1,6 @@
 # Story 3.5: Schema Builder - Date & Relation UI
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,66 +28,66 @@ so that I can configure date format constraints and relation targets—with self
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Extend `SchemaField` interface (AC: #1)
-  - [ ] Add `dateMin?: string` (ISO 8601 date string, e.g. `"2020-01-01"`)
-  - [ ] Add `dateMax?: string` (ISO 8601 date string)
-  - [ ] Add `dateFormat?: 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ssZ'`
-  - [ ] File: `src/types/ledger.ts`
+- [x] Task 1 — Extend `SchemaField` interface (AC: #1)
+  - [x] Add `dateMin?: string` (ISO 8601 date string, e.g. `"2020-01-01"`)
+  - [x] Add `dateMax?: string` (ISO 8601 date string)
+  - [x] Add `dateFormat?: 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ssZ'`
+  - [x] File: `src/types/ledger.ts`
 
-- [ ] Task 2 — Update Zod validation for date constraints (AC: #2)
-  - [ ] In `case 'date':` branch in `buildZodSchemaFromLedger`, chain `.refine()` for `dateMin` and `dateMax`
-  - [ ] Guard: `if (field.dateMin !== undefined)` → reject values where `Date.parse(value) < Date.parse(field.dateMin)`
-  - [ ] Guard: `if (field.dateMax !== undefined)` → reject values where `Date.parse(value) > Date.parse(field.dateMax)`
-  - [ ] No changes needed for `dateFormat` in Zod (format is a display/input hint, not a storage constraint)
-  - [ ] Use try-catch around `Date.parse` guards in case field values are malformed, log `console.warn`, skip constraint gracefully
-  - [ ] File: `src/lib/validation.ts`
+- [x] Task 2 — Update Zod validation for date constraints (AC: #2)
+  - [x] In `case 'date':` branch in `buildZodSchemaFromLedger`, chain `.refine()` for `dateMin` and `dateMax`
+  - [x] Guard: `if (field.dateMin !== undefined)` → reject values where `Date.parse(value) < Date.parse(field.dateMin)`
+  - [x] Guard: `if (field.dateMax !== undefined)` → reject values where `Date.parse(value) > Date.parse(field.dateMax)`
+  - [x] No changes needed for `dateFormat` in Zod (format is a display/input hint, not a storage constraint)
+  - [x] Use try-catch around `Date.parse` guards in case field values are malformed, log `console.warn`, skip constraint gracefully
+  - [x] File: `src/lib/validation.ts`
 
-- [ ] Task 3 — Update `updateField` constraint-clearing (AC: #3)
-  - [ ] After merging patch, add cleanup block: if `updated.type !== 'date'` → delete `updated.dateMin`, `updated.dateMax`, `updated.dateFormat`
-  - [ ] Place the new block adjacent to the existing `relation` / `text` / `number` cleanup blocks for consistency
-  - [ ] File: `src/stores/useSchemaBuilderStore.ts`
+- [x] Task 3 — Update `updateField` constraint-clearing (AC: #3)
+  - [x] After merging patch, add cleanup block: if `updated.type !== 'date'` → delete `updated.dateMin`, `updated.dateMax`, `updated.dateFormat`
+  - [x] Place the new block adjacent to the existing `relation` / `text` / `number` cleanup blocks for consistency
+  - [x] File: `src/stores/useSchemaBuilderStore.ts`
 
-- [ ] Task 4 — Add date constraint sub-panel to `SchemaBuilder.tsx` (AC: #4)
-  - [ ] Add conditional block `{field.type === 'date' && ( ... )}` following the same layout pattern as text/number sub-panels from Story 3-4
-  - [ ] Sub-panel background: `bg-zinc-100 dark:bg-zinc-900` (matches Story 3-4 pattern)
-  - [ ] Date Format selector using a `<select>` (shadcn `Select` if available):
+- [x] Task 4 — Add date constraint sub-panel to `SchemaBuilder.tsx` (AC: #4)
+  - [x] Add conditional block `{field.type === 'date' && ( ... )}` following the same layout pattern as text/number sub-panels from Story 3-4
+  - [x] Sub-panel background: `bg-zinc-100 dark:bg-zinc-900` (matches Story 3-4 pattern)
+  - [x] Date Format selector using a `<select>` (shadcn `Select` if available):
     - Default: empty (no constraint = accept any valid date string)
     - Options: `YYYY-MM-DD` (date only), `YYYY-MM-DDTHH:mm:ssZ` (full ISO datetime)
     - `onValueChange`: `updateField(index, { dateFormat: value || undefined })`
-  - [ ] Min Date input: `<input type="date">` → convert to ISO string on change
-  - [ ] Max Date input: `<input type="date">` → convert to ISO string on change
-  - [ ] Empty Min/Max = no constraint applied
-  - [ ] Both inputs are `<label>` wrapped for WCAG AA
-  - [ ] File: `src/features/ledger/SchemaBuilder.tsx`
+  - [x] Min Date input: `<input type="date">` → convert to ISO string on change
+  - [x] Max Date input: `<input type="date">` → convert to ISO string on change
+  - [x] Empty Min/Max = no constraint applied
+  - [x] Both inputs are `<label>` wrapped for WCAG AA
+  - [x] File: `src/features/ledger/SchemaBuilder.tsx`
 
-- [ ] Task 5 — Fix relation sub-panel for self-target prevention (AC: #5, #6)
-  - [ ] Identify the current schema ID: in **edit mode**, use `useSchemaBuilderStore.getState().editingSchemaId`; in **create mode**, no schema ID exists yet (no filtering needed)
-  - [ ] Update `availableLedgers` filtering: `availableLedgers.filter(l => l._id !== editingSchemaId)`
-  - [ ] If filtered list is empty, render disabled `SelectTrigger` with `title` attribute: _"No other ledgers available — a relation cannot target its own schema"_
-  - [ ] Remove any `relationTarget` currently set to the self-ID on `initEdit` (edge case: schema was previously corrupted)
-  - [ ] File: `src/features/ledger/SchemaBuilder.tsx`
+- [x] Task 5 — Fix relation sub-panel for self-target prevention (AC: #5, #6)
+  - [x] Identify the current schema ID: in **edit mode**, use `useSchemaBuilderStore.getState().editingSchemaId`; in **create mode**, no schema ID exists yet (no filtering needed)
+  - [x] Update `availableLedgers` filtering: `availableLedgers.filter(l => l._id !== editingSchemaId)`
+  - [x] If filtered list is empty, render disabled `SelectTrigger` with `title` attribute: _"No other ledgers available — a relation cannot target its own schema"_
+  - [x] Remove any `relationTarget` currently set to the self-ID on `initEdit` (edge case: schema was previously corrupted)
+  - [x] File: `src/features/ledger/SchemaBuilder.tsx`
 
-- [ ] Task 6 — Guard self-reference in `commit()` (AC: #7)
-  - [ ] In the relation validation loop inside `commit()`, add: `if (field.relationTarget === editingSchemaId && mode === 'edit')` → dispatch error _"Relation field \"{name}\" cannot target its own schema"_ and return
-  - [ ] File: `src/stores/useSchemaBuilderStore.ts`
+- [x] Task 6 — Guard self-reference in `commit()` (AC: #7)
+  - [x] In the relation validation loop inside `commit()`, add: `if (field.relationTarget === editingSchemaId && mode === 'edit')` → dispatch error _"Relation field \"{name}\" cannot target its own schema"_ and return
+  - [x] File: `src/stores/useSchemaBuilderStore.ts`
 
-- [ ] Task 7 — Add date constraint validation tests (AC: #8)
-  - [ ] `date` with `dateMin: '2020-01-01'`: test `'2019-12-31'` fails, `'2020-01-01'` passes
-  - [ ] `date` with `dateMax: '2030-12-31'`: test `'2031-01-01'` fails, `'2030-06-15'` passes
-  - [ ] `date` with `dateMin` and `dateMax` range: test boundary pass values
-  - [ ] `date` with no constraints: test valid ISO string passes, test non-date string fails
-  - [ ] `date` with malformed `dateMin` (invalid string): verify `buildZodSchemaFromLedger` doesn't crash
-  - [ ] `date` with `dateMin > dateMax`: verify constraint is applied (Zod will reject all values — acceptable edge case)
-  - [ ] File: `tests/schemaValidation.test.ts`
+- [x] Task 7 — Add date constraint validation tests (AC: #8)
+  - [x] `date` with `dateMin: '2020-01-01'`: test `'2019-12-31'` fails, `'2020-01-01'` passes
+  - [x] `date` with `dateMax: '2030-12-31'`: test `'2031-01-01'` fails, `'2030-06-15'` passes
+  - [x] `date` with `dateMin` and `dateMax` range: test boundary pass values
+  - [x] `date` with no constraints: test valid ISO string passes, test non-date string fails
+  - [x] `date` with malformed `dateMin` (invalid string): verify `buildZodSchemaFromLedger` doesn't crash
+  - [x] `date` with `dateMin > dateMax`: verify constraint is applied (Zod will reject all values — acceptable edge case)
+  - [x] File: `tests/schemaValidation.test.ts`
 
-- [ ] Task 8 — Add self-target prevention store tests (AC: #9)
-  - [ ] `commit()` in edit mode with relation targeting self: verify dispatch of self-target error, no save occurs
-  - [ ] `updateField` type-change from `date` to `text`: verify `dateMin`, `dateMax`, `dateFormat` are cleared
-  - [ ] File: `tests/schemaBuilderStore.test.ts`
+- [x] Task 8 — Add self-target prevention store tests (AC: #9)
+  - [x] `commit()` in edit mode with relation targeting self: verify dispatch of self-target error, no save occurs
+  - [x] `updateField` type-change from `date` to `text`: verify `dateMin`, `dateMax`, `dateFormat` are cleared
+  - [x] File: `tests/schemaBuilderStore.test.ts`
 
-- [ ] Task 9 — TypeScript check and regression check (AC: #10, #11)
-  - [ ] `npx tsc --noEmit` → 0 errors
-  - [ ] `npx vitest run` → baseline + new tests pass, no regressions
+- [x] Task 9 — TypeScript check and regression check (AC: #10, #11)
+  - [x] `npx tsc --noEmit` → 0 errors
+  - [x] `npx vitest run` → baseline + new tests pass, no regressions
 
 ## Dev Notes
 
@@ -194,10 +194,29 @@ Per Story 3-4 notes:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.6
 
 ### Debug Log References
 
+- Fixed Zod v4 compatibility: `z.ZodEffects` not exported in Zod v4 — replaced casts with `(dateBase as any)` to chain `.refine()` calls.
+
 ### Completion Notes List
 
+- **Task 1**: Extended `SchemaField` with `dateMin?`, `dateMax?`, `dateFormat?` fields in `src/types/ledger.ts`.
+- **Task 2**: Extended `buildZodSchemaFromLedger` `case 'date':` with chained `.refine()` for `dateMin`/`dateMax` bounds, with try-catch + `console.warn` for malformed values. `dateFormat` is UX-only, no Zod constraint.
+- **Task 3**: Added `date` cleanup block in `updateField` — deletes `dateMin`, `dateMax`, `dateFormat` when type changes away from `date`.
+- **Task 4**: Added date constraint sub-panel in `SchemaBuilder.tsx` using shadcn `Select` for format, native `<input type="date">` for min/max, all `<label>`-wrapped for WCAG AA.
+- **Task 5**: Updated `availableLedgers` to filter out `editingSchemaId`; disabled relation select with tooltip title when no targets remain; `initEdit` now clears self-referencing `relationTarget` corruption.
+- **Task 6**: Added self-reference guard in `commit()` — rejects relation fields targeting `editingSchemaId` in edit mode.
+- **Task 7**: Added 6 new date constraint validation tests to `tests/schemaValidation.test.ts` (27 total, all passing).
+- **Task 8**: Added 2 new store tests to `tests/schemaBuilderStore.test.ts` — self-target commit guard + date type-change cleanup (23 total, all passing).
+- **Task 9**: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 62 files, 551 passed, 0 failed.
+
 ### File List
+
+- `src/types/ledger.ts` — extended `SchemaField` with date constraint fields
+- `src/lib/validation.ts` — date constraint `refine()` chains in `buildZodSchemaFromLedger`
+- `src/stores/useSchemaBuilderStore.ts` — date cleanup in `updateField`, self-reference guard in `commit()`, corruption guard in `initEdit`
+- `src/features/ledger/SchemaBuilder.tsx` — date sub-panel, relation self-target filtering + disabled state
+- `tests/schemaValidation.test.ts` — 6 new date constraint tests
+- `tests/schemaBuilderStore.test.ts` — 2 new store tests
