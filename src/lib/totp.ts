@@ -121,10 +121,9 @@ export const generateOtpauthUri = generateTOTPURI;
  */
 async function hmacSha(key: Uint8Array | CryptoKey, data: Uint8Array, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<Uint8Array> {
     let cryptoKey: CryptoKey;
-
-    // Performance Optimization: Allow passing pre-imported CryptoKey to avoid
-    // redundant crypto.subtle.importKey overhead in hot paths (like verifyTOTP loops).
-    if (key instanceof Uint8Array) {
+    if (key instanceof CryptoKey) {
+        cryptoKey = key;
+    } else {
         cryptoKey = await crypto.subtle.importKey(
             'raw',
             key,
@@ -132,8 +131,6 @@ async function hmacSha(key: Uint8Array | CryptoKey, data: Uint8Array, algorithm:
             false,
             ['sign']
         );
-    } else {
-        cryptoKey = key;
     }
     
     const signature = await crypto.subtle.sign('HMAC', cryptoKey, data);
@@ -197,6 +194,10 @@ export async function verifyTOTP(
     
     const algorithms: ('SHA-1' | 'SHA-256')[] = ['SHA-1', 'SHA-256'];
 
+    // Cache imported CryptoKeys per algorithm to avoid redundant WebCrypto API calls
+    // during the loop, which significantly improves performance.
+    const keys: Partial<Record<'SHA-1' | 'SHA-256', CryptoKey>> = {};
+
     // Prioritize checking the current time step (0) first,
     // as it is the most likely to be correct. Then check offsets (-1, 1, -2, 2...)
     const stepsToCheck = [0];
@@ -204,28 +205,21 @@ export async function verifyTOTP(
         stepsToCheck.push(-i, i);
     }
 
-    // Performance Optimization: Cache imported CryptoKeys outside the verification loop
-    // to avoid the overhead of crypto.subtle.importKey on every time step/algorithm iteration.
-    const cryptoKeys = new Map<string, CryptoKey>();
-    async function getCryptoKey(alg: 'SHA-1' | 'SHA-256' | 'SHA-512'): Promise<CryptoKey> {
-        let key = cryptoKeys.get(alg);
-        if (!key) {
-            key = await crypto.subtle.importKey(
-                'raw',
-                secretBytes,
-                { name: 'HMAC', hash: alg },
-                false,
-                ['sign']
-            );
-            cryptoKeys.set(alg, key);
-        }
-        return key;
-    }
-
     for (const stepOffset of stepsToCheck) {
         for (const alg of algorithms) {
-            const key = await getCryptoKey(alg);
-            const expectedCode = await generateTOTP(key, currentStep + stepOffset, alg);
+            // Lazy import and cache the key for this algorithm
+            if (!keys[alg]) {
+                keys[alg] = await crypto.subtle.importKey(
+                    'raw',
+                    secretBytes,
+                    { name: 'HMAC', hash: alg },
+                    false,
+                    ['sign']
+                );
+            }
+
+            // Bypass generateTOTP to directly use the cached CryptoKey with hotp
+            const expectedCode = await hotp(keys[alg]!, currentStep + stepOffset, alg);
 
             // Constant-time comparison to prevent timing attacks
             if (constantTimeCompare(code, expectedCode)) {

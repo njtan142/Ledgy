@@ -37,12 +37,44 @@ export function buildZodSchemaFromLedger(
         if (field.min !== undefined) base = (base as z.ZodNumber).min(field.min);
         if (field.max !== undefined) base = (base as z.ZodNumber).max(field.max);
         break;
-      case "date":
-        base = z.string().refine(
+      case "date": {
+        let dateBase: z.ZodTypeAny = z.string().refine(
           (v) => !isNaN(Date.parse(v)),
           { message: "Must be a valid date string (ISO 8601 recommended)" }
         );
+        if (field.dateMin !== undefined) {
+          try {
+            const minMs = Date.parse(field.dateMin);
+            if (!isNaN(minMs)) {
+              dateBase = (dateBase as any).refine(
+                (v: string) => Date.parse(v) >= minMs,
+                { message: `Date must be on or after ${field.dateMin}` }
+              );
+            } else {
+              console.warn(`Invalid dateMin for field "${field.name}": ${field.dateMin}`);
+            }
+          } catch {
+            console.warn(`Invalid dateMin for field "${field.name}": ${field.dateMin}`);
+          }
+        }
+        if (field.dateMax !== undefined) {
+          try {
+            const maxMs = Date.parse(field.dateMax);
+            if (!isNaN(maxMs)) {
+              dateBase = (dateBase as any).refine(
+                (v: string) => Date.parse(v) <= maxMs,
+                { message: `Date must be on or before ${field.dateMax}` }
+              );
+            } else {
+              console.warn(`Invalid dateMax for field "${field.name}": ${field.dateMax}`);
+            }
+          } catch {
+            console.warn(`Invalid dateMax for field "${field.name}": ${field.dateMax}`);
+          }
+        }
+        base = dateBase;
         break;
+      }
       case "relation":
         base = z.string();
         break;
