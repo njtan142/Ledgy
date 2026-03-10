@@ -117,15 +117,24 @@ export const generateOtpauthUri = generateTOTPURI;
 
 /**
  * HMAC-SHA implementation using WebCrypto API
+ * @param key - Raw bytes or imported CryptoKey
  */
-async function hmacSha(key: Uint8Array, data: Uint8Array, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<Uint8Array> {
-    const cryptoKey = await crypto.subtle.importKey(
-        'raw',
-        key,
-        { name: 'HMAC', hash: algorithm },
-        false,
-        ['sign']
-    );
+async function hmacSha(key: Uint8Array | CryptoKey, data: Uint8Array, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<Uint8Array> {
+    let cryptoKey: CryptoKey;
+
+    // Performance Optimization: Allow passing pre-imported CryptoKey to avoid
+    // redundant crypto.subtle.importKey overhead in hot paths (like verifyTOTP loops).
+    if (key instanceof Uint8Array) {
+        cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            key,
+            { name: 'HMAC', hash: algorithm },
+            false,
+            ['sign']
+        );
+    } else {
+        cryptoKey = key;
+    }
     
     const signature = await crypto.subtle.sign('HMAC', cryptoKey, data);
     return new Uint8Array(signature);
@@ -135,7 +144,7 @@ async function hmacSha(key: Uint8Array, data: Uint8Array, algorithm: 'SHA-1' | '
  * Generate HOTP code (HMAC-based One-Time Password)
  * RFC 4226 compliant
  */
-async function hotp(secret: Uint8Array, counter: number, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<string> {
+async function hotp(secret: Uint8Array | CryptoKey, counter: number, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<string> {
     // Convert counter to 8-byte big-endian array
     const counterBytes = new Uint8Array(8);
     for (let i = 7; i >= 0; i--) {
@@ -161,11 +170,11 @@ async function hotp(secret: Uint8Array, counter: number, algorithm: 'SHA-1' | 'S
 /**
  * Generate TOTP code (Time-based One-Time Password)
  * RFC 6238 compliant
- * @param secret - Base32 encoded secret or raw bytes
+ * @param secret - Base32 encoded secret or raw bytes (or pre-imported CryptoKey)
  * @param timeStep - Optional time step (defaults to current time)
  * @param algorithm - Hash algorithm (defaults to SHA-1 for backwards compatibility in standalone calls)
  */
-export async function generateTOTP(secret: string | Uint8Array, timeStep?: number, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<string> {
+export async function generateTOTP(secret: string | Uint8Array | CryptoKey, timeStep?: number, algorithm: 'SHA-1' | 'SHA-256' | 'SHA-512' = 'SHA-1'): Promise<string> {
     const secretBytes = typeof secret === 'string' ? fromBase32(secret) : secret;
     const step = timeStep ?? Math.floor(Date.now() / 1000 / 30);
     
@@ -195,9 +204,28 @@ export async function verifyTOTP(
         stepsToCheck.push(-i, i);
     }
 
+    // Performance Optimization: Cache imported CryptoKeys outside the verification loop
+    // to avoid the overhead of crypto.subtle.importKey on every time step/algorithm iteration.
+    const cryptoKeys = new Map<string, CryptoKey>();
+    async function getCryptoKey(alg: 'SHA-1' | 'SHA-256' | 'SHA-512'): Promise<CryptoKey> {
+        let key = cryptoKeys.get(alg);
+        if (!key) {
+            key = await crypto.subtle.importKey(
+                'raw',
+                secretBytes,
+                { name: 'HMAC', hash: alg },
+                false,
+                ['sign']
+            );
+            cryptoKeys.set(alg, key);
+        }
+        return key;
+    }
+
     for (const stepOffset of stepsToCheck) {
         for (const alg of algorithms) {
-            const expectedCode = await generateTOTP(secretBytes, currentStep + stepOffset, alg);
+            const key = await getCryptoKey(alg);
+            const expectedCode = await generateTOTP(key, currentStep + stepOffset, alg);
 
             // Constant-time comparison to prevent timing attacks
             if (constantTimeCompare(code, expectedCode)) {
