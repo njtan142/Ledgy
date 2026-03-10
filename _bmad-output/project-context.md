@@ -63,9 +63,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Development Workflow Rules
 
-- **Branch Creation**: When starting work on an epic, you MUST create a new git branch for that epic (e.g., `epic/epic-{{epic_num}}`). Multiple stories within the same epic should be implemented and committed to this epic branch. Do not implement directly on the main continuous integration branch.
-- **Story Completion**: When a story is set to done and successfully committed, you MUST perform a `git push` and create a Pull Request from the story branch to the main branch.
-- **Sprint Status Commits**: When a sprint status is changed (for example, in `sprint-status.yaml`), you MUST always perform a git commit. Furthermore, you must ALWAYS require user review of the commit message before committing.
+- **Sprint Status Commits**:When a sprint status is changed (for example, in `sprint-status.yaml`), you MUST always perform a git commit. Furthermore, you must ALWAYS require user review of the commit message before committing.
 - **CI/CD Build Systems**: GitHub actions will be used to automatically compile cross-platform versions (Win/Mac/Linux).
 - **Binary Size Limits**: Do not bundle runtime engines that exponentially increase payload (e.g., Heavy AI/Gemini-nano models). The compiled application must remain under 10MB. Distribution runs through Tauri's built-in updater using GitHub Releases.
 
