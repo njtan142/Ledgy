@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         // Dispatch error to global error store
         const dispatchError = useErrorStore.getState().dispatchError;
         dispatchError(
-            `ErrorBoundary caught: ${error.message}${errorInfo.componentStack ? ` in ${errorInfo.componentStack}` : ''}`,
+            `ErrorBoundary caught: ${error.message}`,
             'error'
         );
 
