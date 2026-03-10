@@ -23,6 +23,7 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
         draftFields,
         error,
         isLoading,
+        editingSchemaId,
         initCreate,
         setDraftName,
         addField,
@@ -39,8 +40,10 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
         initCreate(projectId);
     }, [projectId, initCreate]);
 
-    // Filter schemas to show as potential relation targets
-    const availableLedgers = schemas.filter(s => s.projectId === projectId);
+    // Filter schemas to show as potential relation targets, excluding the current schema (self-target prevention)
+    const availableLedgers = schemas
+        .filter(s => s.projectId === projectId)
+        .filter(s => s._id !== editingSchemaId);
 
     const handleMoveField = (index: number, direction: 'up' | 'down') => {
         const toIndex = direction === 'up' ? index - 1 : index + 1;
@@ -185,21 +188,31 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
                                             </Select>
 
                                             {field.type === 'relation' && (
-                                                <Select
-                                                    value={field.relationTarget || ''}
-                                                    onValueChange={(value) => updateField(index, { relationTarget: value })}
-                                                >
-                                                    <SelectTrigger className="w-[160px] bg-white dark:bg-zinc-900 border-emerald-500/50">
-                                                        <SelectValue placeholder="Select Target..." />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {availableLedgers.map(ledger => (
-                                                            <SelectItem key={ledger._id} value={ledger._id}>
-                                                                {ledger.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                availableLedgers.length === 0 ? (
+                                                    <span title="No other ledgers available — a relation cannot target its own schema">
+                                                        <Select disabled>
+                                                            <SelectTrigger className="w-[160px] bg-white dark:bg-zinc-900 border-emerald-500/50 opacity-50 cursor-not-allowed">
+                                                                <SelectValue placeholder="No targets available" />
+                                                            </SelectTrigger>
+                                                        </Select>
+                                                    </span>
+                                                ) : (
+                                                    <Select
+                                                        value={field.relationTarget || ''}
+                                                        onValueChange={(value) => updateField(index, { relationTarget: value })}
+                                                    >
+                                                        <SelectTrigger className="w-[160px] bg-white dark:bg-zinc-900 border-emerald-500/50">
+                                                            <SelectValue placeholder="Select Target..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {availableLedgers.map(ledger => (
+                                                                <SelectItem key={ledger._id} value={ledger._id}>
+                                                                    {ledger.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )
                                             )}
 
                                             <label className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 ml-2">
@@ -303,6 +316,51 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
                                                         value={field.max ?? ''}
                                                         onChange={(e) => updateField(index, { max: e.target.value === '' ? undefined : Number(e.target.value) })}
                                                         placeholder="∞"
+                                                    />
+                                                </label>
+                                            </div>
+                                        )}
+
+                                        {/* Date constraint sub-panel */}
+                                        {field.type === 'date' && (
+                                            <div className="flex items-start gap-3 px-3 pb-3 pt-0 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <span className="flex items-center gap-1">
+                                                        Date Format
+                                                        {/* TODO: replace with Tooltip component when installed */}
+                                                        <span title="Specify the expected date format. Leave empty to accept any valid date string.">
+                                                            <Info size={12} className="text-zinc-400 cursor-help" />
+                                                        </span>
+                                                    </span>
+                                                    <Select
+                                                        value={field.dateFormat ?? ''}
+                                                        onValueChange={(value) => updateField(index, { dateFormat: (value || undefined) as 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ssZ' | undefined })}
+                                                    >
+                                                        <SelectTrigger className="w-[200px] h-7 text-xs bg-white dark:bg-zinc-950">
+                                                            <SelectValue placeholder="Any valid date" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (date only)</SelectItem>
+                                                            <SelectItem value="YYYY-MM-DDTHH:mm:ssZ">YYYY-MM-DDTHH:mm:ssZ (full ISO)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <label className="flex flex-col gap-1 mt-2">
+                                                    Min Date
+                                                    <input
+                                                        type="date"
+                                                        className="h-7 text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2"
+                                                        value={field.dateMin ?? ''}
+                                                        onChange={(e) => updateField(index, { dateMin: e.target.value || undefined })}
+                                                    />
+                                                </label>
+                                                <label className="flex flex-col gap-1 mt-2">
+                                                    Max Date
+                                                    <input
+                                                        type="date"
+                                                        className="h-7 text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded px-2"
+                                                        value={field.dateMax ?? ''}
+                                                        onChange={(e) => updateField(index, { dateMax: e.target.value || undefined })}
                                                     />
                                                 </label>
                                             </div>
