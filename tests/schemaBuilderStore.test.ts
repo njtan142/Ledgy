@@ -407,6 +407,35 @@ describe('useSchemaBuilderStore', () => {
         expect(mockUpdateSchema).not.toHaveBeenCalled();
     });
 
+    // Story 3-5: initEdit clears self-referencing relationTarget (corruption guard)
+    it('initEdit: clears relationTarget when it equals the schema own _id (corruption guard)', () => {
+        const corruptedSchema: LedgerSchema = {
+            _id: 'schema-corrupt',
+            type: 'schema',
+            name: 'Corrupted Schema',
+            fields: [
+                { name: 'selfLink', type: 'relation', relationTarget: 'schema-corrupt' },
+                { name: 'validLink', type: 'relation', relationTarget: 'other-schema-id' },
+                { name: 'title', type: 'text' },
+            ],
+            profileId: 'profile-1',
+            projectId: 'project-1',
+            schema_version: 1,
+            createdAt: '2024-01-01',
+            updatedAt: '2024-01-01',
+        };
+
+        useSchemaBuilderStore.getState().initEdit(corruptedSchema);
+
+        const { draftFields } = useSchemaBuilderStore.getState();
+        // Self-referencing relation target must be cleared
+        expect(draftFields[0].relationTarget).toBeUndefined();
+        // Valid cross-schema relation target must be preserved
+        expect(draftFields[1].relationTarget).toBe('other-schema-id');
+        // Non-relation field unaffected
+        expect(draftFields[2].type).toBe('text');
+    });
+
     // Story 3-5: updateField type-change from date to text clears dateMin, dateMax, dateFormat
     it('updateField type-change from date to text clears dateMin, dateMax, dateFormat', () => {
         useSchemaBuilderStore.getState().initCreate('project-1');

@@ -43,32 +43,24 @@ export function buildZodSchemaFromLedger(
           { message: "Must be a valid date string (ISO 8601 recommended)" }
         );
         if (field.dateMin !== undefined) {
-          try {
-            const minMs = Date.parse(field.dateMin);
-            if (!isNaN(minMs)) {
-              dateBase = (dateBase as any).refine(
-                (v: string) => Date.parse(v) >= minMs,
-                { message: `Date must be on or after ${field.dateMin}` }
-              );
-            } else {
-              console.warn(`Invalid dateMin for field "${field.name}": ${field.dateMin}`);
-            }
-          } catch {
+          const minMs = Date.parse(field.dateMin);
+          if (!isNaN(minMs)) {
+            dateBase = (dateBase as any).refine(
+              (v: string) => Date.parse(v) >= minMs,
+              { message: `Date must be on or after ${field.dateMin}` }
+            );
+          } else {
             console.warn(`Invalid dateMin for field "${field.name}": ${field.dateMin}`);
           }
         }
         if (field.dateMax !== undefined) {
-          try {
-            const maxMs = Date.parse(field.dateMax);
-            if (!isNaN(maxMs)) {
-              dateBase = (dateBase as any).refine(
-                (v: string) => Date.parse(v) <= maxMs,
-                { message: `Date must be on or before ${field.dateMax}` }
-              );
-            } else {
-              console.warn(`Invalid dateMax for field "${field.name}": ${field.dateMax}`);
-            }
-          } catch {
+          const maxMs = Date.parse(field.dateMax);
+          if (!isNaN(maxMs)) {
+            dateBase = (dateBase as any).refine(
+              (v: string) => Date.parse(v) <= maxMs,
+              { message: `Date must be on or before ${field.dateMax}` }
+            );
+          } else {
             console.warn(`Invalid dateMax for field "${field.name}": ${field.dateMax}`);
           }
         }

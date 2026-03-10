@@ -189,13 +189,14 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
 
                                             {field.type === 'relation' && (
                                                 availableLedgers.length === 0 ? (
-                                                    <span title="No other ledgers available — a relation cannot target its own schema">
-                                                        <Select disabled>
-                                                            <SelectTrigger className="w-[160px] bg-white dark:bg-zinc-900 border-emerald-500/50 opacity-50 cursor-not-allowed">
-                                                                <SelectValue placeholder="No targets available" />
-                                                            </SelectTrigger>
-                                                        </Select>
-                                                    </span>
+                                                    <Select disabled>
+                                                        <SelectTrigger
+                                                            title="No other ledgers available — a relation cannot target its own schema"
+                                                            className="w-[160px] bg-white dark:bg-zinc-900 border-emerald-500/50 opacity-50 cursor-not-allowed"
+                                                        >
+                                                            <SelectValue placeholder="No targets available" />
+                                                        </SelectTrigger>
+                                                    </Select>
                                                 ) : (
                                                     <Select
                                                         value={field.relationTarget || ''}
@@ -340,6 +341,7 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
                                                             <SelectValue placeholder="Any valid date" />
                                                         </SelectTrigger>
                                                         <SelectContent>
+                                                            <SelectItem value="">Any valid date (no constraint)</SelectItem>
                                                             <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (date only)</SelectItem>
                                                             <SelectItem value="YYYY-MM-DDTHH:mm:ssZ">YYYY-MM-DDTHH:mm:ssZ (full ISO)</SelectItem>
                                                         </SelectContent>
