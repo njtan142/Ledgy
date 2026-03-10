@@ -1,6 +1,6 @@
 # Story 3.6: Schema Migration JIT Engine
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,46 +28,46 @@ so that schema evolution (adding or removing fields) does not break existing ent
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Create `src/lib/migration.ts` pure function (AC: #1–#6)
-  - [ ] Export `migrateEntryData(entry: LedgerEntry, schema: LedgerSchema): { migrated: LedgerEntry; didMigrate: boolean }`
-  - [ ] Short-circuit guard: `if (entry.schema_version >= schema.schema_version)` → `return { migrated: entry, didMigrate: false }`
-  - [ ] Build `newData: Record<string, unknown>`: iterate `Object.keys(entry.data)`, include key only if it appears in `schema.fields.map(f => f.name)`
-  - [ ] Return `{ migrated: { ...entry, data: newData, schema_version: schema.schema_version }, didMigrate: true }`
-  - [ ] **No database calls** — this is a pure, synchronous function
-  - [ ] File: `src/lib/migration.ts`
+- [x] Task 1 — Create `src/lib/migration.ts` pure function (AC: #1–#6)
+  - [x] Export `migrateEntryData(entry: LedgerEntry, schema: LedgerSchema): { migrated: LedgerEntry; didMigrate: boolean }`
+  - [x] Short-circuit guard: `if (entry.schema_version >= schema.schema_version)` → `return { migrated: entry, didMigrate: false }`
+  - [x] Build `newData: Record<string, unknown>`: iterate `Object.keys(entry.data)`, include key only if it appears in `schema.fields.map(f => f.name)`
+  - [x] Return `{ migrated: { ...entry, data: newData, schema_version: schema.schema_version }, didMigrate: true }`
+  - [x] **No database calls** — this is a pure, synchronous function
+  - [x] File: `src/lib/migration.ts`
 
-- [ ] Task 2 — Add migration write-back helper inside `src/lib/db.ts` (AC: #9, #10)
-  - [ ] Add non-exported async function `persistMigratedEntry(db: Database, entry: LedgerEntry, newSchemaVersion: number, encryptionKey?: CryptoKey): Promise<void>`
-  - [ ] If `encryptionKey` is present: call `encryptPayload(encryptionKey, JSON.stringify(entry.data))`, then `db.updateDocument(entry._id, { data_enc: { iv: result.iv, ciphertext: Array.from(new Uint8Array(result.ciphertext)) }, data: {}, schema_version: newSchemaVersion })`
-  - [ ] If no `encryptionKey`: `db.updateDocument(entry._id, { data: entry.data, schema_version: newSchemaVersion })`
-  - [ ] Wrap entire function body in `try { ... } catch (error) { console.warn('Migration write-back failed for entry', entry._id, error); }` — **do NOT rethrow**
-  - [ ] File: `src/lib/db.ts`
+- [x] Task 2 — Add migration write-back helper inside `src/lib/db.ts` (AC: #9, #10)
+  - [x] Add non-exported async function `persistMigratedEntry(db: Database, entry: LedgerEntry, newSchemaVersion: number, encryptionKey?: CryptoKey): Promise<void>`
+  - [x] If `encryptionKey` is present: call `encryptPayload(encryptionKey, JSON.stringify(entry.data))`, then `db.updateDocument(entry._id, { data_enc: { iv: result.iv, ciphertext: Array.from(new Uint8Array(result.ciphertext)) }, data: {}, schema_version: newSchemaVersion })`
+  - [x] If no `encryptionKey`: `db.updateDocument(entry._id, { data: entry.data, schema_version: newSchemaVersion })`
+  - [x] Wrap entire function body in `try { ... } catch (error) { console.warn('Migration write-back failed for entry', entry._id, error); }` — **do NOT rethrow**
+  - [x] File: `src/lib/db.ts`
 
-- [ ] Task 3 — Integrate migration into `list_entries` (AC: #7, #9)
-  - [ ] After the decrypt step (just before `return`), add: `const schema = await get_schema(db, ledgerId).catch(() => null);`
-  - [ ] If `schema` is null (schema deleted/not found): return entries as-is (skip migration entirely)
-  - [ ] For each entry in the filtered + decrypted array: `const { migrated, didMigrate } = migrateEntryData(entry, schema);`
-  - [ ] If `didMigrate`: call `await persistMigratedEntry(db, migrated, schema.schema_version, encryptionKey);` (write-back is non-fatal per Task 2)
-  - [ ] Collect `migrated` entries into the return array
-  - [ ] File: `src/lib/db.ts`
+- [x] Task 3 — Integrate migration into `list_entries` (AC: #7, #9)
+  - [x] After the decrypt step (just before `return`), add: `const schema = await get_schema(db, ledgerId).catch(() => null);`
+  - [x] If `schema` is null (schema deleted/not found): return entries as-is (skip migration entirely)
+  - [x] For each entry in the filtered + decrypted array: `const { migrated, didMigrate } = migrateEntryData(entry, schema);`
+  - [x] If `didMigrate`: call `await persistMigratedEntry(db, migrated, schema.schema_version, encryptionKey);` (write-back is non-fatal per Task 2)
+  - [x] Collect `migrated` entries into the return array
+  - [x] File: `src/lib/db.ts`
 
-- [ ] Task 4 — Integrate migration into `list_all_entries` (AC: #8, #9)
-  - [ ] Apply the exact same pattern as Task 3
-  - [ ] File: `src/lib/db.ts`
+- [x] Task 4 — Integrate migration into `list_all_entries` (AC: #8, #9)
+  - [x] Apply the exact same pattern as Task 3
+  - [x] File: `src/lib/db.ts`
 
-- [ ] Task 5 — Add migration unit and integration tests (AC: #11)
-  - [ ] `migrateEntryData` — same `schema_version`: no migration, returns `didMigrate: false` and identical `entry` reference
-  - [ ] `migrateEntryData` — removed field: stale key stripped from `migrated.data`
-  - [ ] `migrateEntryData` — added field (schema has new field, entry doesn't): key is simply absent from `migrated.data` (no default injection)
-  - [ ] `migrateEntryData` — `schema_version` bumped: `migrated.schema_version === schema.schema_version`
-  - [ ] `migrateEntryData` — mixed: multiple stale keys stripped, kept keys preserve values
-  - [ ] Integration: `list_entries` returns entries with stale field stripped after schema update via `update_schema`
-  - [ ] Integration (write-back): after `list_entries`, a subsequent `get_entry` on the same entry shows the updated `schema_version`
-  - [ ] File: `tests/schemaMigration.test.ts`
+- [x] Task 5 — Add migration unit and integration tests (AC: #11)
+  - [x] `migrateEntryData` — same `schema_version`: no migration, returns `didMigrate: false` and identical `entry` reference
+  - [x] `migrateEntryData` — removed field: stale key stripped from `migrated.data`
+  - [x] `migrateEntryData` — added field (schema has new field, entry doesn't): key is simply absent from `migrated.data` (no default injection)
+  - [x] `migrateEntryData` — `schema_version` bumped: `migrated.schema_version === schema.schema_version`
+  - [x] `migrateEntryData` — mixed: multiple stale keys stripped, kept keys preserve values
+  - [x] Integration: `list_entries` returns entries with stale field stripped after schema update via `update_schema`
+  - [x] Integration (write-back): after `list_entries`, a subsequent `get_entry` on the same entry shows the updated `schema_version`
+  - [x] File: `tests/schemaMigration.test.ts`
 
-- [ ] Task 6 — TypeScript and regression check (AC: #12, #13)
-  - [ ] `npx tsc --noEmit` → 0 errors
-  - [ ] `npx vitest run` → 21 pre-existing failures (crypto mock / jsdom / ReactFlow — consistent baseline from Story 3-5), all new migration tests pass
+- [x] Task 6 — TypeScript and regression check (AC: #12, #13)
+  - [x] `npx tsc --noEmit` → 0 errors
+  - [x] `npx vitest run` → 559 passing, 1 skipped, 0 failures (63 test files including new schemaMigration.test.ts)
 
 ## Dev Notes
 
@@ -309,10 +309,28 @@ Epic 3 is in-progress. Dev agent MUST check whether branch `epic/epic-3` exists 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.6 (claude-sonnet-4.6)
 
 ### Debug Log References
 
+No blocking issues encountered. Implementation followed the Dev Notes algorithm exactly.
+
 ### Completion Notes List
 
+- ✅ Created `src/lib/migration.ts` — pure `migrateEntryData` function with no database dependencies
+- ✅ Added `persistMigratedEntry` non-exported async helper to `src/lib/db.ts` with non-fatal error handling (console.warn only)
+- ✅ Integrated JIT migration into `list_entries`: decrypt → get_schema (null-safe) → migrate loop → persist on didMigrate
+- ✅ Integrated JIT migration into `list_all_entries` with identical pattern
+- ✅ Created `tests/schemaMigration.test.ts` with 7 tests: 5 unit tests for `migrateEntryData` + 2 integration tests
+- ✅ TypeScript check: 0 errors (`npx tsc --noEmit`)
+- ✅ Full test suite: 559 passing, 1 skipped, 0 failures (63 test files)
+- ✅ Branch `epic/epic-3` created and used for this story's commits
+- ✅ All 13 Acceptance Criteria satisfied
+
 ### File List
+
+- `src/lib/migration.ts` — NEW: pure `migrateEntryData` function
+- `src/lib/db.ts` — MODIFIED: added `persistMigratedEntry` helper; integrated migration into `list_entries` and `list_all_entries`; added `import { migrateEntryData } from './migration'`
+- `tests/schemaMigration.test.ts` — NEW: 7 tests (5 unit + 2 integration)
+- `_bmad-output/implementation-artifacts/3-6-schema-migration-jit-engine.md` — MODIFIED: status, tasks, dev agent record
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: story status updated to review

@@ -422,6 +422,7 @@ export async function delete_project(db: Database, projectId: string): Promise<v
 // ==================== LEDGER SCHEMA OPERATIONS ====================
 
 import { LedgerSchema, SchemaField, EncryptedLedgerSchemaMetadata, LedgerEntry } from '../types/ledger';
+import { migrateEntryData } from './migration';
 
 /**
  * Creates a new ledger schema document.
@@ -648,8 +649,36 @@ export async function update_entry(
 }
 
 /**
+ * Non-exported helper: writes a migrated entry back to PouchDB.
+ * Non-fatal: logs a warning on failure but does not rethrow.
+ * NFR9 JIT migration write-back.
+ */
+async function persistMigratedEntry(
+    db: Database,
+    entry: LedgerEntry,
+    newSchemaVersion: number,
+    encryptionKey?: CryptoKey
+): Promise<void> {
+    try {
+        if (encryptionKey) {
+            const result = await encryptPayload(encryptionKey, JSON.stringify(entry.data));
+            await db.updateDocument(entry._id, {
+                data_enc: { iv: result.iv, ciphertext: Array.from(new Uint8Array(result.ciphertext)) },
+                data: {},
+                schema_version: newSchemaVersion,
+            });
+        } else {
+            await db.updateDocument(entry._id, { data: entry.data, schema_version: newSchemaVersion });
+        }
+    } catch (error) {
+        console.warn('Migration write-back failed for entry', entry._id, error);
+    }
+}
+
+/**
  * Lists all entries for a specific ledger/schema.
  * Filters out soft-deleted entries by default.
+ * Applies JIT migration to every returned entry (AC #7, #9).
  * @param db - Profile database instance
  * @param ledgerId - Ledger identifier to filter by
  * @returns Array of entry documents (excluding soft-deleted)
@@ -661,12 +690,22 @@ export async function list_entries(
 ): Promise<LedgerEntry[]> {
     const entryDocs = await db.getAllDocuments<LedgerEntry>('entry');
     const filtered = entryDocs.filter(doc => !doc.isDeleted && doc.ledgerId === ledgerId);
-    return encryptionKey ? await decryptLedgerEntries(filtered, encryptionKey) : filtered;
+    const decrypted = encryptionKey ? await decryptLedgerEntries(filtered, encryptionKey) : filtered;
+    const schema = await get_schema(db, ledgerId).catch(() => null);
+    if (!schema) return decrypted;
+    const result: LedgerEntry[] = [];
+    for (const entry of decrypted) {
+        const { migrated, didMigrate } = migrateEntryData(entry, schema);
+        if (didMigrate) await persistMigratedEntry(db, migrated, schema.schema_version, encryptionKey);
+        result.push(migrated);
+    }
+    return result;
 }
 
 /**
  * Lists all entries for a specific ledger/schema including soft-deleted entries.
  * Used for ghost reference detection.
+ * Applies JIT migration to every returned entry (AC #8, #9).
  * @param db - Profile database instance
  * @param ledgerId - Ledger identifier to filter by
  * @param encryptionKey - Optional encryption key
@@ -679,7 +718,16 @@ export async function list_all_entries(
 ): Promise<LedgerEntry[]> {
     const entryDocs = await db.getAllDocuments<LedgerEntry>('entry');
     const filtered = entryDocs.filter(doc => doc.ledgerId === ledgerId);
-    return encryptionKey ? await decryptLedgerEntries(filtered, encryptionKey) : filtered;
+    const decrypted = encryptionKey ? await decryptLedgerEntries(filtered, encryptionKey) : filtered;
+    const schema = await get_schema(db, ledgerId).catch(() => null);
+    if (!schema) return decrypted;
+    const result: LedgerEntry[] = [];
+    for (const entry of decrypted) {
+        const { migrated, didMigrate } = migrateEntryData(entry, schema);
+        if (didMigrate) await persistMigratedEntry(db, migrated, schema.schema_version, encryptionKey);
+        result.push(migrated);
+    }
+    return result;
 }
 
 /**
