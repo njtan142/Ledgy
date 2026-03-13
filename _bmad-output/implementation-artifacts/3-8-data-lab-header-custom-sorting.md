@@ -1,6 +1,6 @@
 # Story 3.8: Data Lab - Header & Custom Sorting
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -446,9 +446,9 @@ Claude Sonnet 4.6 (claude-sonnet-4.6)
 - ✅ Task 2: Updated all `role="columnheader"` divs with `onClick`/`onKeyDown` handlers, `aria-sort` attribute, cursor-pointer/select-none classes, ▲/▼ glyph with superscript priority badge for multi-column sort.
 - ✅ Task 3: Added `columnWidths` state, `resizeState` ref, `headerScrollRef` ref, `getColWidth`/`handleResizeMouseDown` functions, window mousemove/mouseup resize useEffect, explicit width styles on header and gridcell elements (removed flex-1 min-w-0), header row wrapped in scroll-sync container, scroll container updated with `overflowX: auto` and `onScroll` sync handler.
 - ✅ Task 4: Created `tests/dataLabHeaderSorting.test.tsx` with 6 tests (single-column asc, single-column desc, sort removal/restoration, Shift+click multi-column, ▲ glyph indicator, ▼ glyph indicator).
-- ✅ Task 5: `npx tsc --noEmit` → 0 errors. `npx vitest run` → 65 test files passed, 578 tests passed (up from 567 baseline), 1 skipped, 0 failures.
+- ✅ Code Review (adversarial): All 18 ACs verified. 3 Medium / 4 Low issues found and resolved — memoized `schema` lookup (M2), added `selectedRowRef`/`sortedEntriesRef` to eliminate keyboard handler re-registration on every keypress (M1), added 4 resize tests to `tests/dataLabHeaderSorting.test.tsx` (M3), fixed date sort to pure lexicographic string comparison (L2), extracted `resizeState.current` ref to eliminate non-null assertion (L4). Final suite: 65 test files, 582 tests passed (+4 resize), 1 skipped, 0 failures. `npx tsc --noEmit` → 0 errors.
 
 ### File List
 
 - `src/features/ledger/LedgerTable.tsx` — MODIFIED: sort state/useMemo, header JSX with sort indicator + aria-sort + resize handle, column resize state/refs/functions/useEffect, scroll sync, sortedEntries virtualizer integration
-- `tests/dataLabHeaderSorting.test.tsx` — NEW: 6 tests covering sort behavior and indicators
+- `tests/dataLabHeaderSorting.test.tsx` — NEW: 10 tests covering sort behavior, indicators, and column resize (mousedown/mousemove/mouseup, min-width clamp, resize does not trigger sort)

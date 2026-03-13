@@ -186,3 +186,77 @@ describe('dataLabHeaderSorting', () => {
         expect(nameHeader).toHaveTextContent('▼');
     });
 });
+
+describe('dataLabColumnResize', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        setupStore();
+    });
+
+    it('mousedown on resize handle followed by mousemove updates column width', async () => {
+        const { act } = await import('@testing-library/react');
+        render(<LedgerTable schemaId="schema:sort-123" />);
+
+        const nameHeader = screen.getByRole('columnheader', { name: /^name/i });
+        const resizeHandle = nameHeader.querySelector('[style*="col-resize"]') as HTMLElement;
+        expect(resizeHandle).not.toBeNull();
+
+        // Start resize from default 150px (clientX=200), drag 50px right (clientX=250) → 200px wide
+        fireEvent.mouseDown(resizeHandle, { clientX: 200 });
+        await act(async () => {
+            fireEvent.mouseMove(window, { clientX: 250 });
+        });
+
+        expect(nameHeader).toHaveStyle({ width: '200px' });
+    });
+
+    it('column resize enforces minimum width of 60px', async () => {
+        const { act } = await import('@testing-library/react');
+        render(<LedgerTable schemaId="schema:sort-123" />);
+
+        const nameHeader = screen.getByRole('columnheader', { name: /^name/i });
+        const resizeHandle = nameHeader.querySelector('[style*="col-resize"]') as HTMLElement;
+
+        // Default 150px, drag left past minimum (delta = -200 → 0px → clamped to 60px)
+        fireEvent.mouseDown(resizeHandle, { clientX: 200 });
+        await act(async () => {
+            fireEvent.mouseMove(window, { clientX: 0 });
+        });
+
+        expect(nameHeader).toHaveStyle({ width: '60px' });
+    });
+
+    it('mouseup stops resize — subsequent mousemove does not change width', async () => {
+        const { act } = await import('@testing-library/react');
+        render(<LedgerTable schemaId="schema:sort-123" />);
+
+        const nameHeader = screen.getByRole('columnheader', { name: /^name/i });
+        const resizeHandle = nameHeader.querySelector('[style*="col-resize"]') as HTMLElement;
+
+        fireEvent.mouseDown(resizeHandle, { clientX: 200 });
+        await act(async () => {
+            fireEvent.mouseMove(window, { clientX: 250 }); // width → 200px
+        });
+        await act(async () => {
+            fireEvent.mouseUp(window); // release
+        });
+        await act(async () => {
+            fireEvent.mouseMove(window, { clientX: 400 }); // should have no effect
+        });
+
+        // Width should remain at 200px (not 350px)
+        expect(nameHeader).toHaveStyle({ width: '200px' });
+    });
+
+    it('resize handle click does not trigger sort', () => {
+        render(<LedgerTable schemaId="schema:sort-123" />);
+
+        const nameHeader = screen.getByRole('columnheader', { name: /^name/i });
+        const resizeHandle = nameHeader.querySelector('[style*="col-resize"]') as HTMLElement;
+
+        fireEvent.click(resizeHandle);
+
+        // No sort indicator — aria-sort remains none
+        expect(nameHeader).toHaveAttribute('aria-sort', 'none');
+    });
+});

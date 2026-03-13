@@ -33,12 +33,17 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const pendingDeleteRef = useRef<LedgerEntry | null>(null);
     pendingDeleteRef.current = pendingDeleteEntry;
+    const selectedRowRef = useRef(selectedRow);
+    selectedRowRef.current = selectedRow;
     const [sortConfig, setSortConfig] = useState<SortColumn[]>([]);
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
     const resizeState = useRef<{ field: string; startX: number; startWidth: number } | null>(null);
     const headerScrollRef = useRef<HTMLDivElement>(null);
 
-    const schema = schemas.find(s => s._id === schemaId);
+    const schema = useMemo(
+        () => schemas.find(s => s._id === schemaId),
+        [schemas, schemaId]
+    );
 
     // Memoized set of deleted entry IDs for efficient ghost detection (Story 3-4)
     // Scoped to relation target schemas only — avoids scanning all schemas on each render
@@ -87,7 +92,8 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                         cmp = (aVal as number) - (bVal as number);
                         break;
                     case 'date':
-                        cmp = String(aVal).localeCompare(String(bVal));
+                        // Lexicographic string comparison for ISO 8601 date strings
+                        cmp = String(aVal) < String(bVal) ? -1 : String(aVal) > String(bVal) ? 1 : 0;
                         break;
                     case 'boolean':
                         cmp = (aVal ? 1 : 0) - (bVal ? 1 : 0);
@@ -121,6 +127,10 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
     const rowVirtualizerRef = useRef(rowVirtualizer);
     rowVirtualizerRef.current = rowVirtualizer;
 
+    // Stable ref to sortedEntries for use inside the keyboard handler closure (avoids stale closure)
+    const sortedEntriesRef = useRef(sortedEntries);
+    sortedEntriesRef.current = sortedEntries;
+
     // Auto-select highlighted entry on mount (Story 3-3, AC 5)
     useEffect(() => {
         if (highlightEntryId && sortedEntries.length > 0) {
@@ -138,22 +148,24 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                 return; // Don't steal focus from inputs
             }
 
+            const currentRow = selectedRowRef.current;
+
             if (e.key === 'n' || e.key === 'N') {
                 e.preventDefault();
                 setIsAddingEntry(true);
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                const next = Math.min(selectedRow + 1, sortedEntries.length - 1);
+                const next = Math.min(currentRow + 1, sortedEntriesRef.current.length - 1);
                 setSelectedRow(next);
                 rowVirtualizerRef.current.scrollToIndex(next, { align: 'auto' });
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                const next = Math.max(selectedRow - 1, 0);
+                const next = Math.max(currentRow - 1, 0);
                 setSelectedRow(next);
                 rowVirtualizerRef.current.scrollToIndex(next, { align: 'auto' });
-            } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRow >= 0) {
+            } else if ((e.key === 'Delete' || e.key === 'Backspace') && currentRow >= 0) {
                 e.preventDefault();
-                const entryToDelete = sortedEntries[selectedRow];
+                const entryToDelete = sortedEntriesRef.current[currentRow];
                 if (entryToDelete) {
                     setPendingDeleteEntry(entryToDelete);
                 }
@@ -171,14 +183,15 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [sortedEntries, selectedRow, deleteEntry]);
+    }, [deleteEntry]);
 
     useEffect(() => {
         const onMouseMove = (e: MouseEvent) => {
-            if (!resizeState.current) return;
-            const delta = e.clientX - resizeState.current.startX;
-            const newWidth = Math.max(60, resizeState.current.startWidth + delta);
-            setColumnWidths(prev => ({ ...prev, [resizeState.current!.field]: newWidth }));
+            const rs = resizeState.current;
+            if (!rs) return;
+            const delta = e.clientX - rs.startX;
+            const newWidth = Math.max(60, rs.startWidth + delta);
+            setColumnWidths(prev => ({ ...prev, [rs.field]: newWidth }));
         };
 
         const onMouseUp = () => {
