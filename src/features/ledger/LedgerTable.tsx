@@ -35,6 +35,8 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
     pendingDeleteRef.current = pendingDeleteEntry;
     const selectedRowRef = useRef(selectedRow);
     selectedRowRef.current = selectedRow;
+    const isAddingEntryRef = useRef(isAddingEntry);
+    isAddingEntryRef.current = isAddingEntry;
     const [sortConfig, setSortConfig] = useState<SortColumn[]>([]);
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
     const resizeState = useRef<{ field: string; startX: number; startWidth: number } | null>(null);
@@ -152,7 +154,9 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
 
             if (e.key === 'n' || e.key === 'N') {
                 e.preventDefault();
-                setIsAddingEntry(true);
+                if (!isAddingEntryRef.current) {
+                    setIsAddingEntry(true);
+                }
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 const next = Math.min(currentRow + 1, sortedEntriesRef.current.length - 1);
@@ -251,7 +255,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                 <div className="flex items-center justify-between p-3">
                     <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{schema.name}</h2>
                     <Button
-                        onClick={() => setIsAddingEntry(true)}
+                        onClick={() => { if (!isAddingEntry) setIsAddingEntry(true); }}
                         className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold"
                         size="sm"
                         aria-label="Add new entry"
@@ -353,6 +357,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                     {/* Scrollable virtualizer body — scroll element for useVirtualizer; no role needed here */}
                     <div
                         ref={scrollContainerRef}
+                        tabIndex={-1}
                         style={{ overflowY: 'auto', overflowX: 'auto', flex: 1 }}
                         onScroll={() => {
                             if (headerScrollRef.current && scrollContainerRef.current) {
@@ -362,19 +367,20 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                     >
                         {/* Inline add-entry row — rendered OUTSIDE the virtualizer loop */}
                         {isAddingEntry && (
-                            <div>
-                                <InlineEntryRow
-                                    schema={schema}
-                                    onCancel={() => setIsAddingEntry(false)}
-                                    onComplete={(id?: string) => {
-                                        setIsAddingEntry(false);
-                                        if (id) {
-                                            setRecentlyCommittedId(id);
-                                            setTimeout(() => setRecentlyCommittedId(null), 2000);
-                                        }
-                                    }}
-                                />
-                            </div>
+                            <InlineEntryRow
+                                schema={schema}
+                                onCancel={() => {
+                                    setIsAddingEntry(false);
+                                    scrollContainerRef.current?.focus();
+                                }}
+                                onComplete={(id?: string) => {
+                                    setIsAddingEntry(false);
+                                    if (id) {
+                                        setRecentlyCommittedId(id);
+                                        setTimeout(() => setRecentlyCommittedId(null), 2000);
+                                    }
+                                }}
+                            />
                         )}
 
                         {/* Empty state */}
@@ -420,7 +426,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                                 return (
                                     <div
                                         key={entry._id}
-                                        role="row"
+                                        role={isEditing ? undefined : "row"}
                                         data-state={isSelected ? 'selected' : undefined}
                                         style={{
                                             position: 'absolute',

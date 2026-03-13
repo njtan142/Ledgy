@@ -1,6 +1,6 @@
 # Story 3.9: Data Lab - Keyboard-First Inline Entry Row
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,44 +32,44 @@ so that I can log entries in under 3 seconds without leaving the keyboard.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Fix `<tr>`-in-`<div>` HTML nesting in `InlineEntryRow` (AC: #5, #6)
-  - [ ] 1.1 Replace `<TableRow>` with `<div role="row" className="...existing-bg-classes...">` in `InlineEntryRow.tsx`
-  - [ ] 1.2 Replace each `<TableCell>` with `<div role="gridcell" className="...existing-cell-classes...">` — preserve all Tailwind classes verbatim
-  - [ ] 1.3 Replace the action buttons cell `<TableCell>` with a matching `<div role="gridcell">` with `style={{ width: 150, flexShrink: 0 }}`
-  - [ ] 1.4 Remove the `TableRow` and `TableCell` imports from `InlineEntryRow.tsx` (no longer used)
-  - [ ] 1.5 Verify in browser / test: no `<tr>` is produced; no React console warning about invalid DOM nesting
+- [x] Task 1 — Fix `<tr>`-in-`<div>` HTML nesting in `InlineEntryRow` (AC: #5, #6)
+  - [x] 1.1 Replace `<TableRow>` with `<div role="row" className="...existing-bg-classes...">` in `InlineEntryRow.tsx`
+  - [x] 1.2 Replace each `<TableCell>` with `<div role="gridcell" className="...existing-cell-classes...">` — preserve all Tailwind classes verbatim
+  - [x] 1.3 Replace the action buttons cell `<TableCell>` with a matching `<div role="gridcell">` with `style={{ width: 150, flexShrink: 0 }}`
+  - [x] 1.4 Remove the `TableRow` and `TableCell` imports from `InlineEntryRow.tsx` (no longer used)
+  - [x] 1.5 Verify in browser / test: no `<tr>` is produced; no React console warning about invalid DOM nesting
 
-- [ ] Task 2 — Harden N-key guard against double-open (AC: #1)
-  - [ ] 2.1 In `LedgerTable.tsx` keyboard handler (`useEffect` with `window.addEventListener('keydown', ...)`), confirm that the `N`/`n` branch already calls `setIsAddingEntry(true)` — it does — which is idempotent (setting true when already true). Add an explicit guard: `if (isAddingEntry) return;` before `setIsAddingEntry(true)` using a stable ref (pattern already established with `selectedRowRef`). Create `isAddingEntryRef` mirroring `isAddingEntry` so the closure reads the latest value without adding it to the effect dependency array.
-  - [ ] 2.2 Confirm clicking "Add Entry (N)" when the row is already open also does nothing (the button calls `setIsAddingEntry(true)` which is already no-op due to React state batching, but update the `onClick` to `() => { if (!isAddingEntry) setIsAddingEntry(true); }` for explicitness).
+- [x] Task 2 — Harden N-key guard against double-open (AC: #1)
+  - [x] 2.1 In `LedgerTable.tsx` keyboard handler (`useEffect` with `window.addEventListener('keydown', ...)`), confirm that the `N`/`n` branch already calls `setIsAddingEntry(true)` — it does — which is idempotent (setting true when already true). Add an explicit guard: `if (isAddingEntry) return;` before `setIsAddingEntry(true)` using a stable ref (pattern already established with `selectedRowRef`). Create `isAddingEntryRef` mirroring `isAddingEntry` so the closure reads the latest value without adding it to the effect dependency array.
+  - [x] 2.2 Confirm clicking "Add Entry (N)" when the row is already open also does nothing (the button calls `setIsAddingEntry(true)` which is already no-op due to React state batching, but update the `onClick` to `() => { if (!isAddingEntry) setIsAddingEntry(true); }` for explicitness).
 
-- [ ] Task 3 — First-field auto-focus on open (AC: #2, #9)
-  - [ ] 3.1 The existing `useEffect(() => { inputRefs.current[0]?.focus(); }, [])` in `InlineEntryRow.tsx` already fires on mount — verify it still works after the `<div>` refactor in Task 1.
-  - [ ] 3.2 Write a test asserting `document.activeElement` is the first field input immediately after the inline row mounts.
+- [x] Task 3 — First-field auto-focus on open (AC: #2, #9)
+  - [x] 3.1 The existing `useEffect(() => { inputRefs.current[0]?.focus(); }, [])` in `InlineEntryRow.tsx` already fires on mount — verify it still works after the `<div>` refactor in Task 1.
+  - [x] 3.2 Write a test asserting `document.activeElement` is the first field input immediately after the inline row mounts.
 
-- [ ] Task 4 — Escape restores focus to grid (AC: #2)
-  - [ ] 4.1 In `InlineEntryRow.tsx`, the `Escape` handler calls `onCancel()`. After `onCancel()`, `LedgerTable` sets `isAddingEntry = false` which unmounts the row. Add a `focusGridRef` prop OR use a callback pattern: `onCancel` in `LedgerTable.tsx` should call `scrollContainerRef.current?.focus()` after `setIsAddingEntry(false)` to return keyboard focus to the scrollable grid.
-  - [ ] 4.2 Ensure `scrollContainerRef` has `tabIndex={-1}` so it can programmatically receive focus. (Check current markup — add it if absent.)
+- [x] Task 4 — Escape restores focus to grid (AC: #2)
+  - [x] 4.1 In `InlineEntryRow.tsx`, the `Escape` handler calls `onCancel()`. After `onCancel()`, `LedgerTable` sets `isAddingEntry = false` which unmounts the row. Add a `focusGridRef` prop OR use a callback pattern: `onCancel` in `LedgerTable.tsx` should call `scrollContainerRef.current?.focus()` after `setIsAddingEntry(false)` to return keyboard focus to the scrollable grid.
+  - [x] 4.2 Ensure `scrollContainerRef` has `tabIndex={-1}` so it can programmatically receive focus. (Check current markup — add it if absent.)
 
-- [ ] Task 5 — Update test file for inline entry keyboard flows (AC: #7)
-  - [ ] 5.1 Create `tests/dataLabKeyboardInlineEntry.test.tsx`
-  - [ ] 5.2 Write test: N key opens inline row (`fireEvent.keyDown(window, { key: 'n' })` → `Save` button visible)
-  - [ ] 5.3 Write test: second N key press does NOT open a duplicate row (count of `Save` buttons still 1)
-  - [ ] 5.4 Write test: Tab navigates between fields (focus moves from field 0 to field 1)
-  - [ ] 5.5 Write test: Enter on last field submits form and calls `createEntry`
-  - [ ] 5.6 Write test: Escape cancels and removes the inline row from DOM
-  - [ ] 5.7 Write test: Required-field validation shows `Required` error on empty submit
-  - [ ] 5.8 Write test: InlineEntryRow renders `div[role="row"]` not `tr` (use `container.querySelector`)
-  - [ ] 5.9 Write test: first input is focused on mount (`document.activeElement`)
-  - [ ] 5.10 Run full test suite — verify 65 files, ≥ 590 tests (582 baseline + new), 0 failures
+- [x] Task 5 — Update test file for inline entry keyboard flows (AC: #7)
+  - [x] 5.1 Create `tests/dataLabKeyboardInlineEntry.test.tsx`
+  - [x] 5.2 Write test: N key opens inline row (`fireEvent.keyDown(window, { key: 'n' })` → `Save` button visible)
+  - [x] 5.3 Write test: second N key press does NOT open a duplicate row (count of `Save` buttons still 1)
+  - [x] 5.4 Write test: Tab navigates between fields (focus moves from field 0 to field 1)
+  - [x] 5.5 Write test: Enter on last field submits form and calls `createEntry`
+  - [x] 5.6 Write test: Escape cancels and removes the inline row from DOM
+  - [x] 5.7 Write test: Required-field validation shows `Required` error on empty submit
+  - [x] 5.8 Write test: InlineEntryRow renders `div[role="row"]` not `tr` (use `container.querySelector`)
+  - [x] 5.9 Write test: first input is focused on mount (`document.activeElement`)
+  - [x] 5.10 Run full test suite — verify 65 files, ≥ 590 tests (582 baseline + new), 0 failures
 
-- [ ] Task 6 — TypeScript validation (AC: #8)
-  - [ ] 6.1 Run `npx tsc --noEmit` — fix any type errors introduced by the `<div>` refactor (e.g., `className` on `<div>` vs. Shadcn props, removed import types)
-  - [ ] 6.2 Ensure `FieldInput` `ref` typing still works; `React.forwardRef` with `HTMLInputElement | HTMLSelectElement | HTMLButtonElement` union is unchanged
+- [x] Task 6 — TypeScript validation (AC: #8)
+  - [x] 6.1 Run `npx tsc --noEmit` — fix any type errors introduced by the `<div>` refactor (e.g., `className` on `<div>` vs. Shadcn props, removed import types)
+  - [x] 6.2 Ensure `FieldInput` `ref` typing still works; `React.forwardRef` with `HTMLInputElement | HTMLSelectElement | HTMLButtonElement` union is unchanged
 
-- [ ] Task 7 — Commit flash for new entries (verify parity) (AC: #4)
-  - [ ] 7.1 Confirm `onComplete` callback in `LedgerTable.tsx` (add mode) already sets `recentlyCommittedId` and clears after 2 s — it does (lines 369–375). No code change needed; cover with a test.
-  - [ ] 7.2 Write a test in `dataLabKeyboardInlineEntry.test.tsx` asserting that after successful save the committed entry row receives `animate-slide-down-row` class within the 2s window (mock `setTimeout`/`vi.useFakeTimers`).
+- [x] Task 7 — Commit flash for new entries (verify parity) (AC: #4)
+  - [x] 7.1 Confirm `onComplete` callback in `LedgerTable.tsx` (add mode) already sets `recentlyCommittedId` and clears after 2 s — it does (lines 369–375). No code change needed; cover with a test.
+  - [x] 7.2 Write a test in `dataLabKeyboardInlineEntry.test.tsx` asserting that after successful save the committed entry row receives `animate-slide-down-row` class within the 2s window (mock `setTimeout`/`vi.useFakeTimers`).
 
 ## Dev Notes
 
@@ -281,4 +281,16 @@ claude-sonnet-4.6
 
 ### Completion Notes List
 
+- All 7 tasks completed. InlineEntryRow.tsx now renders `<div role="row">` / `<div role="gridcell">` — no `<tr>/<td>` produced, HTML nesting warning eliminated.
+- `isAddingEntryRef` added to LedgerTable.tsx; N-key handler and Add Entry button both guard against double-open.
+- `tabIndex={-1}` added to scrollContainerRef div; `onCancel` in add-mode restores focus to the grid container.
+- Edit-mode virtualizer row `role="row"` suppressed when editing (`role={isEditing ? undefined : "row"}`) to avoid nested role="row".
+- Outer `<div>` wrapper around add-mode InlineEntryRow removed.
+- 9 tests created in `tests/dataLabKeyboardInlineEntry.test.tsx` (≥8 required).
+- Final test run: 66 files, 591 passed, 1 skipped, 0 failed. `npx tsc --noEmit` emits 0 errors.
+
 ### File List
+
+- `src/features/ledger/InlineEntryRow.tsx` — Replaced TableRow/TableCell with div[role="row"]/div[role="gridcell"]; removed unused imports
+- `src/features/ledger/LedgerTable.tsx` — Added isAddingEntryRef; hardened N-key guard; tabIndex={-1} on scrollContainerRef; onCancel focus restore; edit-mode role fix; removed add-mode outer div wrapper
+- `tests/dataLabKeyboardInlineEntry.test.tsx` — Created new test file with 9 tests

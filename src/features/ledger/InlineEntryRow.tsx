@@ -3,7 +3,6 @@ import { LedgerSchema, SchemaField, LedgerEntry } from '../../types/ledger';
 import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { RelationCombobox } from './RelationCombobox';
-import { TableRow, TableCell } from '../../components/ui/table';
 
 interface InlineEntryRowProps {
     schema: LedgerSchema;
@@ -122,11 +121,16 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
     };
 
     return (
-        <TableRow className="bg-emerald-50 dark:bg-emerald-900/10 animate-in slide-in-from-top-2 duration-150">
+        <div
+            role="row"
+            className="flex bg-emerald-50 dark:bg-emerald-900/10 animate-in slide-in-from-top-2 duration-150"
+        >
             {schema.fields.map((field, index) => (
-                <TableCell
+                <div
                     key={field.name}
+                    role="gridcell"
                     className="p-2 relative border-r border-zinc-200 dark:border-zinc-800 last:border-r-0"
+                    style={{ width: 150, flexShrink: 0 }}
                 >
                     <FieldInput
                         ref={el => { inputRefs.current[index] = el; }}
@@ -137,10 +141,10 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
                         error={errors[field.name]}
                         targetEntries={targetEntries}
                     />
-                </TableCell>
+                </div>
             ))}
             {/* Action buttons/Error display cell */}
-            <TableCell className="p-2 w-[150px]">
+            <div role="gridcell" className="p-2" style={{ width: 150, flexShrink: 0 }}>
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                         <button
@@ -164,8 +168,8 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
                         </div>
                     )}
                 </div>
-            </TableCell>
-        </TableRow>
+            </div>
+        </div>
     );
 };
 
