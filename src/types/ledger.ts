@@ -50,11 +50,23 @@ export interface LedgerEntry extends LedgyDocument {
     schemaId: string;
     ledgerId: string;
     data: Record<string, unknown>;
+    backLinks?: BackLinkMetadata[];
     data_enc?: {
         iv: number[];
         ciphertext: number[];
     };
     profileId: string;
+}
+
+/**
+ * Derived backlink index metadata written on relation targets.
+ * This is recomputable from source entries relation fields.
+ */
+export interface BackLinkMetadata {
+    sourceEntryId: string;
+    sourceSchemaId: string;
+    sourceLedgerId: string;
+    relationField: string;
 }
 
 /**

@@ -238,7 +238,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
             const db = getProfileDb(state.activeProfileId);
             const entry = await db.getDocument<any>(entryId);
-            await delete_entry(db, entryId);
+            await delete_entry(db, entryId, useAuthStore.getState().encryptionKey || undefined);
 
             // Refresh entries for the ledger
             await get().fetchEntries(state.activeProfileId, entry.ledgerId);
@@ -260,7 +260,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
             const db = getProfileDb(state.activeProfileId);
             const entry = await db.getDocument<any>(entryId);
-            await restore_entry(db, entryId);
+            await restore_entry(db, entryId, useAuthStore.getState().encryptionKey || undefined);
 
             // Refresh entries for the ledger
             await get().fetchEntries(state.activeProfileId, entry.ledgerId);

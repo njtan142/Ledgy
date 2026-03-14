@@ -68,7 +68,7 @@ export function buildZodSchemaFromLedger(
         break;
       }
       case "relation":
-        base = z.string();
+        base = z.union([z.string(), z.array(z.string())]);
         break;
       default:
         base = z.unknown();

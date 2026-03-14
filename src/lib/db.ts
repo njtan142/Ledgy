@@ -448,7 +448,7 @@ export async function delete_project(db: Database, projectId: string): Promise<v
 
 // ==================== LEDGER SCHEMA OPERATIONS ====================
 
-import { LedgerSchema, SchemaField, EncryptedLedgerSchemaMetadata, LedgerEntry } from '../types/ledger';
+import { LedgerSchema, SchemaField, EncryptedLedgerSchemaMetadata, LedgerEntry, BackLinkMetadata } from '../types/ledger';
 import { migrateEntryData } from './migration';
 
 /**
@@ -596,6 +596,223 @@ export async function get_entry(db: Database, entryId: string): Promise<LedgerEn
     return entry;
 }
 
+type RelationTargetsByEntryId = Map<string, Set<string>>;
+
+interface BackLinkSourceContext {
+    sourceEntryId: string;
+    sourceSchemaId: string;
+    sourceLedgerId: string;
+}
+
+function getRelationFieldNames(schema: LedgerSchema): string[] {
+    return schema.fields
+        .filter((field) => field.type === 'relation')
+        .map((field) => field.name);
+}
+
+function normalizeRelationTargetIds(value: unknown): string[] {
+    if (typeof value === 'string' && value.trim().length > 0) {
+        return [value];
+    }
+
+    if (Array.isArray(value)) {
+        return value
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    }
+
+    return [];
+}
+
+function extractRelationTargets(
+    data: Record<string, unknown>,
+    schema: LedgerSchema
+): RelationTargetsByEntryId {
+    const relationTargetsByEntryId: RelationTargetsByEntryId = new Map();
+
+    for (const fieldName of getRelationFieldNames(schema)) {
+        const targetIds = normalizeRelationTargetIds(data[fieldName]);
+        for (const targetId of targetIds) {
+            if (!relationTargetsByEntryId.has(targetId)) {
+                relationTargetsByEntryId.set(targetId, new Set());
+            }
+            relationTargetsByEntryId.get(targetId)!.add(fieldName);
+        }
+    }
+
+    return relationTargetsByEntryId;
+}
+
+function diffRelationTargets(
+    previousTargets: RelationTargetsByEntryId,
+    nextTargets: RelationTargetsByEntryId
+): { added: RelationTargetsByEntryId; removed: RelationTargetsByEntryId } {
+    const added: RelationTargetsByEntryId = new Map();
+    const removed: RelationTargetsByEntryId = new Map();
+    const targetIds = new Set([...previousTargets.keys(), ...nextTargets.keys()]);
+
+    for (const targetId of targetIds) {
+        const previousFields = previousTargets.get(targetId) ?? new Set<string>();
+        const nextFields = nextTargets.get(targetId) ?? new Set<string>();
+
+        const addedFields = new Set<string>(
+            [...nextFields].filter((fieldName) => !previousFields.has(fieldName))
+        );
+        const removedFields = new Set<string>(
+            [...previousFields].filter((fieldName) => !nextFields.has(fieldName))
+        );
+
+        if (addedFields.size > 0) {
+            added.set(targetId, addedFields);
+        }
+
+        if (removedFields.size > 0) {
+            removed.set(targetId, removedFields);
+        }
+    }
+
+    return { added, removed };
+}
+
+function buildBackLinkRecord(
+    source: BackLinkSourceContext,
+    relationField: string
+): BackLinkMetadata {
+    return {
+        sourceEntryId: source.sourceEntryId,
+        sourceSchemaId: source.sourceSchemaId,
+        sourceLedgerId: source.sourceLedgerId,
+        relationField,
+    };
+}
+
+function backLinkIdentity(backLink: BackLinkMetadata): string {
+    return `${backLink.sourceEntryId}::${backLink.sourceSchemaId}::${backLink.sourceLedgerId}::${backLink.relationField}`;
+}
+
+function normalizeBackLinks(backLinks: BackLinkMetadata[]): BackLinkMetadata[] {
+    const byIdentity = new Map<string, BackLinkMetadata>();
+    for (const backLink of backLinks) {
+        byIdentity.set(backLinkIdentity(backLink), backLink);
+    }
+
+    return [...byIdentity.values()].sort((a, b) =>
+        backLinkIdentity(a).localeCompare(backLinkIdentity(b))
+    );
+}
+
+function applyBackLinkChanges(
+    existingBackLinks: BackLinkMetadata[] | undefined,
+    source: BackLinkSourceContext,
+    addedFields: Set<string>,
+    removedFields: Set<string>
+): BackLinkMetadata[] {
+    const filteredExisting = (existingBackLinks ?? []).filter((backLink) => {
+        if (backLink.sourceEntryId !== source.sourceEntryId) {
+            return true;
+        }
+        return !removedFields.has(backLink.relationField);
+    });
+
+    const additions = [...addedFields].map((relationField) =>
+        buildBackLinkRecord(source, relationField)
+    );
+
+    return normalizeBackLinks([...filteredExisting, ...additions]);
+}
+
+function areBackLinksEqual(a: BackLinkMetadata[] | undefined, b: BackLinkMetadata[] | undefined): boolean {
+    const left = normalizeBackLinks(a ?? []);
+    const right = normalizeBackLinks(b ?? []);
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((value, index) => backLinkIdentity(value) === backLinkIdentity(right[index]));
+}
+
+async function getRelationDataForEntry(
+    entry: LedgerEntry,
+    encryptionKey?: CryptoKey
+): Promise<Record<string, unknown>> {
+    if (!entry.data_enc) {
+        return entry.data;
+    }
+
+    if (!encryptionKey) {
+        throw new Error(`Cannot reconcile relation backlinks for encrypted entry without encryption key: ${entry._id}`);
+    }
+
+    const decryptedEntry = await decryptLedgerEntry(entry, encryptionKey);
+    return decryptedEntry.data;
+}
+
+async function reconcileBackLinksForSource(
+    db: Database,
+    source: BackLinkSourceContext,
+    previousTargets: RelationTargetsByEntryId,
+    nextTargets: RelationTargetsByEntryId
+): Promise<void> {
+    const { added, removed } = diffRelationTargets(previousTargets, nextTargets);
+    const targetIds = [...new Set([...added.keys(), ...removed.keys()])].sort((a, b) => a.localeCompare(b));
+
+    if (targetIds.length === 0) {
+        return;
+    }
+
+    const docsById = await Promise.all(
+        targetIds.map(async (targetId) => ({
+            targetId,
+            doc: await db.getDocument<LedgerEntry>(targetId),
+        }))
+    );
+
+    const patches: Array<{ id: string; data: Record<string, unknown> }> = [];
+    for (const { targetId, doc } of docsById) {
+        if (!doc) {
+            useErrorStore.getState().dispatchError(
+                `Backlink sync skipped: target entry not found (${targetId})`,
+                'warning'
+            );
+            continue;
+        }
+
+        if (doc.isDeleted) {
+            useErrorStore.getState().dispatchError(
+                `Backlink sync skipped: target entry is soft-deleted (${targetId})`,
+                'warning'
+            );
+            continue;
+        }
+
+        const nextBackLinks = applyBackLinkChanges(
+            doc.backLinks,
+            source,
+            added.get(targetId) ?? new Set<string>(),
+            removed.get(targetId) ?? new Set<string>()
+        );
+
+        if (!areBackLinksEqual(doc.backLinks, nextBackLinks)) {
+            patches.push({
+                id: targetId,
+                data: { backLinks: nextBackLinks },
+            });
+        }
+    }
+
+    if (patches.length === 0) {
+        return;
+    }
+
+    const results = await db.bulkPatchDocuments(patches);
+    const failed = results.filter((result) => !('ok' in result && result.ok));
+    if (failed.length > 0) {
+        useErrorStore.getState().dispatchError(
+            `Backlink reconciliation failed for ${failed.length} target entr${failed.length === 1 ? 'y' : 'ies'}.`,
+            'error'
+        );
+        throw new Error('Backlink reconciliation failed due to bulk patch errors.');
+    }
+}
+
 /**
  * Creates a new ledger entry document.
  * @param db - Profile database instance
@@ -613,34 +830,52 @@ export async function create_entry(
     profileId: string,
     encryptionKey?: CryptoKey
 ): Promise<string> {
-    const schema = await get_schema(db, schemaId);
-    const validatedData = validateEntryAgainstSchema(data, schema);
+    try {
+        const schema = await get_schema(db, schemaId);
+        const validatedData = validateEntryAgainstSchema(data, schema);
+        const sourceTargets = extractRelationTargets(validatedData, schema);
 
-    const entryData: any = {
-        schemaId,
-        ledgerId,
-        profileId,
-    };
-
-    if (encryptionKey) {
-        // Zero-knowledge sync: Encrypt payload before storage
-        const result = await encryptPayload(encryptionKey, JSON.stringify(validatedData));
-        entryData.data_enc = {
-            iv: result.iv,
-            ciphertext: Array.from(new Uint8Array(result.ciphertext))
+        const entryData: Omit<LedgerEntry, keyof LedgyDocument> = {
+            schemaId,
+            ledgerId,
+            profileId,
+            data: validatedData,
         };
-        // Keep an empty data object for type compatibility
-        entryData.data = {};
-    } else {
-        entryData.data = validatedData;
-    }
 
-    const response = await db.createDocument<LedgerEntry>('entry', entryData);
+        if (encryptionKey) {
+            // Zero-knowledge sync: Encrypt payload before storage
+            const result = await encryptPayload(encryptionKey, JSON.stringify(validatedData));
+            entryData.data_enc = {
+                iv: result.iv,
+                ciphertext: Array.from(new Uint8Array(result.ciphertext))
+            };
+            // Keep an empty data object for type compatibility
+            entryData.data = {};
+        }
 
-    if (!response.ok) {
-        throw new Error('Failed to create entry document');
+        const response = await db.createDocument<LedgerEntry>('entry', entryData);
+
+        if (!response.ok) {
+            throw new Error('Failed to create entry document');
+        }
+
+        await reconcileBackLinksForSource(
+            db,
+            {
+                sourceEntryId: response.id,
+                sourceSchemaId: schemaId,
+                sourceLedgerId: ledgerId,
+            },
+            new Map(),
+            sourceTargets
+        );
+
+        return response.id;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to create entry';
+        useErrorStore.getState().dispatchError(message, 'error');
+        throw error;
     }
-    return response.id;
 }
 
 /**
@@ -656,22 +891,46 @@ export async function update_entry(
     data: Record<string, unknown>,
     encryptionKey?: CryptoKey
 ): Promise<void> {
-    const existingEntry = await get_entry(db, entryId);
-    const schema = await get_schema(db, existingEntry.schemaId);
-    const validatedData = validateEntryAgainstSchema(data, schema);
+    try {
+        const existingEntry = await get_entry(db, entryId);
+        const schema = await get_schema(db, existingEntry.schemaId);
+        const previousData = await getRelationDataForEntry(existingEntry, encryptionKey);
+        const previousTargets = existingEntry.isDeleted
+            ? new Map<string, Set<string>>()
+            : extractRelationTargets(previousData, schema);
 
-    if (encryptionKey) {
-        const result = await encryptPayload(encryptionKey, JSON.stringify(validatedData));
-        const entryUpdate: any = {
-            data_enc: {
-                iv: result.iv,
-                ciphertext: Array.from(new Uint8Array(result.ciphertext))
+        const validatedData = validateEntryAgainstSchema(data, schema);
+        const nextTargets = existingEntry.isDeleted
+            ? new Map<string, Set<string>>()
+            : extractRelationTargets(validatedData, schema);
+
+        if (encryptionKey) {
+            const result = await encryptPayload(encryptionKey, JSON.stringify(validatedData));
+            await db.updateDocument(entryId, {
+                data_enc: {
+                    iv: result.iv,
+                    ciphertext: Array.from(new Uint8Array(result.ciphertext))
+                },
+                data: {}
+            });
+        } else {
+            await db.updateDocument(entryId, { data: validatedData });
+        }
+
+        await reconcileBackLinksForSource(
+            db,
+            {
+                sourceEntryId: existingEntry._id,
+                sourceSchemaId: existingEntry.schemaId,
+                sourceLedgerId: existingEntry.ledgerId,
             },
-            data: {} // Clear plaintext data if previously present
-        };
-        await db.updateDocument(entryId, entryUpdate);
-    } else {
-        await db.updateDocument(entryId, { data: validatedData });
+            previousTargets,
+            nextTargets
+        );
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to update entry';
+        useErrorStore.getState().dispatchError(message, 'error');
+        throw error;
     }
 }
 
@@ -842,11 +1101,39 @@ export async function decryptLedgerEntry(
  * @param db - Profile database instance
  * @param entryId - Entry document ID
  */
-export async function delete_entry(db: Database, entryId: string): Promise<void> {
-    await db.updateDocument(entryId, {
-        isDeleted: true,
-        deletedAt: new Date().toISOString(),
-    });
+export async function delete_entry(
+    db: Database,
+    entryId: string,
+    encryptionKey?: CryptoKey
+): Promise<void> {
+    try {
+        const entry = await get_entry(db, entryId);
+        const schema = await get_schema(db, entry.schemaId);
+        const sourceTargets = extractRelationTargets(
+            await getRelationDataForEntry(entry, encryptionKey),
+            schema
+        );
+
+        await db.updateDocument(entryId, {
+            isDeleted: true,
+            deletedAt: new Date().toISOString(),
+        });
+
+        await reconcileBackLinksForSource(
+            db,
+            {
+                sourceEntryId: entry._id,
+                sourceSchemaId: entry.schemaId,
+                sourceLedgerId: entry.ledgerId,
+            },
+            sourceTargets,
+            new Map()
+        );
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to delete entry';
+        useErrorStore.getState().dispatchError(message, 'error');
+        throw error;
+    }
 }
 
 /**
@@ -854,11 +1141,39 @@ export async function delete_entry(db: Database, entryId: string): Promise<void>
  * @param db - Profile database instance
  * @param entryId - Entry document ID to restore
  */
-export async function restore_entry(db: Database, entryId: string): Promise<void> {
-    await db.updateDocument(entryId, {
-        isDeleted: false,
-        deletedAt: undefined,
-    });
+export async function restore_entry(
+    db: Database,
+    entryId: string,
+    encryptionKey?: CryptoKey
+): Promise<void> {
+    try {
+        const entry = await get_entry(db, entryId);
+        const schema = await get_schema(db, entry.schemaId);
+        const sourceTargets = extractRelationTargets(
+            await getRelationDataForEntry(entry, encryptionKey),
+            schema
+        );
+
+        await db.updateDocument(entryId, {
+            isDeleted: false,
+            deletedAt: undefined,
+        });
+
+        await reconcileBackLinksForSource(
+            db,
+            {
+                sourceEntryId: entry._id,
+                sourceSchemaId: entry.schemaId,
+                sourceLedgerId: entry.ledgerId,
+            },
+            new Map(),
+            sourceTargets
+        );
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to restore entry';
+        useErrorStore.getState().dispatchError(message, 'error');
+        throw error;
+    }
 }
 
 /**

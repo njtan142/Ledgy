@@ -1,6 +1,6 @@
 # Story 3.13: Bidirectional Link Writing
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,39 +34,39 @@ so that linked context remains consistent, discoverable, and resilient across ed
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Introduce backlink metadata contract in data layer
-  - [ ] 1.1 Add typed backlink metadata shape (entry-level metadata, not schema field data) in `src/types/ledger.ts`
-  - [ ] 1.2 Ensure contract does not violate PouchDB reserved field rules and existing validation helpers
-  - [ ] 1.3 Document merge rules for backlink metadata (idempotent set behavior)
+- [x] Task 1 — Introduce backlink metadata contract in data layer
+  - [x] 1.1 Add typed backlink metadata shape (entry-level metadata, not schema field data) in `src/types/ledger.ts`
+  - [x] 1.2 Ensure contract does not violate PouchDB reserved field rules and existing validation helpers
+  - [x] 1.3 Document merge rules for backlink metadata (idempotent set behavior)
 
-- [ ] Task 2 — Implement relation extraction + diff helpers
-  - [ ] 2.1 Add helper to extract normalized relation target IDs from entry data using schema relation fields only
-  - [ ] 2.2 Add helper to diff previous vs next relation target sets
-  - [ ] 2.3 Add helper to build deterministic backlink patch payloads (add/remove)
+- [x] Task 2 — Implement relation extraction + diff helpers
+  - [x] 2.1 Add helper to extract normalized relation target IDs from entry data using schema relation fields only
+  - [x] 2.2 Add helper to diff previous vs next relation target sets
+  - [x] 2.3 Add helper to build deterministic backlink patch payloads (add/remove)
 
-- [ ] Task 3 — Wire bidirectional sync into entry write lifecycle
-  - [ ] 3.1 In `create_entry`, after schema validation and successful write of source entry, apply backlink add patches to targets
-  - [ ] 3.2 In `update_entry`, load existing entry first, compute relation delta, apply add/remove patches atomically
-  - [ ] 3.3 In `delete_entry`/`restore_entry`, reconcile backlinks based on effective active state
-  - [ ] 3.4 Route failures through `useErrorStore.dispatchError` patterns already used in `db.ts`
+- [x] Task 3 — Wire bidirectional sync into entry write lifecycle
+  - [x] 3.1 In `create_entry`, after schema validation and successful write of source entry, apply backlink add patches to targets
+  - [x] 3.2 In `update_entry`, load existing entry first, compute relation delta, apply add/remove patches atomically
+  - [x] 3.3 In `delete_entry`/`restore_entry`, reconcile backlinks based on effective active state
+  - [x] 3.4 Route failures through `useErrorStore.dispatchError` patterns already used in `db.ts`
 
-- [ ] Task 4 — Preserve existing backlink UX behavior
-  - [ ] 4.1 Keep `find_entries_with_relation_to` usable as fallback for current UI behavior
-  - [ ] 4.2 Ensure `BackLinksPanel` displays consistent counts after create/update/delete/restore flows
-  - [ ] 4.3 Validate compatibility with ghost-reference rendering in `LedgerTable` / `RelationTagChip`
+- [x] Task 4 — Preserve existing backlink UX behavior
+  - [x] 4.1 Keep `find_entries_with_relation_to` usable as fallback for current UI behavior
+  - [x] 4.2 Ensure `BackLinksPanel` displays consistent counts after create/update/delete/restore flows
+  - [x] 4.3 Validate compatibility with ghost-reference rendering in `LedgerTable` / `RelationTagChip`
 
-- [ ] Task 5 — Add focused regression test suite
-  - [ ] 5.1 Create `tests/bidirectionalLinkWriting.test.ts`
-  - [ ] 5.2 Cover create-time backlink writes (single + multi relation)
-  - [ ] 5.3 Cover update-time add/remove reconciliation
-  - [ ] 5.4 Cover soft-delete + restore backlink lifecycle
-  - [ ] 5.5 Cover idempotency (no duplicate backlinks) and missing-target handling
-  - [ ] 5.6 Ensure existing tests (`tests/SoftDelete.test.ts`, `tests/BackLinksPanel.test.tsx`) still pass
+- [x] Task 5 — Add focused regression test suite
+  - [x] 5.1 Create `tests/bidirectionalLinkWriting.test.ts`
+  - [x] 5.2 Cover create-time backlink writes (single + multi relation)
+  - [x] 5.3 Cover update-time add/remove reconciliation
+  - [x] 5.4 Cover soft-delete + restore backlink lifecycle
+  - [x] 5.5 Cover idempotency (no duplicate backlinks) and missing-target handling
+  - [x] 5.6 Ensure existing tests (`tests/SoftDelete.test.ts`, `tests/BackLinksPanel.test.tsx`) still pass
 
-- [ ] Task 6 — Validate and stabilize
-  - [ ] 6.1 Run `npx vitest run tests/bidirectionalLinkWriting.test.ts tests/SoftDelete.test.ts tests/BackLinksPanel.test.tsx`
-  - [ ] 6.2 Run `npx tsc --noEmit`
-  - [ ] 6.3 Update any story notes if implementation reveals hidden edge cases
+- [x] Task 6 — Validate and stabilize
+  - [x] 6.1 Run `npx vitest run tests/bidirectionalLinkWriting.test.ts tests/SoftDelete.test.ts tests/BackLinksPanel.test.tsx`
+  - [x] 6.2 Run `npx tsc --noEmit`
+  - [x] 6.3 Update any story notes if implementation reveals hidden edge cases
 
 ## Dev Notes
 
@@ -165,9 +165,9 @@ so that linked context remains consistent, discoverable, and resilient across ed
 
 ## Story Completion Status
 
-- Story document generated with comprehensive developer context and guardrails.
-- Story status set to: `ready-for-dev`.
-- Completion note: **Ultimate context engine analysis completed - comprehensive developer guide created.**
+- Story implemented with bidirectional backlink write/reconcile logic in entry lifecycle paths.
+- Story status set to: `review`.
+- Completion note: **Backlink metadata is now maintained idempotently on relation targets across create/update/delete/restore, with schema-aware extraction and batched writes.**
 
 ## Dev Agent Record
 
@@ -188,10 +188,25 @@ GPT-5.3-Codex (model ID: gpt-5.3-codex)
 - [x] Previous story intelligence incorporated
 - [x] Latest package version intelligence incorporated
 - [x] Story scaffolded with implementation-ready tasks and guardrails
+- [x] Added backlink metadata contract (`BackLinkMetadata`) to entry type and updated relation validation to support single/multi values
+- [x] Implemented schema-aware relation extraction/diff and deterministic backlink merge helpers in `src/lib/db.ts`
+- [x] Wired backlink reconciliation into `create_entry`, `update_entry`, `delete_entry`, and `restore_entry` with warning/error routing via `useErrorStore`
+- [x] Added regression suite `tests/bidirectionalLinkWriting.test.ts` for create/update/delete/restore/idempotency/missing-target and fallback query compatibility
+- [x] Validation run: targeted story tests passed; `npx tsc --noEmit` passed; `npm run build` passed
+- [x] Full `npm run test` run showed pre-existing unrelated failures in long-running suite (e.g., `src/lib/crypto.test.ts`, `tests/dataLabHeaderSorting.test.tsx`, `tests/dataLabBulkSelection.test.tsx`, `tests/SchemaBuilder.test.tsx`)
+
+### Change Log
+
+- 2026-03-14: Implemented bidirectional backlink writing with deterministic reconciliation and added focused regression coverage for Story 3.13.
 
 ### File List
 
-- `_bmad-output/implementation-artifacts/3-13-bidirectional-link-writing.md` (created)
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated to ready-for-dev)
+- `src/types/ledger.ts` (modified)
+- `src/lib/validation.ts` (modified)
+- `src/lib/db.ts` (modified)
+- `src/stores/useLedgerStore.ts` (modified)
+- `tests/bidirectionalLinkWriting.test.ts` (added)
+- `_bmad-output/implementation-artifacts/3-13-bidirectional-link-writing.md` (updated)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated to `review`)
 
 
