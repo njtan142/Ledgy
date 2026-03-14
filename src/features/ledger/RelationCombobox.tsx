@@ -2,6 +2,38 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LedgerEntry } from '../../types/ledger';
 import { Check, ChevronDown } from 'lucide-react';
 
+export const MAX_RESULTS = 50;
+
+/**
+ * Fuzzy-match `query` against `text`. Returns a score ≥ 0 on match, -1 on no match.
+ * Tier 1 (highest): exact substring match → score = 100 + (text.length - query.length)
+ * Tier 2: subsequence match → score = sum of consecutive-character run lengths
+ * All comparisons are case-insensitive.
+ */
+export function fuzzyScore(text: string, query: string): number {
+    if (query === '') return 0;
+    const t = text.toLowerCase();
+    const q = query.toLowerCase();
+
+    // Tier 1: substring
+    if (t.includes(q)) return 1000 - (t.length - q.length);
+
+    // Tier 2: subsequence
+    let score = 0;
+    let consecutive = 0;
+    let qi = 0;
+    for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+        if (t[ti] === q[qi]) {
+            qi++;
+            consecutive++;
+            score += consecutive;
+        } else {
+            consecutive = 0;
+        }
+    }
+    return qi === q.length ? score : -1;
+}
+
 interface RelationComboboxProps {
     entries: LedgerEntry[];
     value?: string | string[];
@@ -14,7 +46,7 @@ interface RelationComboboxProps {
 
 /**
  * Combobox for selecting related entries.
- * Supports single or multiple selection with search/filter.
+ * Supports single or multiple selection with fuzzy search/filter.
  */
 export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComboboxProps>(({
     entries,
@@ -23,7 +55,6 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
     placeholder = 'Select entry...',
     allowMultiple = false,
     getDisplayValue = (entry) => {
-        // Try to get a display value from the entry data
         const data = entry.data || {};
         const firstValue = Object.values(data)[0];
         return firstValue ? String(firstValue) : entry._id;
@@ -38,11 +69,35 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
 
     const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
 
-    // Filter entries based on search
-    const filteredEntries = entries.filter((entry) => {
-        const displayValue = getDisplayValue(entry);
-        return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+    // Defer filter computation so rapid typing never blocks the search input
+    const deferredSearchTerm = React.useDeferredValue(searchTerm);
+
+    const { visibleEntries, totalCount } = (() => {
+        if (!deferredSearchTerm) {
+            return { visibleEntries: entries.slice(0, MAX_RESULTS), totalCount: entries.length };
+        }
+        const scored = entries
+            .map(entry => ({ entry, score: fuzzyScore(getDisplayValue(entry), deferredSearchTerm) }))
+            .filter(({ score }) => score >= 0)
+            .sort((a, b) => b.score - a.score);
+        return {
+            visibleEntries: scored.slice(0, MAX_RESULTS).map(({ entry }) => entry),
+            totalCount: scored.length,
+        };
+    })();
+    const isOverflowing = totalCount > MAX_RESULTS;
+
+    // Build trigger label from selected entry display values
+    const selectedDisplay = (() => {
+        if (selectedValues.length === 0) return null;
+        const names = selectedValues
+            .map(id => entries.find(e => e._id === id))
+            .filter((e): e is LedgerEntry => Boolean(e))
+            .map(e => getDisplayValue(e));
+        if (names.length === 0) return `${selectedValues.length} selected`;
+        if (names.length <= 2) return names.join(', ');
+        return `${names[0]} +${names.length - 1} more`;
+    })();
 
     // Close on outside click
     useEffect(() => {
@@ -77,7 +132,7 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                setHighlightedIndex((prev) => Math.min(prev + 1, filteredEntries.length - 1));
+                setHighlightedIndex((prev) => Math.min(prev + 1, visibleEntries.length - 1));
                 break;
             case 'ArrowUp':
                 e.preventDefault();
@@ -85,8 +140,8 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                 break;
             case 'Enter':
                 e.preventDefault();
-                if (highlightedIndex >= 0 && filteredEntries[highlightedIndex]) {
-                    handleSelect(filteredEntries[highlightedIndex]._id);
+                if (highlightedIndex >= 0 && visibleEntries[highlightedIndex]) {
+                    handleSelect(visibleEntries[highlightedIndex]._id);
                 }
                 break;
             case 'Escape':
@@ -108,9 +163,7 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                 aria-haspopup="listbox"
             >
                 <span className="truncate">
-                    {selectedValues.length > 0
-                        ? `${selectedValues.length} selected`
-                        : placeholder}
+                    {selectedDisplay ?? placeholder}
                 </span>
                 <ChevronDown size={14} className={`text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -123,7 +176,10 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                         ref={inputRef}
                         type="text"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setHighlightedIndex(-1);
+                        }}
                         onKeyDown={handleKeyDown}
                         placeholder="Search entries..."
                         className="w-full px-3 py-2 bg-zinc-800 border-b border-zinc-700 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -136,33 +192,40 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                         className="overflow-y-auto max-h-48"
                         aria-activedescendant={highlightedIndex >= 0 ? `option-${highlightedIndex}` : undefined}
                     >
-                        {filteredEntries.length === 0 ? (
+                        {visibleEntries.length === 0 ? (
                             <li className="px-3 py-2 text-sm text-zinc-500">No entries found</li>
                         ) : (
-                            filteredEntries.map((entry, index) => {
-                                const displayValue = getDisplayValue(entry);
-                                const isSelected = selectedValues.includes(entry._id);
+                            <>
+                                {visibleEntries.map((entry, index) => {
+                                    const displayValue = getDisplayValue(entry);
+                                    const isSelected = selectedValues.includes(entry._id);
 
-                                return (
-                                    <li
-                                        key={entry._id}
-                                        id={`option-${index}`}
-                                        role="option"
-                                        aria-selected={isSelected}
-                                        onClick={() => handleSelect(entry._id)}
-                                        className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
-                                            index === highlightedIndex
-                                                ? 'bg-emerald-900/50'
-                                                : 'hover:bg-zinc-800'
-                                        } ${isSelected ? 'bg-emerald-900/30' : ''}`}
-                                    >
-                                        <span className="text-sm text-zinc-200 truncate flex-1">
-                                            {displayValue}
-                                        </span>
-                                        {isSelected && <Check size={14} className="text-emerald-500 ml-2" />}
+                                    return (
+                                        <li
+                                            key={entry._id}
+                                            id={`option-${index}`}
+                                            role="option"
+                                            aria-selected={isSelected}
+                                            onClick={() => handleSelect(entry._id)}
+                                            className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
+                                                index === highlightedIndex
+                                                    ? 'bg-emerald-900/50'
+                                                    : 'hover:bg-zinc-800'
+                                            } ${isSelected ? 'bg-emerald-900/30' : ''}`}
+                                        >
+                                            <span className="text-sm text-zinc-200 truncate flex-1">
+                                                {displayValue}
+                                            </span>
+                                            {isSelected && <Check size={14} className="text-emerald-500 ml-2" />}
+                                        </li>
+                                    );
+                                })}
+                                {isOverflowing && (
+                                    <li className="px-3 py-1.5 text-xs text-zinc-500 border-t border-zinc-800 select-none">
+                                        Showing {MAX_RESULTS} of {totalCount} — type to filter
                                     </li>
-                                );
-                            })
+                                )}
+                            </>
                         )}
                     </ul>
                 </div>

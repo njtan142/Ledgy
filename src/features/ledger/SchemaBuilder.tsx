@@ -334,14 +334,14 @@ export const SchemaBuilder: React.FC<SchemaBuilderProps> = ({ projectId, onClose
                                                         </span>
                                                     </span>
                                                     <Select
-                                                        value={field.dateFormat ?? ''}
-                                                        onValueChange={(value) => updateField(index, { dateFormat: (value || undefined) as 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ssZ' | undefined })}
+                                                        value={field.dateFormat ?? '__none__'}
+                                                        onValueChange={(value) => updateField(index, { dateFormat: (value === '__none__' ? undefined : value) as 'YYYY-MM-DD' | 'YYYY-MM-DDTHH:mm:ssZ' | undefined })}
                                                     >
                                                         <SelectTrigger className="w-[200px] h-7 text-xs bg-white dark:bg-zinc-950">
                                                             <SelectValue placeholder="Any valid date" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="">Any valid date (no constraint)</SelectItem>
+                                                            <SelectItem value="__none__">Any valid date (no constraint)</SelectItem>
                                                             <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (date only)</SelectItem>
                                                             <SelectItem value="YYYY-MM-DDTHH:mm:ssZ">YYYY-MM-DDTHH:mm:ssZ (full ISO)</SelectItem>
                                                         </SelectContent>
