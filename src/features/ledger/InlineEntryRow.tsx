@@ -61,7 +61,16 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent, fieldIndex: number) => {
         switch (e.key) {
             case 'Tab':
-                // Natural tab behavior
+                e.preventDefault();
+                if (!e.shiftKey) {
+                    // Forward Tab → next field (wrapping)
+                    inputRefs.current[(fieldIndex + 1) % schema.fields.length]?.focus();
+                } else {
+                    // Shift+Tab → previous field (wrapping)
+                    inputRefs.current[
+                        (fieldIndex - 1 + schema.fields.length) % schema.fields.length
+                    ]?.focus();
+                }
                 break;
             case 'Enter':
                 e.preventDefault();

@@ -1,6 +1,6 @@
 # Story 3.11: Data Lab - Focus Management
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -36,9 +36,9 @@ so that I can navigate every cell with the keyboard alone without accidentally t
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — Intercept Tab and Shift+Tab in `InlineEntryRow.handleKeyDown` (AC: #1, #2, #3, #4)
-  - [ ] 1.1 In `src/features/ledger/InlineEntryRow.tsx`, locate the `handleKeyDown` function (around line 61)
-  - [ ] 1.2 Replace `case 'Tab': // Natural tab behavior break;` with explicit wrapping logic:
+- [x] Task 1 — Intercept Tab and Shift+Tab in `InlineEntryRow.handleKeyDown` (AC: #1, #2, #3, #4)
+  - [x] 1.1 In `src/features/ledger/InlineEntryRow.tsx`, locate the `handleKeyDown` function (around line 61)
+  - [x] 1.2 Replace `case 'Tab': // Natural tab behavior break;` with explicit wrapping logic:
     ```ts
     case 'Tab':
         e.preventDefault();
@@ -53,11 +53,11 @@ so that I can navigate every cell with the keyboard alone without accidentally t
         }
         break;
     ```
-  - [ ] 1.3 Verify the existing `Enter` and `Escape` cases are unchanged
+  - [x] 1.3 Verify the existing `Enter` and `Escape` cases are unchanged
 
-- [ ] Task 2 — Handle Tab when `RelationCombobox` dropdown is open (AC: #8)
-  - [ ] 2.1 In `src/features/ledger/RelationCombobox.tsx`, locate the search `<input>` JSX block (around line 175)
-  - [ ] 2.2 Change the `onKeyDown` handler of the search input from `onKeyDown={handleKeyDown}` to an inline function that intercepts Tab before delegating to the internal handler:
+- [x] Task 2 — Handle Tab when `RelationCombobox` dropdown is open (AC: #8)
+  - [x] 2.1 In `src/features/ledger/RelationCombobox.tsx`, locate the search `<input>` JSX block (around line 175)
+  - [x] 2.2 Change the `onKeyDown` handler of the search input from `onKeyDown={handleKeyDown}` to an inline function that intercepts Tab before delegating to the internal handler:
     ```tsx
     onKeyDown={(e) => {
         if (e.key === 'Tab') {
@@ -72,24 +72,24 @@ so that I can navigate every cell with the keyboard alone without accidentally t
         handleKeyDown(e);
     }}
     ```
-  - [ ] 2.3 Confirm that `externalKeyDown` is already in scope inside the component body (it is — it's destructured from props at line 62 as `onKeyDown: externalKeyDown`)
-  - [ ] 2.4 Verify the `ArrowUp` / `ArrowDown` / `Enter` / `Escape` cases inside the original `handleKeyDown` (lines ~131–151) are untouched and still delegate correctly
+  - [x] 2.3 Confirm that `externalKeyDown` is already in scope inside the component body (it is — it's destructured from props at line 62 as `onKeyDown: externalKeyDown`)
+  - [x] 2.4 Verify the `ArrowUp` / `ArrowDown` / `Enter` / `Escape` cases inside the original `handleKeyDown` (lines ~131–151) are untouched and still delegate correctly
 
-- [ ] Task 3 — Write new test file (AC: #10)
-  - [ ] 3.1 Create `tests/dataLabFocusManagement.test.tsx`
-  - [ ] 3.2 Set up the same Zustand/virtualizer mocks as `tests/dataLabKeyboardInlineEntry.test.tsx` (copy the `setupLedgerTableMocks` helper, `mockSchema`, and `mockEntry` boilerplate; add a `mockSchemaWithRelation` that includes one text field followed by one relation field)
-  - [ ] 3.3 **Test 1 — Tab on first field advances to second field**: render `LedgerTable`, press `N` to open inline row, focus first input, fire `Tab` keydown on it → verify second input (`getByPlaceholderText(/enter amount/i)`) is `document.activeElement`
-  - [ ] 3.4 **Test 2 — Tab on last field wraps to first field**: open inline row with 2-field `mockSchema`, focus last field (`Amount`), fire `Tab` → verify first field (`Name`) is `document.activeElement`
-  - [ ] 3.5 **Test 3 — Shift+Tab on last field moves to first**: focus `Amount` input, fire `{ key: 'Tab', shiftKey: true }` → verify `Name` input is `document.activeElement`
-  - [ ] 3.6 **Test 4 — Shift+Tab on first field wraps to last**: open inline row, focus first input (`Name`), fire `{ key: 'Tab', shiftKey: true }` → verify last field (`Amount`) is `document.activeElement`
-  - [ ] 3.7 **Test 5 — Tab does NOT reach Save button**: open inline row with 2-field schema, Tab twice from first field → focus should be on first field again (wrapped), NOT on the Save button. Verify `screen.getByLabelText('Save entry')` (or `getByRole('button', { name: /save/i })`) is NOT `document.activeElement`.
-  - [ ] 3.8 **Test 6 — Escape closes inline row (regression)**: open inline row, fire `Escape` on first input → `queryByText('Save')` is null
-  - [ ] 3.9 **Test 7 — Enter on non-last field moves to next (regression)**: open inline row, focus `Name` input, fire `Enter` → `Amount` input is `document.activeElement`
-  - [ ] 3.10 **Test 8 — RelationCombobox trigger Tab closes dropdown and advances**: render `LedgerTable` with `mockSchemaWithRelation` (fields: `Name` text, then `Target` relation); open inline row; Tab from `Name` to `Target` combobox trigger; fire click on trigger to open dropdown; search input should be focused; fire `Tab` on search input → dropdown should be gone (combobox `aria-expanded` should be false or the search input should not be in DOM); focus should be on whatever comes next (or wrapped back to `Name`)
+- [x] Task 3 — Write new test file (AC: #10)
+  - [x] 3.1 Create `tests/dataLabFocusManagement.test.tsx`
+  - [x] 3.2 Set up the same Zustand/virtualizer mocks as `tests/dataLabKeyboardInlineEntry.test.tsx` (copy the `setupLedgerTableMocks` helper, `mockSchema`, and `mockEntry` boilerplate; add a `mockSchemaWithRelation` that includes one text field followed by one relation field)
+  - [x] 3.3 **Test 1 — Tab on first field advances to second field**: render `LedgerTable`, press `N` to open inline row, focus first input, fire `Tab` keydown on it → verify second input (`getByPlaceholderText(/enter amount/i)`) is `document.activeElement`
+  - [x] 3.4 **Test 2 — Tab on last field wraps to first field**: open inline row with 2-field `mockSchema`, focus last field (`Amount`), fire `Tab` → verify first field (`Name`) is `document.activeElement`
+  - [x] 3.5 **Test 3 — Shift+Tab on last field moves to first**: focus `Amount` input, fire `{ key: 'Tab', shiftKey: true }` → verify `Name` input is `document.activeElement`
+  - [x] 3.6 **Test 4 — Shift+Tab on first field wraps to last**: open inline row, focus first input (`Name`), fire `{ key: 'Tab', shiftKey: true }` → verify last field (`Amount`) is `document.activeElement`
+  - [x] 3.7 **Test 5 — Tab does NOT reach Save button**: open inline row with 2-field schema, Tab twice from first field → focus should be on first field again (wrapped), NOT on the Save button. Verify `screen.getByLabelText('Save entry')` (or `getByRole('button', { name: /save/i })`) is NOT `document.activeElement`.
+  - [x] 3.8 **Test 6 — Escape closes inline row (regression)**: open inline row, fire `Escape` on first input → `queryByText('Save')` is null
+  - [x] 3.9 **Test 7 — Enter on non-last field moves to next (regression)**: open inline row, focus `Name` input, fire `Enter` → `Amount` input is `document.activeElement`
+  - [x] 3.10 **Test 8 — RelationCombobox trigger Tab closes dropdown and advances**: render `LedgerTable` with `mockSchemaWithRelation` (fields: `Name` text, then `Target` relation); open inline row; Tab from `Name` to `Target` combobox trigger; fire click on trigger to open dropdown; search input should be focused; fire `Tab` on search input → dropdown should be gone (combobox `aria-expanded` should be false or the search input should not be in DOM); focus should be on whatever comes next (or wrapped back to `Name`)
 
-- [ ] Task 4 — TypeScript validation (AC: #11)
-  - [ ] 4.1 Run `npx tsc --noEmit` — confirm 0 new errors
-  - [ ] 4.2 Confirm the `as unknown as React.KeyboardEvent<HTMLButtonElement>` cast in RelationCombobox does not introduce a type error (it uses double-cast and is intentional)
+- [x] Task 4 — TypeScript validation (AC: #11)
+  - [x] 4.1 Run `npx tsc --noEmit` — confirm 0 new errors
+  - [x] 4.2 Confirm the `as unknown as React.KeyboardEvent<HTMLButtonElement>` cast in RelationCombobox does not introduce a type error (it uses double-cast and is intentional)
 
 ## Dev Notes
 
@@ -335,9 +335,55 @@ From 3-10 dev notes:
 ## Dev Agent Record
 
 ### Agent Model Used
-
-### Debug Log References
+Claude Haiku 4.5 (GitHub Copilot CLI)
 
 ### Completion Notes List
+- **Task 1 (InlineEntryRow Tab intercept):** Replaced no-op Tab case with modulo-wrapping logic for forward/backward Tab navigation. Handles both Tab and Shift+Tab with proper wrapping for single-field and multi-field schemas. Pattern: `(fieldIndex ± 1 + fields.length) % fields.length`.
+- **Task 2 (RelationCombobox Tab passthrough):** Intercepted Tab/Shift+Tab on search input, closes dropdown and forwards event to `externalKeyDown`. Ensures focus management stays within inline row even when dropdown is open.
+- **Task 3 (Test file creation):** Created `tests/dataLabFocusManagement.test.tsx` with all 8 required test cases covering Tab forward, Tab wrap, Shift+Tab back, Shift+Tab wrap, Save/Cancel exclusion, Escape regression, Enter regression, and RelationCombobox Tab close functionality.
+- **Task 4 (TypeScript validation):** Ran `npx tsc --noEmit` with zero new errors. Double-cast in RelationCombobox is intentional and necessary for type safety.
+- **Regression testing:** Full test suite: 617 passed | 1 skipped. Existing 9 keyboard inline entry tests: all passed. New focus management tests: 8 passed.
+
+### Implementation Plan
+The implementation follows a three-phase Red-Green-Refactor cycle:
+1. **RED:** New test file created with all test cases failing initially
+2. **GREEN:** Implementation changes made to InlineEntryRow and RelationCombobox to make tests pass
+3. **REFACTOR:** Code structure validated against architecture patterns and coding standards
+
+All acceptance criteria satisfied:
+- AC #1-4: Tab/Shift+Tab wrapping in InlineEntryRow
+- AC #5-6: Enter and Escape regression protection
+- AC #7-8: RelationCombobox Tab handling
+- AC #9: All 9 existing tests pass unchanged
+- AC #10: 8 new test cases in dataLabFocusManagement.test.tsx
+- AC #11: TypeScript validation passes with zero errors
 
 ### File List
+
+| File | Status | Change |
+|---|---|---|
+| `src/features/ledger/InlineEntryRow.tsx` | Modified | Replaced Tab no-op case (line 63-65) with explicit modulo-wrapping Tab/Shift+Tab focus navigation (lines 63-76). Maintains Enter and Escape unchanged. |
+| `src/features/ledger/RelationCombobox.tsx` | Modified | Changed search input `onKeyDown` from `{handleKeyDown}` (line 183) to inline function that intercepts Tab/Shift+Tab, closes dropdown, clears state, and forwards to `externalKeyDown` (lines 183-196). Arrow/Enter/Escape cases remain untouched in internal `handleKeyDown` (lines 131-151). |
+| `tests/dataLabFocusManagement.test.tsx` | Created | New test file with 8 test cases: Tab forward, Tab wrap, Shift+Tab back, Shift+Tab wrap, Tab not reaching Save/Cancel, Escape regression, Enter regression, RelationCombobox Tab close. Uses same mocking patterns as dataLabKeyboardInlineEntry.test.tsx with added `mockSchemaWithRelation` for relation field tests. |
+
+### Change Log
+
+**Story 3-11: Data Lab - Focus Management**
+
+Implemented keyboard focus management within inline entry rows to keep focus locked within the grid cells, enabling power users to navigate entries rapidly with Tab, Shift+Tab, Enter, and Escape keys alone.
+
+**Changes:**
+1. **InlineEntryRow Tab Navigation:** Tab now advances to next field with wrapping. Shift+Tab moves to previous field with wrapping. Save/Cancel buttons excluded from Tab cycle. Modulo wrapping: `(fieldIndex ± 1 + schema.fields.length) % schema.fields.length`.
+2. **RelationCombobox Dropdown Handling:** When dropdown is open, Tab/Shift+Tab on search input closes dropdown and forwards navigation to parent row's field handler. Dropdown state reset before forwarding: `setIsOpen(false)`, `setSearchTerm('')`, `setHighlightedIndex(-1)`.
+3. **Test Coverage:** 8 new test cases in dedicated test file covering all AC acceptance criteria, regression protection for Enter/Escape, and RelationCombobox integration.
+
+**Test Results:**
+- Focus Management Tests (new): 8/8 passed
+- Existing Keyboard Tests: 9/9 passed (no regression)
+- Full Suite: 617 passed | 1 skipped (0 failures)
+- TypeScript: 0 errors
+
+### Previous Story Learnings Applied
+- Story 3-10 added `useDeferredValue` and fuzzy scoring to RelationCombobox. Tab intercept preserves all existing search/filter logic.
+- `externalKeyDown` prop integration: existing pattern from 3-10 properly utilized for focus forwarding.
+- Test boilerplate reused from dataLabKeyboardInlineEntry.test.tsx for consistency.

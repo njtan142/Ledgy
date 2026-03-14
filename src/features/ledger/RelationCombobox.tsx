@@ -180,7 +180,18 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                             setSearchTerm(e.target.value);
                             setHighlightedIndex(-1);
                         }}
-                        onKeyDown={handleKeyDown}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Tab') {
+                                e.preventDefault();
+                                setIsOpen(false);
+                                setSearchTerm('');
+                                setHighlightedIndex(-1);
+                                // Forward Tab/Shift+Tab to parent row's field navigator
+                                externalKeyDown?.(e as unknown as React.KeyboardEvent<HTMLButtonElement>);
+                                return;
+                            }
+                            handleKeyDown(e);
+                        }}
                         placeholder="Search entries..."
                         className="w-full px-3 py-2 bg-zinc-800 border-b border-zinc-700 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         aria-autocomplete="list"
