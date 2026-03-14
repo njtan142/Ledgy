@@ -9,6 +9,7 @@ interface RelationComboboxProps {
     placeholder?: string;
     allowMultiple?: boolean;
     getDisplayValue?: (entry: LedgerEntry) => string;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
 }
 
 /**
@@ -27,6 +28,7 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
         const firstValue = Object.values(data)[0];
         return firstValue ? String(firstValue) : entry._id;
     },
+    onKeyDown: externalKeyDown,
 }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -100,6 +102,7 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                 ref={ref}
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
+                onKeyDown={!isOpen ? externalKeyDown : undefined}
                 className="w-full flex items-center justify-between gap-2 px-2 py-1 bg-transparent border border-zinc-700 rounded text-sm text-zinc-100 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"

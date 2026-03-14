@@ -106,8 +106,8 @@ describe('Data Lab Keyboard Inline Entry', () => {
         expect(screen.getAllByText('Save').length).toBe(1);
     });
 
-    // Test 3: Tab navigates between fields
-    it('Tab moves focus from first field to second field', () => {
+    // Test 3: Enter on non-last field moves focus to next field
+    it('Enter on a non-last field moves focus to the next field', () => {
         setupLedgerTableMocks();
         render(<LedgerTable schemaId="schema:test-kb" />);
 
@@ -209,10 +209,11 @@ describe('Data Lab Keyboard Inline Entry', () => {
         expect(document.activeElement).toBe(nameInput);
     });
 
-    // Test 9 (Task 7.2): After successful save, createEntry is called exactly once
-    it('after successful save the commit is persisted via createEntry exactly once', async () => {
+    // Test 9 (Task 7.2): After successful save the committed entry row gets the flash animation class
+    it('after successful save the committed entry row receives animate-slide-down-row within the 2s window', async () => {
+        vi.useFakeTimers();
         const { mockCreateEntry } = setupLedgerTableMocks();
-        mockCreateEntry.mockResolvedValue('entry:new');
+        mockCreateEntry.mockResolvedValue('entry:1'); // matches mockEntry._id so the row exists in virtualizer
 
         render(<LedgerTable schemaId="schema:test-kb" />);
 
@@ -222,15 +223,22 @@ describe('Data Lab Keyboard Inline Entry', () => {
             target: { value: 'Flash Entry' },
         });
 
+        // Flush the async handleSubmit (createEntry promise + state updates) in one act
         await act(async () => {
             fireEvent.click(screen.getByText('Save'));
+            await Promise.resolve(); // flush microtasks so createEntry promise resolves
         });
 
-        await waitFor(() => {
-            expect(mockCreateEntry).toHaveBeenCalledTimes(1);
-        });
+        expect(mockCreateEntry).toHaveBeenCalledTimes(1);
 
-        // Inline row should close after successful save
+        // Inline row should be gone after successful commit
         expect(screen.queryByText('Save')).not.toBeInTheDocument();
+
+        // The virtualizer row for entry:1 should carry the flash class within 2s
+        expect(document.querySelector('.animate-slide-down-row')).not.toBeNull();
+
+        // After timer expires the flash class should be gone
+        await act(async () => { vi.runAllTimers(); });
+        expect(document.querySelector('.animate-slide-down-row')).toBeNull();
     });
 });

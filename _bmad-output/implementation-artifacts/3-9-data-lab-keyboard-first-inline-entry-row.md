@@ -1,6 +1,6 @@
 # Story 3.9: Data Lab - Keyboard-First Inline Entry Row
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -291,6 +291,8 @@ claude-sonnet-4.6
 
 ### File List
 
-- `src/features/ledger/InlineEntryRow.tsx` — Replaced TableRow/TableCell with div[role="row"]/div[role="gridcell"]; removed unused imports
+- `src/features/ledger/InlineEntryRow.tsx` — Replaced TableRow/TableCell with div[role="row"]/div[role="gridcell"]; removed unused imports; fixed number-empty detection; added error-span padding; onKeyDown wired through RelationCombobox
 - `src/features/ledger/LedgerTable.tsx` — Added isAddingEntryRef; hardened N-key guard; tabIndex={-1} on scrollContainerRef; onCancel focus restore; edit-mode role fix; removed add-mode outer div wrapper
-- `tests/dataLabKeyboardInlineEntry.test.tsx` — Created new test file with 9 tests
+- `src/features/ledger/RelationCombobox.tsx` — Added onKeyDown prop to interface and trigger element
+- `tests/dataLabKeyboardInlineEntry.test.tsx` — Created new test file with 9 tests; test 9 rewritten to use vi.useFakeTimers and assert animate-slide-down-row class
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — Sprint tracking updated to reflect story-3-9 completion

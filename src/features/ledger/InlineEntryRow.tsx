@@ -129,7 +129,7 @@ export const InlineEntryRow: React.FC<InlineEntryRowProps> = ({
                 <div
                     key={field.name}
                     role="gridcell"
-                    className="p-2 relative border-r border-zinc-200 dark:border-zinc-800 last:border-r-0"
+                    className="p-2 pb-5 relative border-r border-zinc-200 dark:border-zinc-800 last:border-r-0"
                     style={{ width: 150, flexShrink: 0 }}
                 >
                     <FieldInput
@@ -195,7 +195,7 @@ const FieldInput = React.forwardRef<HTMLInputElement | HTMLSelectElement | HTMLB
                             type="number"
                             className={baseClasses}
                             value={value as string || ''}
-                            onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                            onChange={(e) => onChange(isNaN(e.target.valueAsNumber) ? '' : e.target.valueAsNumber)}
                             onKeyDown={onKeyDown}
                             placeholder={`Enter ${field.name}`}
                         />
@@ -218,6 +218,7 @@ const FieldInput = React.forwardRef<HTMLInputElement | HTMLSelectElement | HTMLB
                             entries={targetEntries[field.name] || []}
                             value={value as string | string[]}
                             onChange={(newValue) => onChange(newValue)}
+                            onKeyDown={onKeyDown as (e: React.KeyboardEvent<HTMLButtonElement>) => void}
                             placeholder={`Select ${field.name}...`}
                             allowMultiple={true}
                             getDisplayValue={(entry) => {
