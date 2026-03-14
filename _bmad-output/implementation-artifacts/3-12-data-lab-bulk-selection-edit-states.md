@@ -16,7 +16,14 @@ so that I can efficiently batch-modify entries without entering each one individ
 
 2. **Row selection toggle** — Clicking a row's checkbox toggles selection state for that row. The checkbox state is immediately visual (checked/unchecked).
 
-3. **Select All toggles all visible rows** — Clicking the column header checkbox selects or deselects all visible rows in the current viewport.
+3. **Select All toggles all visible rows** — Clicking the column header checkbox selects or deselects all visible rows in the current viewport (~20-50 rows depending on row height).
+   
+   **Behavior Details:**
+   - "Select All" operates on ONLY the virtualizer's currently rendered rows, not all 10,000 rows in the ledger
+   - When user scrolls past selected rows, they remain selected (stored in `selectedRowIds` Set in Zustand)
+   - When user scrolls back, previously selected rows show as checked (because checkbox is controlled: `checked={selectedRowIds.has(rowId)}`)
+   - This matches behavior of Linear, Figma, and other data-dense tools
+   - **Never attempt to select all 10k rows into memory at once** (causes UI freeze)
 
 4. **Bulk Delete action** — When ≥1 row is selected, a "Bulk Delete" button appears in a floating action bar (or context menu). Clicking it opens a confirmation dialog showing count of selected rows (e.g., "Delete 5 entries?"). Confirming deletes all selected rows from PouchDB in a single batch operation.
 
@@ -48,9 +55,30 @@ so that I can efficiently batch-modify entries without entering each one individ
     selectAll: (rowIds: string[]) => void;
     clearSelection: () => void;
     ```
-  - [ ] 1.3 Implement `toggleRowSelection`: add rowId to Set if not present, remove if present
-  - [ ] 1.4 Implement `selectAll`: populate selectedRowIds with all provided rowIds
-  - [ ] 1.5 Implement `clearSelection`: empty the Set and reset to initial state
+  - [ ] 1.3 Implement `toggleRowSelection`: 
+    ```ts
+    toggleRowSelection: (rowId: string) => {
+      set((state) => {
+        const newSet = new Set(state.selectedRowIds);
+        if (newSet.has(rowId)) newSet.delete(rowId);
+        else newSet.add(rowId);
+        return { selectedRowIds: newSet };
+      });
+    }
+    ```
+  - [ ] 1.4 Implement `selectAll`: 
+    ```ts
+    selectAll: (rowIds: string[]) => {
+      set({ selectedRowIds: new Set(rowIds) });
+    }
+    ```
+  - [ ] 1.5 Implement `clearSelection`: 
+    ```ts
+    clearSelection: () => {
+      set({ selectedRowIds: new Set() });
+    }
+    ```
+  - [ ] 1.6 **CRITICAL:** Always use these actions (never mutate `selectedRowIds` directly with `.add()` or `.delete()`)
 
 - [ ] Task 2 — Implement checkbox column in LedgerTable grid
   - [ ] 2.1 Open `src/features/ledger/LedgerTable.tsx`
@@ -58,13 +86,42 @@ so that I can efficiently batch-modify entries without entering each one individ
   - [ ] 2.3 Add checkbox column header as first virtualizer row (before field headers)
     - [ ] 2.3a Render "Select All" checkbox in header
     - [ ] 2.3b Checkbox state: checked if all visible rows are selected, indeterminate if partial, unchecked if none
-    - [ ] 2.3c onClick handler calls `selectAll(allVisibleRowIds)` or `clearSelection()` based on current state
+    - [ ] 2.3c onClick handler calls `selectAll(visibleRowIds)` or `clearSelection()` based on current state
+           where visibleRowIds is computed from: `virtualItems.map(item => entries[schemaId][item.index]._id)`
+    - [ ] 2.3d **CRITICAL:** Use `useEffect` + `ref` to set indeterminate property (not HTML attribute):
+           ```tsx
+           const headerCheckboxRef = useRef<HTMLInputElement>(null);
+           useEffect(() => {
+             if (headerCheckboxRef.current) {
+               headerCheckboxRef.current.indeterminate = 
+                 selectedCount > 0 && selectedCount < totalVisible;
+             }
+           }, [selectedCount, totalVisible]);
+           ```
   - [ ] 2.4 For each data row, render checkbox in first column
-    - [ ] 2.4a Checkbox state: `selectedRowIds.has(rowId)`
-    - [ ] 2.4b onClick handler calls `toggleRowSelection(rowId)`
+    - [ ] 2.4a **CRITICAL - Use controlled checkboxes:** `checked={selectedRowIds.has(rowId)}` (uncontrolled will break on virtualizer scroll)
+    - [ ] 2.4b onClick handler calls `toggleRowSelection(rowId)` via store action (never mutate Set directly)
     - [ ] 2.4c CSS class `.selected-row` applied to row when checkbox is checked (for visual highlight)
-  - [ ] 2.5 Space key handler on focused cell toggles selection for that row (integrate into existing keyboard handler)
-  - [ ] 2.6 Shift+Click handler: determine first and last clicked row indices, select range (inclusive)
+    - [ ] 2.4d Track last clicked index for Shift+Click: `lastClickedIndexRef.current = virtualItem.index`
+  - [ ] 2.5 Space key handler on focused cell toggles selection for that row:
+    ```ts
+    case ' ':
+      if (!isAddingEntry) {  // Only when NOT in inline entry mode
+        e.preventDefault();
+        toggleRowSelection(entry._id);
+      }
+      break;
+    ```
+  - [ ] 2.6 Shift+Click handler: determine first and last clicked row indices, select range (inclusive):
+    ```ts
+    const handleShiftClickRange = (firstIdx: number, lastIdx: number) => {
+      const [start, end] = [Math.min(firstIdx, lastIdx), Math.max(firstIdx, lastIdx)];
+      for (let i = start; i <= end; i++) {
+        const rowId = entries[schemaId][i]._id;
+        toggleRowSelection(rowId);  // Use store action
+      }
+    };
+    ```
 
 - [ ] Task 3 — Create floating action bar for bulk operations
   - [ ] 3.1 Create new file `src/features/ledger/BulkActionBar.tsx`
@@ -72,29 +129,76 @@ so that I can efficiently batch-modify entries without entering each one individ
   - [ ] 3.3 Floating position: fixed at bottom-center of viewport, above tab bar (z-index: 40)
   - [ ] 3.4 Display text: "X entries selected" with count
   - [ ] 3.5 Buttons: "Delete Selected" and "Assign Tag" (both disabled if 0 selected)
-  - [ ] 3.6 Import this component in `src/features/ledger/DataLabView.tsx` (or parent layout) and render at layout bottom
+  - [ ] 3.6 Import this component in `src/features/ledger/LedgerView.tsx` and render at layout bottom
+           (Note: The actual parent container is LedgerView, not DataLabView which does not exist)
 
 - [ ] Task 4 — Implement bulk delete action
   - [ ] 4.1 In `BulkActionBar.tsx`, create `handleBulkDelete` function
   - [ ] 4.2 Show confirmation dialog: "Delete X entries? This cannot be undone."
   - [ ] 4.3 On confirm: batch delete all selected row IDs from PouchDB
-    - [ ] 4.3a Use `db.bulkDocs()` or similar batch operation (check existing PouchDB patterns in codebase)
-    - [ ] 4.3b Each delete doc: `{ _id: rowId, _deleted: true, _rev: latestRev }`
-    - [ ] 4.3c Catch errors and display error toast if any delete fails
-  - [ ] 4.4 On success: call `clearSelection()` from store
+    - [ ] 4.3a **CRITICAL - Fetch current _rev before deletion:**
+    ```ts
+    async function batchDeleteEntries(db: PouchDB.Database, entryIds: string[]) {
+      // Step 1: Fetch current documents to get _rev
+      const currentDocs = await Promise.all(
+        entryIds.map(id => db.get(id).catch(() => null))
+      );
+      
+      // Step 2: Build deletion documents
+      const deletionDocs = currentDocs
+        .filter(doc => doc !== null)
+        .map(doc => ({
+          _id: doc._id,
+          _rev: doc._rev,  // CRITICAL: Include _rev for conflict handling
+          _deleted: true,
+        }));
+      
+      // Step 3: Batch operation with error handling
+      const results = await db.bulkDocs(deletionDocs);
+      
+      // Step 4: Separate successes and failures
+      const successful = results.filter((r: any) => !r.error);
+      const failures = results.filter((r: any) => r.error);
+      
+      if (failures.length > 0) {
+        console.warn(`Failed to delete ${failures.length} docs:`, failures);
+      }
+      return { success: successful.length, failed: failures.length };
+    }
+    ```
+    - [ ] 4.3b Never batch > 5000 rows; paginate if needed
+  - [ ] 4.4 On success: call `clearSelection()` from store immediately (before toast, to prevent race condition)
   - [ ] 4.5 Show success toast: "X entries deleted"
+  - [ ] 4.6 On failure: show error toast with failure count (don't auto-clear selection if partial failure)
 
 - [ ] Task 5 — Implement bulk tag assignment
   - [ ] 5.1 In `BulkActionBar.tsx`, create `handleBulkAssignTag` function
   - [ ] 5.2 Open a small modal/popover with tag selector or create-new-tag input
     - [ ] 5.2a Display existing tags (query from store or load from schema)
     - [ ] 5.2b Allow user to type new tag name if not in list
+    - [ ] 5.2c **CRITICAL - Verify tags field exists in schema:** Before assigning, check that the current schema (Story 3-2) includes a `tags` field. If not, show error: "Current schema does not support tags. Edit schema first."
   - [ ] 5.3 On tag select: batch update all selected rows
-    - [ ] 5.3a Load each selected row document
-    - [ ] 5.3b Add tag to row's `tags` field (or create field if not present)
-    - [ ] 5.3c Use batch update: `db.bulkDocs([...updatedDocs])`
-  - [ ] 5.4 On success: call `clearSelection()` from store
+    - [ ] 5.3a Load each selected row document (fetch current _rev):
+    ```ts
+    async function batchAssignTag(db: PouchDB.Database, entryIds: string[], tagValue: string) {
+      const docs = await Promise.all(entryIds.map(id => db.get(id)));
+      const updatedDocs = docs.map(doc => ({
+        ...doc,
+        data: {
+          ...doc.data,
+          tags: [...(doc.data.tags || []), tagValue].filter(Boolean), // Avoid duplicates
+        },
+      }));
+      const results = await db.bulkDocs(updatedDocs);
+      const successful = results.filter((r: any) => !r.error);
+      const failures = results.filter((r: any) => r.error);
+      return { success: successful.length, failed: failures.length };
+    }
+    ```
+    - [ ] 5.3b Never batch > 5000 rows; paginate if needed
+  - [ ] 5.4 On success: call `clearSelection()` from store immediately (before toast)
   - [ ] 5.5 Show success toast: "Tagged X entries"
+  - [ ] 5.6 On failure: show error toast; don't auto-clear selection for partial failures
 
 - [ ] Task 6 — Add CSS styling for selection highlight
   - [ ] 6.1 Open `src/index.css` or relevant Tailwind config
@@ -123,6 +227,44 @@ so that I can efficiently batch-modify entries without entering each one individ
   - [ ] 8.2 Confirm 0 new errors introduced
 
 ## Dev Notes
+
+### Zustand Actions Pattern (Critical)
+
+All mutations to `selectedRowIds` and related state **must** go through store actions, not by directly mutating the Set.
+
+**Why This Matters:** Sets are mutable reference types. If you mutate a Set directly (`.add()`, `.delete()`), Zustand won't detect the change and components won't re-render. Always use `set()` to create a new reference.
+
+**✓ CORRECT:**
+```ts
+toggleRowSelection: (rowId: string) => {
+  set((state) => {
+    const newSet = new Set(state.selectedRowIds);
+    if (newSet.has(rowId)) newSet.delete(rowId);
+    else newSet.add(rowId);
+    return { selectedRowIds: newSet };  // New Set reference
+  });
+}
+```
+
+**❌ WRONG (won't trigger re-render):**
+```ts
+toggleRowSelection: (rowId: string) => {
+  // THIS WILL NOT WORK
+  const state = get();
+  state.selectedRowIds.add(rowId);  // Zustand won't detect the change
+}
+```
+
+### PouchDB Batch Operations Pattern
+
+The most common dev mistake: forgetting to fetch `_rev` before batch operations.
+
+**Key Points:**
+- CouchDB/PouchDB requires `_rev` field for conflict resolution
+- Always fetch current `_rev` for each document before `bulkDocs()`
+- Handle partial failures: `bulkDocs()` returns mixed results (some ok, some error)
+- Never batch > 5000 rows at once; paginate if needed
+- Check `src/lib/db.ts` for existing helpers like `deleteEntry()` which show the pattern
 
 ### Current State Analysis
 
@@ -233,11 +375,25 @@ From `tests/dataLabFocusManagement.test.tsx`:
 
 ### Common Pitfalls to Avoid
 
-1. **Selection state in component state** — If you use `useState` for selectedRowIds in LedgerTable, selections will reset on scroll. Store in Zustand.
-2. **Not clearing selection after action** — After bulk delete/tag succeeds, forget to call `clearSelection()` → UI shows old selections
-3. **Ignoring virtualization** — If you assume all 1000 rows are in DOM to select them, the UI will freeze. Load only visible row IDs or paginate.
-4. **Missing rev in PouchDB updates** — Forgetting `_rev` field causes conflict errors. Always fetch current `_rev` before batch update.
-5. **Not testing with 100+ rows** — Bulk ops feel fast with 5 rows but slow with 10k. Test suite should include virtualization edge cases (scrolled-out-of-view selections).
+1. **Selection state in component state** — If you use `useState` for selectedRowIds in LedgerTable, selections will reset on scroll. Store MUST be in Zustand store, not component state.
+
+2. **Uncontrolled checkboxes** — Using `defaultChecked` instead of `checked` will cause selections to reset when virtualizer remounts (user scrolls). **All checkboxes must be controlled components** reading from Zustand every render.
+
+3. **Direct Set mutations** — Mutating the Set directly (`.add()`, `.delete()`) won't trigger Zustand re-renders. **Always use store actions** that create a new Set reference.
+
+4. **"Select All" too aggressive** — If you try to select all 10k rows into the Set at once, the UI will freeze. **Select All must operate only on visible rows (~30)** in the current viewport.
+
+5. **Missing _rev in PouchDB updates** — Forgetting `_rev` field causes conflict errors and silent failures. **Always fetch current `_rev` for each document** before batch operation.
+
+6. **Race condition after bulk delete** — After `bulkDocs()` succeeds, if you don't immediately clear selection before returning from async, the UI might show stale selections. **Call `clearSelection()` before showing toast**.
+
+7. **Partial failures ignored** — If 3 of 5 deletes fail silently, user thinks data was deleted when it wasn't. **Check the results array from `bulkDocs()` and handle failures** explicitly.
+
+8. **Schema validation skipped** — If the current schema doesn't have a `tags` field (defined in Story 3-2), bulk tag assignment will fail. **Validate schema before opening tag modal**.
+
+9. **Not testing with virtualization** — Bulk ops feel fast with 5 rows but can break with 100+. **Test with realistic data volumes** (1000+ rows) to catch virtualization edge cases.
+
+10. **Forgetting indeterminate checkbox** — When 2 of 3 rows are selected, header checkbox should show indeterminate visual state. **Use `useEffect` + `ref.indeterminate` property** (not HTML attribute).
 
 ## References
 
