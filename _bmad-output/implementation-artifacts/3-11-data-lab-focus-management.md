@@ -38,7 +38,7 @@ so that I can navigate every cell with the keyboard alone without accidentally t
 
 - [x] Task 1 — Intercept Tab and Shift+Tab in `InlineEntryRow.handleKeyDown` (AC: #1, #2, #3, #4)
   - [x] 1.1 In `src/features/ledger/InlineEntryRow.tsx`, locate the `handleKeyDown` function (around line 61)
-  - [x] 1.2 Replace `case 'Tab': // Natural tab behavior break;` with explicit wrapping logic:
+  - [x] 1.2 Replace `case 'Tab': // Natural tab behavior break;` with explicit wrapping logic (implemented at lines 63-74):
     ```ts
     case 'Tab':
         e.preventDefault();
@@ -57,7 +57,7 @@ so that I can navigate every cell with the keyboard alone without accidentally t
 
 - [x] Task 2 — Handle Tab when `RelationCombobox` dropdown is open (AC: #8)
   - [x] 2.1 In `src/features/ledger/RelationCombobox.tsx`, locate the search `<input>` JSX block (around line 175)
-  - [x] 2.2 Change the `onKeyDown` handler of the search input from `onKeyDown={handleKeyDown}` to an inline function that intercepts Tab before delegating to the internal handler:
+  - [x] 2.2 Change the `onKeyDown` handler of the search input from `onKeyDown={handleKeyDown}` to an inline function that intercepts Tab before delegating to the internal handler (implemented at lines 183-196):
     ```tsx
     onKeyDown={(e) => {
         if (e.key === 'Tab') {
@@ -362,8 +362,8 @@ All acceptance criteria satisfied:
 
 | File | Status | Change |
 |---|---|---|
-| `src/features/ledger/InlineEntryRow.tsx` | Modified | Replaced Tab no-op case (line 63-65) with explicit modulo-wrapping Tab/Shift+Tab focus navigation (lines 63-76). Maintains Enter and Escape unchanged. |
-| `src/features/ledger/RelationCombobox.tsx` | Modified | Changed search input `onKeyDown` from `{handleKeyDown}` (line 183) to inline function that intercepts Tab/Shift+Tab, closes dropdown, clears state, and forwards to `externalKeyDown` (lines 183-196). Arrow/Enter/Escape cases remain untouched in internal `handleKeyDown` (lines 131-151). |
+| `src/features/ledger/InlineEntryRow.tsx` | Modified | Replaced Tab no-op case (line 63-65) with explicit modulo-wrapping Tab/Shift+Tab focus navigation (lines 63-74). Maintains Enter and Escape unchanged. |
+| `src/features/ledger/RelationCombobox.tsx` | Modified | Changed search input `onKeyDown` from `{handleKeyDown}` (line 175) to inline function that intercepts Tab/Shift+Tab, closes dropdown, clears state, and forwards to `externalKeyDown` (lines 183-196). Added inline documentation explaining type-cast safety. Arrow/Enter/Escape cases remain untouched in internal `handleKeyDown` (lines 131-151). |
 | `tests/dataLabFocusManagement.test.tsx` | Created | New test file with 8 test cases: Tab forward, Tab wrap, Shift+Tab back, Shift+Tab wrap, Tab not reaching Save/Cancel, Escape regression, Enter regression, RelationCombobox Tab close. Uses same mocking patterns as dataLabKeyboardInlineEntry.test.tsx with added `mockSchemaWithRelation` for relation field tests. |
 
 ### Change Log

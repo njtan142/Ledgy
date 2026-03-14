@@ -186,7 +186,10 @@ export const RelationCombobox = React.forwardRef<HTMLButtonElement, RelationComb
                                 setIsOpen(false);
                                 setSearchTerm('');
                                 setHighlightedIndex(-1);
-                                // Forward Tab/Shift+Tab to parent row's field navigator
+                                // Forward Tab/Shift+Tab to parent row's field navigator.
+                                // Cast is safe: the handler only reads e.key and e.shiftKey, which exist
+                                // identically on both input and button KeyboardEvents. The double-cast
+                                // (to unknown then to HTMLButtonElement type) is intentional for type safety.
                                 externalKeyDown?.(e as unknown as React.KeyboardEvent<HTMLButtonElement>);
                                 return;
                             }
