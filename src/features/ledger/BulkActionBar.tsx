@@ -13,7 +13,8 @@ import { useLedgerStore } from '../../stores/useLedgerStore';
 import { useProfileStore } from '../../stores/useProfileStore';
 import { useNotificationStore } from '../../stores/useNotificationStore';
 import { useErrorStore } from '../../stores/useErrorStore';
-import { getProfileDb } from '../../lib/db';
+import { Database, delete_entry, getProfileDb } from '../../lib/db';
+import { LedgerEntry } from '../../types/ledger';
 
 interface BulkActionBarProps {
     schemaId: string;
@@ -23,12 +24,6 @@ interface BulkOperationResult {
     success: number;
     failed: number;
 }
-
-type PouchResult = { error?: string };
-type LocalPouchDb = {
-    get: <T = Record<string, unknown>>(id: string) => Promise<T>;
-    bulkDocs: (docs: Record<string, unknown>[]) => Promise<PouchResult[]>;
-};
 
 const MAX_BATCH_SIZE = 5000;
 
@@ -41,41 +36,23 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 async function batchDeleteEntries(
-    db: LocalPouchDb,
+    db: Database,
     entryIds: string[]
 ): Promise<BulkOperationResult> {
     let success = 0;
     let failed = 0;
 
     for (const idBatch of chunk(entryIds, MAX_BATCH_SIZE)) {
-        const currentDocs = await Promise.all(
-            idBatch.map((id) => db.get<{ _id: string; _rev: string }>(id).catch(() => null))
-        );
-
-        const deletionDocs = currentDocs
-            .filter((doc): doc is { _id: string; _rev: string } => Boolean(doc))
-            .map((doc) => ({
-                _id: doc._id,
-                _rev: doc._rev,
-                _deleted: true,
-            }));
-
-        if (deletionDocs.length === 0) {
-            failed += idBatch.length;
-            continue;
-        }
-
-        const results = await db.bulkDocs(deletionDocs);
-        success += results.filter((result) => !(result as PouchResult).error).length;
-        failed += results.filter((result) => Boolean((result as PouchResult).error)).length;
-        failed += idBatch.length - deletionDocs.length;
+        const results = await Promise.allSettled(idBatch.map((id) => delete_entry(db, id)));
+        success += results.filter((result) => result.status === 'fulfilled').length;
+        failed += results.filter((result) => result.status === 'rejected').length;
     }
 
     return { success, failed };
 }
 
 async function batchAssignTag(
-    db: LocalPouchDb,
+    db: Database,
     entryIds: string[],
     tagValue: string
 ): Promise<BulkOperationResult> {
@@ -83,36 +60,28 @@ async function batchAssignTag(
     let failed = 0;
 
     for (const idBatch of chunk(entryIds, MAX_BATCH_SIZE)) {
-        const docs = await Promise.all(idBatch.map((id) => db.get<Record<string, unknown>>(id).catch(() => null)));
-        const updateDocs: Record<string, unknown>[] = [];
-        for (const doc of docs) {
-            if (!doc || typeof doc._id !== 'string') {
-                continue;
+        const results = await Promise.allSettled(idBatch.map(async (id) => {
+            const doc = await db.getDocument<LedgerEntry>(id);
+            if (!doc) {
+                throw new Error(`Entry not found: ${id}`);
             }
 
             const currentData = (doc.data as Record<string, unknown> | undefined) ?? {};
             const currentTags = Array.isArray(currentData.tags)
                 ? currentData.tags.filter((tag): tag is string => typeof tag === 'string')
                 : [];
+            const nextTags = Array.from(new Set([...currentTags, tagValue])).filter(Boolean);
 
-            updateDocs.push({
-                ...doc,
+            await db.updateDocument(id, {
                 data: {
                     ...currentData,
-                    tags: Array.from(new Set([...currentTags, tagValue])).filter(Boolean),
+                    tags: nextTags,
                 },
             });
-        }
+        }));
 
-        if (updateDocs.length === 0) {
-            failed += idBatch.length;
-            continue;
-        }
-
-        const results = await db.bulkDocs(updateDocs);
-        success += results.filter((result) => !(result as PouchResult).error).length;
-        failed += results.filter((result) => Boolean((result as PouchResult).error)).length;
-        failed += idBatch.length - updateDocs.length;
+        success += results.filter((result) => result.status === 'fulfilled').length;
+        failed += results.filter((result) => result.status === 'rejected').length;
     }
 
     return { success, failed };
@@ -161,8 +130,8 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({ schemaId }) => {
             return;
         }
 
-        const db = getProfileDb(activeProfileId) as unknown as { db: LocalPouchDb };
-        const result = await batchDeleteEntries(db.db, selectedIds);
+        const db = getProfileDb(activeProfileId);
+        const result = await batchDeleteEntries(db, selectedIds);
         await fetchEntries(activeProfileId, schemaId);
 
         if (result.failed === 0) {
@@ -195,8 +164,8 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({ schemaId }) => {
             return;
         }
 
-        const db = getProfileDb(activeProfileId) as unknown as { db: LocalPouchDb };
-        const result = await batchAssignTag(db.db, selectedIds, trimmedTag);
+        const db = getProfileDb(activeProfileId);
+        const result = await batchAssignTag(db, selectedIds, trimmedTag);
         await fetchEntries(activeProfileId, schemaId);
 
         if (result.failed === 0) {

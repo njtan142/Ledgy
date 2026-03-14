@@ -575,8 +575,17 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ schemaId, highlightEnt
                                                     <div
                                                         key={`${entry._id}-${field.name}`}
                                                         role="gridcell"
+                                                        tabIndex={0}
                                                         style={{ width: getColWidth(field.name), flexShrink: 0 }}
                                                         className="px-4 py-2 text-sm text-zinc-900 dark:text-zinc-100 overflow-hidden text-ellipsis whitespace-nowrap"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === ' ') {
+                                                                if (isAddingEntry) return;
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleRowSelection(virtualRow.index, e.shiftKey);
+                                                            }
+                                                        }}
                                                     >
                                                         {renderFieldValue(entry.data[field.name], field.type, entry, field, deletedEntryIds)}
                                                     </div>

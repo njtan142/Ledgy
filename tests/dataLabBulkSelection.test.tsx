@@ -5,17 +5,32 @@ import { BulkActionBar } from '../src/features/ledger/BulkActionBar';
 import { useLedgerStore } from '../src/stores/useLedgerStore';
 import { useProfileStore } from '../src/stores/useProfileStore';
 import { useUIStore } from '../src/stores/useUIStore';
-import { getProfileDb } from '../src/lib/db';
+import { delete_entry, getProfileDb } from '../src/lib/db';
+
+let virtualRange: { start: number; endExclusive: number } = { start: 0, endExclusive: 2 };
+const setVirtualRange = (start: number, endExclusive: number) => {
+    virtualRange = { start, endExclusive };
+};
 
 vi.mock('@tanstack/react-virtual', () => ({
     useVirtualizer: vi.fn().mockImplementation(({ count, estimateSize }) => ({
-        getVirtualItems: () =>
-            Array.from({ length: count }, (_, i) => ({
-                index: i,
-                key: i,
-                start: i * estimateSize(),
-                size: estimateSize(),
-            })),
+        getVirtualItems: () => {
+            const size = estimateSize();
+            const start = Math.max(0, Math.min(virtualRange.start, count));
+            const normalizedEnd = virtualRange.endExclusive > start
+                ? virtualRange.endExclusive
+                : Math.min(count, start + 2);
+            const end = Math.max(start, Math.min(normalizedEnd, count));
+            return Array.from({ length: end - start }, (_, i) => {
+                const index = start + i;
+                return {
+                    index,
+                    key: index,
+                    start: index * size,
+                    size,
+                };
+            });
+        },
         getTotalSize: () => count * estimateSize(),
         measureElement: vi.fn(),
         scrollToIndex: vi.fn(),
@@ -39,6 +54,7 @@ vi.mock('../src/stores/useUIStore', () => ({
 
 vi.mock('../src/lib/db', () => ({
     getProfileDb: vi.fn(),
+    delete_entry: vi.fn(),
 }));
 
 const mockSchema = {
@@ -97,6 +113,7 @@ function setupLedgerStore(overrides?: Record<string, unknown>) {
 describe('dataLabBulkSelection — LedgerTable', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        setVirtualRange(0, 2);
         setupLedgerStore();
     });
 
@@ -120,7 +137,7 @@ describe('dataLabBulkSelection — LedgerTable', () => {
         render(<LedgerTable schemaId="schema:bulk" />);
 
         fireEvent.click(screen.getByRole('checkbox', { name: /select all/i }));
-        expect(selectAll).toHaveBeenCalledWith(expect.arrayContaining(['entry:1', 'entry:2', 'entry:3']));
+        expect(selectAll).toHaveBeenCalledWith(['entry:1', 'entry:2']);
     });
 
     it('Test 4 — Partial selection marks header checkbox as mixed', () => {
@@ -135,13 +152,14 @@ describe('dataLabBulkSelection — LedgerTable', () => {
         setupLedgerStore({ toggleRowSelection });
         render(<LedgerTable schemaId="schema:bulk" />);
 
-        const row = screen.getByText('Entry 1').closest('[role="row"]') as HTMLElement;
-        row.focus();
-        fireEvent.keyDown(row, { key: ' ' });
+        const cell = screen.getByText('Entry 1').closest('[role="gridcell"]') as HTMLElement;
+        cell.focus();
+        fireEvent.keyDown(cell, { key: ' ' });
         expect(toggleRowSelection).toHaveBeenCalledWith('entry:1');
     });
 
     it('Test 6 — Shift+Click selects a row range', () => {
+        setVirtualRange(0, 3);
         const selectAll = vi.fn();
         setupLedgerStore({ selectAll });
         render(<LedgerTable schemaId="schema:bulk" />);
@@ -152,11 +170,15 @@ describe('dataLabBulkSelection — LedgerTable', () => {
         expect(selectAll).toHaveBeenLastCalledWith(expect.arrayContaining(['entry:1', 'entry:2', 'entry:3']));
     });
 
-    it('Test 7 — Selection state survives render and remains checked', () => {
-        setupLedgerStore({ selectedRowIds: new Set<string>(['entry:2']) });
-        render(<LedgerTable schemaId="schema:bulk" />);
+    it('Test 7 — Selection state survives virtualized scroll windows', () => {
+        setupLedgerStore({ selectedRowIds: new Set<string>(['entry:3']) });
+        const rendered = render(<LedgerTable schemaId="schema:bulk" />);
 
-        expect(screen.getByRole('checkbox', { name: /select row 2/i })).toBeChecked();
+        expect(screen.queryByRole('checkbox', { name: /select row 3/i })).not.toBeInTheDocument();
+
+        setVirtualRange(2, 3);
+        rendered.rerender(<LedgerTable schemaId="schema:bulk" />);
+        expect(screen.getByRole('checkbox', { name: /select row 3/i })).toBeChecked();
     });
 });
 
@@ -189,20 +211,17 @@ describe('dataLabBulkSelection — BulkActionBar', () => {
         });
 
         const mockDb = {
-            get: vi.fn().mockImplementation(async (id: string) => ({ _id: id, _rev: '1-a', data: {} })),
-            bulkDocs: vi.fn().mockResolvedValue([
-                { ok: true, id: 'entry:1' },
-                { ok: true, id: 'entry:2' },
-                { ok: true, id: 'entry:3' },
-            ]),
+            updateDocument: vi.fn().mockResolvedValue({ ok: true }),
         };
-        (getProfileDb as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ db: mockDb });
+        (getProfileDb as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockDb);
+        (delete_entry as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
         render(<BulkActionBar schemaId="schema:bulk" />);
         fireEvent.click(screen.getByRole('button', { name: /delete selected/i }));
         fireEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
         await waitFor(() => {
+            expect(delete_entry).toHaveBeenCalledTimes(3);
             expect(clearSelection).toHaveBeenCalled();
             expect(fetchEntries).toHaveBeenCalledWith('profile-1', 'schema:bulk');
         });
