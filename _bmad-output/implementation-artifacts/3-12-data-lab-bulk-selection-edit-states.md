@@ -1,6 +1,6 @@
 # Story 3.12: Data Lab - Bulk Selection & Edit States
 
-Status: review
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -226,6 +226,13 @@ so that I can efficiently batch-modify entries without entering each one individ
   - [x] 8.1 Run `npx tsc --noEmit`
   - [x] 8.2 Confirm 0 new errors introduced
 
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][HIGH] Bulk delete currently performs hard deletion (`_deleted: true`) instead of Ledgy's soft-delete contract (`isDeleted`), which can bypass Trash/restore and ghost-reference behavior. [src/features/ledger/BulkActionBar.tsx:55-61,68-72; src/lib/db.ts:818-823]
+- [ ] [AI-Review][HIGH] AC6 is only partially implemented: Space toggling is wired on the row, but "focused data cell" behavior is not implemented because grid cells are not focusable (`tabIndex` missing). [src/features/ledger/LedgerTable.tsx:533-541,575-580]
+- [ ] [AI-Review][MEDIUM] Bulk actions rely on private DB internals via unsafe casts (`(getProfileDb(...) as { db }).db`) instead of a typed API, creating brittle coupling to `Database` internals. [src/features/ledger/BulkActionBar.tsx:164,198; src/lib/db.ts:19,207]
+- [ ] [AI-Review][MEDIUM] Virtualization coverage is weak: the virtualizer mock renders all rows, and the "survives scroll" test never scrolls, so viewport-only selection behavior is not truly validated. [tests/dataLabBulkSelection.test.tsx:11-19,155-160]
+
 ## Dev Notes
 
 ### Zustand Actions Pattern (Critical)
@@ -442,4 +449,30 @@ None yet — this is the initial story file creation.
 - `src/features/ledger/InlineEntryRow.tsx` — Focus management from 3-11 stays untouched
 - `src/features/ledger/RelationCombobox.tsx` — Tab forwarding from 3-11 stays untouched
 - `tests/dataLabFocusManagement.test.tsx` — Existing focus tests must continue to pass
+
+## Senior Developer Review (AI)
+
+### Reviewer
+James (AI-assisted)
+
+### Date
+2026-03-14
+
+### Outcome
+Changes Requested
+
+### Summary
+- Acceptance criteria are mostly present, but AC6 ("Space on focused data cell") is only partially met.
+- `npx vitest run tests/dataLabBulkSelection.test.tsx` passes (11/11), but tests do not exercise real virtualized viewport scrolling.
+- `npx tsc --noEmit` passes.
+- Bulk delete implementation conflicts with Ledgy's existing soft-delete architecture and risks data lifecycle regressions.
+
+### AC Validation Snapshot
+- AC1-5, AC7-9, AC11-12: Implemented
+- AC6: Partial (row-level key handling exists; focused data-cell interaction missing)
+- AC10: Not disproven in this review, but no dedicated regression assertion in this story's test suite
+
+## Change Log
+
+- 2026-03-14: Senior AI code review completed; added follow-up items and moved story status to `in-progress` due unresolved HIGH/MEDIUM issues.
 
