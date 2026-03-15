@@ -12,16 +12,20 @@ so that I can see which entries once linked to records that no longer exist, and
 
 ## Acceptance Criteria
 
-1. **Ghost detection on render** — When rendering a relation field cell, if the target entry ID exists in `deletedEntryIds` memoized set, mark it as ghost before rendering.
+1. **Ghost detection on render** — When rendering a relation field cell, if the target entry ID exists in the target ledger's `deletedEntryIds` memoized set, mark it as ghost before rendering. The target ledger is determined by the schema field's `relationTarget` property.
 
 2. **RelationTagChip receives isGhost flag** — The `RelationTagChip` component already accepts an `isGhost` prop; pass `true` when target is deleted.
 
-3. **Visual styling for ghosts** — Ghost references render with:
-   - Zinc-800 background + zinc-700 border (disabled appearance)
-   - Zinc-500 text color (muted, not emerald-400)
-   - Line-through text decoration
-   - `cursor-not-allowed` mouse cursor
-   - NO external link icon (disabled state)
+3. **Visual styling for ghosts** — Ghost references render with specified styling:
+
+   | Property | Value |
+   |---|---|
+   | Background | zinc-800 |
+   | Border | zinc-700 |
+   | Text color | zinc-500 |
+   | Text decoration | line-through |
+   | Cursor | not-allowed |
+   | External link icon | Hidden |
 
 4. **No crash on deleted target** — Relation rendering gracefully handles missing targets without throwing errors or leaving blank cells.
 
@@ -29,13 +33,33 @@ so that I can see which entries once linked to records that no longer exist, and
 
 6. **Bulk selection includes ghosts** — Ghost references remain selectable via checkbox in bulk-edit mode; they do not bypass the selection UI.
 
-7. **Ghost rendering in InlineEntryRow** — When editing/creating entries, relation fields with deleted targets show ghosts correctly in the combobox or inline edit context.
+7. **Ghost rendering in InlineEntryRow** — When editing an existing entry with a relation field that currently points to a deleted entry:
+   - The deleted entry ID renders as a ghost chip (line-through, zinc-500, disabled)
+   - User can remove the ghost reference
+   - User can add new (non-deleted) references alongside the ghost
+   - The ghost reference is preserved in the form data until explicitly removed
 
-8. **Ghost rendering in BackLinksPanel** — If a backlink source entry is soft-deleted, it should appear as "ghost" or excluded from the BackLinksPanel display to avoid confusing deleted entries as active references.
+8. **Ghost rendering in BackLinksPanel** — Ghost references within BackLinksPanel entries are handled correctly: if a backlink source entry contains relation fields pointing to deleted targets, those relations render as ghosts (line-through, disabled) within the BackLinksPanel display.
 
 9. **Schema-aware ghost detection** — Ghosts are only checked for relation field types; non-relation fields ignore the deleted state.
 
-10. **No console warnings** — Ghost detection and rendering do not emit spurious warnings or errors.
+10. **No console warnings** — Ghost detection and rendering do NOT emit console.warn() or console.error() during normal operation. Any errors are surfaced through the global error store (useErrorStore), not console.
+
+11. **Ghost entries in RelationCombobox** — Deleted entries in relation field dropdowns render with:
+   - Strikethrough text
+   - Zinc-500 text color
+   - Can still be selected (not filtered out)
+
+12. **Hard deletion resilience** — If a target entry is hard-deleted from the database (not just soft-deleted), the relation still renders gracefully:
+   - Renders as ghost with strikethrough (same appearance as soft-delete)
+   - No error logs or crashes
+   - No console warnings
+
+13. **Accessibility** — Ghost references are accessible:
+   - Ghost buttons have `disabled={true}` and `aria-disabled='true'`
+   - RelationTagChip ghost chip has `title='This entry has been deleted'`
+   - Screen readers should read: `<entry-id> deleted reference`
+   - Keyboard users can tab to ghost entries but cannot activate them (Enter does nothing)
 
 ## Tasks / Subtasks
 
@@ -46,27 +70,35 @@ so that I can see which entries once linked to records that no longer exist, and
 
 - [ ] Task 2 — Ensure ghost flag is passed at all rendering touchpoints
   - [ ] 2.1 Update LedgerTable cell rendering logic to pass `isGhost={deletedEntryIds.has(val)}` to RelationTagChip
+  - [ ] 2.1.5 **CRITICAL:** Extend RelationCombobox component to accept `deletedEntryIds?: Set<string>` prop and render deleted entries with ghost styling
   - [ ] 2.2 Update InlineEntryRow's RelationCombobox rendering to highlight/disable ghost targets
-  - [ ] 2.3 Verify BackLinksPanel filters or marks soft-deleted entries (if they appear in backlinks)
+  - [ ] 2.3 Update BackLinksPanel to mark or filter soft-deleted backlink source entries (choice depends on UX preference)
   - [ ] 2.4 Test edge case: relation field with empty/null value vs. deleted target
 
 - [ ] Task 3 — Validate ghost UI styling and interaction
-  - [ ] 3.1 Test visual appearance in dark mode: line-through, zinc-500 text, zinc-800/700 borders
+  - [ ] 3.1 Test visual appearance in dark mode: line-through, zinc-500 text, zinc-800/700 borders (verify against AC 3 table)
   - [ ] 3.2 Confirm ghost buttons are disabled and cursor shows `not-allowed`
   - [ ] 3.3 Verify no navigation occurs on ghost click
-  - [ ] 3.4 Confirm bulk selection checkboxes work on ghosts (they remain selectable)
+  - [ ] 3.4 Confirm bulk selection checkboxes work on ghosts; entries containing ghosts remain selectable for bulk operations
+  - [ ] 3.5 Verify ARIA labels and screen-reader compatibility for accessibility
 
 - [ ] Task 4 — Test edge cases and error resilience
   - [ ] 4.1 Create entry with relation → soft-delete target → verify cell shows ghost on re-render
   - [ ] 4.2 Test ghost rendering with multi-relation fields (multiple ghosts in one cell)
-  - [ ] 4.3 Verify no crashes or console errors when rendering large datasets with many ghosts
-  - [ ] 4.4 Test ghost rendering after schema migration (schema_version bump)
+  - [ ] 4.3 Verify no crashes or console errors when rendering large datasets with many ghosts; profile memoization performance
+  - [ ] 4.4 Test ghost rendering after schema migration (schema_version bump):
+    - [ ] Run JIT migration on sample entries (via story 3-6 logic)
+    - [ ] Verify deletedEntryIds Set is correctly invalidated
+    - [ ] Verify ghosts still render correctly if target ledger schema changed
+    - [ ] If relation field removed from schema, verify ghosts do not appear
+  - [ ] 4.5 Test hard-deletion resilience: hard-delete target entry → verify ghost still renders gracefully
 
 - [ ] Task 5 — TypeScript and testing
   - [ ] 5.1 Ensure `npx tsc --noEmit` passes with zero new errors
   - [ ] 5.2 Add unit tests for ghost detection logic (deletedEntryIds memoization)
   - [ ] 5.3 Add unit tests for RelationTagChip with `isGhost` prop variations
   - [ ] 5.4 Add integration tests: create entry → link target → soft-delete target → verify ghost render
+  - [ ] 5.5 Add accessibility tests: verify ARIA attributes and keyboard navigation work correctly
 
 ## Dev Notes
 
@@ -77,27 +109,25 @@ so that I can see which entries once linked to records that no longer exist, and
 - **Relation Rendering Pattern:** Use `relationTarget` schema field to determine target ledger; filter deletedEntryIds from that ledger only
 - **Error Handling:** All rendering errors must propagate through the global error store pattern — no local try/catch in components
 
+**deletedEntryIds Memoization Details:**
+- Recomputes whenever:
+  - A new entry is soft-deleted (isDeleted flag changed in allEntries)
+  - The schema changes (new relation fields added)
+  - Focus moves to a different ledger (schemaId changes)
+- Scoped to relation target schemas only (LedgerTable line 61-63)
+- Performance: O(n) per relation-target ledger, but only runs when dependencies change
+- Memoization dependency array includes `allEntries` and `schema` (critical for cache invalidation)
+
 ### Code Patterns Established
 
-**From Story 3.13 (Bidirectional Link Writing) — Key Implementation Insights:**
-- Backlinks are stored as metadata in `backLinks?: BackLinkMetadata[]` on target entries
-- When updating relations, diff old vs new targets and apply add/remove patches
-- Soft-delete pattern: set `isDeleted?: boolean` flag on entry, do NOT remove from database
-- `find_entries_with_relation_to` is the fallback query if indexed backlinks unavailable
+**Related Stories & Code Patterns:**
 
-**From Story 3.9 (Data Lab Keyboard-First Inline Entry Row):**
-- InlineEntryRow uses ref-based keyboard navigation (Tab, Shift+Tab, Enter, Escape)
-- RelationCombobox loads and filters targets on mount via `fetchEntries`
-- Field rendering happens via `FieldInput` component with conditional logic per field type
+- **Story 3.13 (Bidirectional Link Writing):** Soft-delete semantics (isDeleted flag is single source of truth), backlink metadata structure, batched writes for performance
+- **Story 3.9 (Inline Entry Row):** Keyboard-first FieldInput + RelationCombobox integration, ref-based navigation
+- **Story 3.8 (Header Sorting):** Memoization critical for large datasets, column state management
+- **Story 3-6 (Schema Migration JIT Engine):** Schema version bumps trigger JIT migrations; deletedEntryIds memoization must invalidate correctly
 
-**From Story 3.8 (Header Custom Sorting):**
-- Column widths are tracked in local state `columnWidths` record
-- Memoization is critical: use `useMemo` for derived data (deletedEntryIds already follows this pattern)
-
-**From Previous Story (3.13) Git Patterns:**
-- Commits follow format: `feat(feature-name): description` or `fix(area): description`
-- Story files document learnings for next story (do this at completion)
-- Code review cycles verify: no breaking regressions, all AC met, TypeScript strict passing
+See full story files for deeper implementation context.
 
 ### Project Structure Notes
 
@@ -115,10 +145,8 @@ so that I can see which entries once linked to records that no longer exist, and
 
 ### Testing Standards Summary
 
-- All tests reside in `/tests` directory (mandatory per project-context.md)
-- Use Vitest for unit tests, Playwright for E2E
-- Coverage target: 80% on core data layer functions
-- Regression suite: previous stories' tests remain untouched
+**Testing Conventions:**
+Per project-context.md: all tests in `/tests`, Vitest for unit, Playwright for E2E. Target coverage: 80% on ghost detection and rendering logic (see Task 5).
 
 ## Previous Story Intelligence (Story 3.13: Bidirectional Link Writing)
 
@@ -143,35 +171,23 @@ so that I can see which entries once linked to records that no longer exist, and
 - Schema-aware extraction verified (non-relation fields ignored)
 - Cross-ledger compatibility confirmed (backlinks work across different schemas)
 
-## Git Intelligence (Last 5 Commits)
+## Git Intelligence (Story Commit Patterns)
 
-**Commit Pattern Analysis:**
-- Commit 1: `Story 3.13: Bidirectional Link Writing — code review fixes and validation` (main branch)
-- Commit 2: `feat(story-3.13): implement bidirectional backlink reconciliation`
-- Commit 3: `docs(story): create story 3-13 and mark ready-for-dev`
-- Commit 4: `fix(ledger): finalize story 3-12 bulk actions and sync status to done`
-- Commit 5: `fix(data-lab): resolve story 3-12 bulk-selection review findings`
+**Expected commit pattern for this story:**
+```
+docs(story): create story 3-14 ghost reference fallback rendering and mark ready-for-dev
+feat(story-3.14): implement ghost reference fallback rendering
+fix(story-3.14): resolve code review findings
+```
 
-**Actionable Insights:**
-- Story files are created BEFORE implementation (`docs(story):` commits)
-- Code review cycle is mandatory; fixes applied in separate `fix(...)` commits
-- Story number and title appear in commit messages for traceability
-- Data layer logic (backlink reconciliation) uses `feat(...)` prefix; UI fixes use `fix(...)`
+**Per project conventions:** Story files created first (docs commit), then implementation (feat), then review fixes (fix).
 
 ## Latest Tech Information
 
-**WebCrypto & Browser APIs (Current):**
-- No external libraries required for ghost detection (uses native Set, array includes)
-- Memoization via `useMemo` hook is the performance optimization pattern
-
-**React 19 Patterns (Current):**
-- Component props passed directly (no Provider wrapping needed for RelationTagChip isGhost flag)
-- useRef for DOM element caching continues to be used (as seen in LedgerTable)
-
-**Styling with Tailwind (Current):**
-- Ghost appearance: `bg-zinc-800 border-zinc-700 text-zinc-500 line-through cursor-not-allowed`
-- Disabled button style: use `disabled={true}` attribute and corresponding class conditions
-- Current active reference: `bg-emerald-900/30 border-emerald-800 text-emerald-400 hover:bg-emerald-900/50`
+**Latest Technical Context:**
+- No external libraries required for ghost detection (uses native Set, array.includes)
+- React 19 component props passed directly (no Provider wrapping needed for isGhost flag)
+- Tailwind class conditions continue to work (dark mode ghost styling already tested in RelationTagChip)
 
 ## Project Context Reference
 
